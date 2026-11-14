@@ -8,7 +8,7 @@ const URL_CSV = 'https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv'
 const OUT = join(__dirname, '..', 'src', 'data', 'holidays.json')
 
 async function main(): Promise<void> {
-  const res = await fetch(URL_CSV)
+  const res = await fetch(URL_CSV, { signal: AbortSignal.timeout(30_000) })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const text = new TextDecoder('shift_jis').decode(await res.arrayBuffer())
 
