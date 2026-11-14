@@ -28,9 +28,11 @@ test('F-306: 同じ日の合計が 1 日を超えると知らせる（保存は�
   expect(checkEntryDraft(SHEET, draft('2026-10-07'), '2026-10-07').overOneDay).toBe(false) // 自分自身は足さない
 })
 test('R-12・F-101: 付与日と日数の検証', () => {
-  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, carryOverMinutes: 0 })).toEqual([])
-  expect(checkGrantDraft({ grantDay: '02-29', grantDays: 14, carryOverMinutes: 0 })).toEqual(['invalidGrantDay'])
-  expect(checkGrantDraft({ grantDay: '05-01', grantDays: -1, carryOverMinutes: 0 })).toEqual(['invalidGrantDays'])
-  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 10.3, carryOverMinutes: 0 })).toEqual(['invalidGrantDays'])
-  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, carryOverMinutes: -1 })).toEqual(['invalidCarryOver'])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: null })).toEqual([])
+  expect(checkGrantDraft({ grantDay: '02-29', grantDays: 14, entitlementMinutes: null })).toEqual(['invalidGrantDay'])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: -1, entitlementMinutes: null })).toEqual(['invalidGrantDays'])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 10.3, entitlementMinutes: null })).toEqual(['invalidGrantDays'])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 17 * 480 })).toEqual([])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: -1 })).toEqual(['invalidEntitlement'])
+  expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 1.5 })).toEqual(['invalidEntitlement'])
 })

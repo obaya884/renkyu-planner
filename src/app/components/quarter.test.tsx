@@ -41,7 +41,7 @@ test('F-205: 祝日のない月は、押して開く 1 行', () => {
 })
 test('F-209・F-211: 次の付与年から引く・足りない、の添え書き', () => {
   expect(html(<CandidateList blocks={q2.candidates} workMinutes={480} onAdd={noop} />)).toContain(T.nextGrantYear)
-  const tight = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 10, carryOverMinutes: 0 } } } }
+  const tight = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 10, entitlementMinutes: null } } } }
   const [t4] = buildQuarterViews(tight, qs)
   expect(html(<CandidateList blocks={t4.candidates} workMinutes={480} onAdd={noop} />)).toContain('有休が 6 時間足りません')
 })
@@ -74,7 +74,7 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
 test('§3.6: 付与日の 1 行。入力済みなら有休の日数を出す', () => {
   const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q2} {...props} />)).toContain(T.enterGrant)
-  const entered = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, carryOverMinutes: 0 } } } }
+  const entered = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
   const [, , e2] = buildQuarterViews(entered, qs)
   const h = html(<QuarterSection view={e2} {...props} />)
   expect(h).toContain('5/1 から次の付与年（有休 16日）')
@@ -93,13 +93,13 @@ test('F-507・§3.4: タブ。年と月の 2 行、前・次の出し分け', ()
   expect(h2).toContain(T.forward)
 })
 test('§3.4: 持ち分の 1 行は不足のとき警告の色', () => {
-  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, carryOverMinutes: 0 } } } })
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
   expect(html(<StickySummary summary={s} workMinutes={480} />)).toContain('text-warn-ink')
   expect(html(<StickySummary summary={buildSummary(SHEET)} workMinutes={480} />)).not.toContain('text-warn-ink')
 })
 test('F-401: 持ち分の 1 行は有休だけ。不足なら不足と出す。設定なしは出さない', () => {
   expect(html(<StickySummary summary={buildSummary(SHEET)} workMinutes={480} />)).toContain('有休 残り 9 日と 2 時間・未割り当て 4 日と 2 時間')
-  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, carryOverMinutes: 0 } } } })
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
   expect(html(<StickySummary summary={s} workMinutes={480} />)).toContain('不足 6 時間')
   expect(html(<StickySummary summary={buildSummary(UNSET)} workMinutes={480} />)).toBe('')
 })

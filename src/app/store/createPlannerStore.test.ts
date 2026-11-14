@@ -141,17 +141,17 @@ test('D-9: 読めても書けないときは、書けなかった時点で canSa
 test('F-101・F-405: 付与日と日数を入れる。付与日を変えると、前の付与年の設定を消す', () => {
   const s = createPlannerStore(memory(), ids())
   s.load()
-  s.setGrant({ grantDay: '05-01', grantDays: 14, carryOverMinutes: 0 }, '2026-05-01')
-  s.setGrant({ grantDay: '05-01', grantDays: 16, carryOverMinutes: 2040 }, '2027-05-01')
+  s.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 7000 }, '2026-05-01')
+  s.setGrant({ grantDay: '05-01', grantDays: 16, entitlementMinutes: null }, '2027-05-01')
   expect(s.getState().data.settings).toMatchObject({
     grantDay: '05-01',
     grantYears: {
-      '2026-05-01': { grantDays: 14, carryOverMinutes: 0 },
-      '2027-05-01': { grantDays: 16, carryOverMinutes: 2040 },
+      '2026-05-01': { grantDays: 14, entitlementMinutes: 7000 },
+      '2027-05-01': { grantDays: 16, entitlementMinutes: null },
     },
   })
-  s.setGrant({ grantDay: '04-01', grantDays: 14, carryOverMinutes: 0 }, '2026-04-01')
-  expect(s.getState().data.settings.grantYears).toEqual({ '2026-04-01': { grantDays: 14, carryOverMinutes: 0 } })
+  s.setGrant({ grantDay: '04-01', grantDays: 14, entitlementMinutes: null }, '2026-04-01')
+  expect(s.getState().data.settings.grantYears).toEqual({ '2026-04-01': { grantDays: 14, entitlementMinutes: null } })
 })
 test('存在しない id の更新と削除は何もしない', () => {
   const m = memory()

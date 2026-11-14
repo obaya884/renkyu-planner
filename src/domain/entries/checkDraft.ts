@@ -34,15 +34,16 @@ export function checkEntryDraft(
   return { errors, overOneDay }
 }
 
-export type GrantDraft = Readonly<{ grantDay: MonthDay; grantDays: number; carryOverMinutes: number }>
-export type GrantError = 'invalidGrantDay' | 'invalidGrantDays' | 'invalidCarryOver'
+/** `entitlementMinutes` は持ち分の上書き（分）。null は計算に任せる（R-13） */
+export type GrantDraft = Readonly<{ grantDay: MonthDay; grantDays: number; entitlementMinutes: number | null }>
+export type GrantError = 'invalidGrantDay' | 'invalidGrantDays' | 'invalidEntitlement'
 
-/** R-12・F-101: 付与日・付与日数（0〜366 で 0.5 刻み）・繰り越し（0 以上の整数の分）の検証 */
+/** R-12・F-101: 付与日・付与日数（0〜366 で 0.5 刻み）・持ち分の上書き（null か 0 以上の整数の分）の検証 */
 export function checkGrantDraft(draft: GrantDraft): readonly GrantError[] {
   const errors: GrantError[] = []
   if (!isValidGrantDay(draft.grantDay)) errors.push('invalidGrantDay')
-  const { grantDays, carryOverMinutes } = draft
+  const { grantDays, entitlementMinutes } = draft
   if (!Number.isInteger(grantDays * 2) || grantDays < 0 || grantDays > 366) errors.push('invalidGrantDays')
-  if (!Number.isInteger(carryOverMinutes) || carryOverMinutes < 0) errors.push('invalidCarryOver')
+  if (entitlementMinutes !== null && (!Number.isInteger(entitlementMinutes) || entitlementMinutes < 0)) errors.push('invalidEntitlement')
   return errors
 }

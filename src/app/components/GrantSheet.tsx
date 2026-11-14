@@ -36,10 +36,12 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
 
   // 付与年を指定して開いたときの付与日は、設定の付与日（設定が無いことはないが、無ければ付与年の開始日から取る）
   const grantDay = first ? `${pad(month)}-${pad(day)}` : (settings.grantDay ?? grantYearStart.slice(5))
+  const carryMinutes = Number(carryDays) * workMinutes + Number(carryHours) * 60 + Number(carryMins)
   const draft: GrantDraft = {
     grantDay,
     grantDays: grantDays === '' ? Number.NaN : Number(grantDays),
-    carryOverMinutes: Number(carryDays) * workMinutes + Number(carryHours) * 60 + Number(carryMins),
+    // Task 11 の Step 4 で面を作り直すまでのつなぎ: 繰り越しの欄を変えたときだけ、持ち分の上書きにする
+    entitlementMinutes: carryMinutes === carry0 ? null : (grantDays === '' ? 0 : Number(grantDays)) * workMinutes + carryMinutes,
   }
   const allErrors = checkGrantDraft(draft)
   const errors = allErrors.filter((e) => !(e === 'invalidGrantDays' && grantDays === ''))
@@ -118,9 +120,9 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
             <input type="number" min={0} inputMode="numeric" aria-label={T.minutesUnit} value={carryMins} onChange={(e) => setCarryMins(e.target.value)} className={`${FIELD_CLASS} w-20`} />
             {T.minutesUnit}
           </div>
-          {errors.includes('invalidCarryOver') && (
+          {errors.includes('invalidEntitlement') && (
             <p role="alert" className="text-sm text-danger">
-              {errorText('invalidCarryOver')}
+              {errorText('invalidEntitlement')}
             </p>
           )}
         </fieldset>

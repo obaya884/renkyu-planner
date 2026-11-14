@@ -17,7 +17,7 @@ test('F-401: 持ち分のカードに、残り・予定・未割り当てが出�
   expect(h).not.toContain(T.short)
 })
 test('F-211・R-11: 未割り当てが負なら「不足」と絶対値', () => {
-  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, carryOverMinutes: 0 } } } })
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
   const h = html(<BalanceCards summary={s} workMinutes={480} />)
   expect(h).toContain(T.short)
   expect(h).toContain('6 時間')

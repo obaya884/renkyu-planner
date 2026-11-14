@@ -28,6 +28,6 @@ test('F-106: 付与日が無ければカードを出さない。会社の休日�
   expect(s.longBreaks.map((c) => c.has)).toEqual([false, false, true, false]) // 2027 年の 5/1〜5/5
 })
 test('F-211: 持ち分を超えると short', () => {
-  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, carryOverMinutes: 0 } } } })
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
   expect(s.cards[0]).toMatchObject({ unassigned: -360, short: true })
 })

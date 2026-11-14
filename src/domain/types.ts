@@ -23,7 +23,8 @@ export type LeaveType = Readonly<{
   usable: { start: MonthDay; end: MonthDay } | null
 }>
 
-export type GrantYearSetting = Readonly<{ grantDays: number; carryOverMinutes: number }>
+/** `entitlementMinutes` は持ち分の上書き（分）。null は計算に任せる（R-13） */
+export type GrantYearSetting = Readonly<{ grantDays: number; entitlementMinutes: number | null }>
 
 /** `grantYears` のキーは付与年の開始日 */
 export type Settings = Readonly<{

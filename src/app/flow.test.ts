@@ -29,7 +29,7 @@ test('成功基準 2: 何も入れずに候補が見え、候補を入れ、付�
   expect(rows.some((r) => r.leaveDays.includes('2026-11-20'))).toBe(false)
   expect(rows.some((r) => r.leaveDays.length === 1 && r.leaveDays[0] === '2026-11-24' && r.run.days === 5)).toBe(true)
 
-  s.setGrant({ grantDay: '05-01', grantDays: 14, carryOverMinutes: 0 }, '2026-05-01')
+  s.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: null }, '2026-05-01')
   v = view(s)
   expect(v.summary.cards[0]).toMatchObject({ remaining: 14 * 480, planned: 480, unassigned: 13 * 480 })
   expect(v.summary.fiveDays).toMatchObject({ doneDays: 0, plannedDays: 1, remainingDays: 4 })

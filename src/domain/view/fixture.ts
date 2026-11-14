@@ -9,7 +9,7 @@ const e = (date: string, unit: 'day' | 'hours', done: boolean, title = ''): Entr
 export const SHEET: PlannerInput = {
   holidays: data,
   today: '2026-11-15',
-  settings: { ...DEFAULT_SETTINGS, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 14, carryOverMinutes: 0 } }, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03' }] },
+  settings: { ...DEFAULT_SETTINGS, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: null } }, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03' }] },
   entries: [
     e('2026-05-15', 'day', true), e('2026-05-21', 'hours', true), e('2026-06-22', 'day', true), e('2026-08-10', 'day', true),
     e('2026-09-04', 'hours', true), e('2026-10-07', 'hours', true, '体調不良'), e('2026-11-02', 'day', true, '連休作成'),

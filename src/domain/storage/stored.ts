@@ -159,7 +159,7 @@ function readGrantYears(v: unknown): Record<string, GrantYearSetting> {
     const g = obj(val, 'grantYears の値')
     out[isoDate(key, 'grantYears のキー')] = {
       grantDays: num(g.grantDays, 'grantDays', 0),
-      carryOverMinutes: num(g.carryOverMinutes, 'carryOverMinutes', 0),
+      entitlementMinutes: g.entitlementMinutes === null ? null : num(g.entitlementMinutes, 'entitlementMinutes', 0, Infinity, true),
     }
   }
   return out

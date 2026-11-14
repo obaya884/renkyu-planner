@@ -56,7 +56,7 @@ test('F-209: 付与日の印と、次の付与年に入る候補', () => {
   expect(rows.filter((r) => r.leaveDays.every((d) => d < '2027-05-01')).every((r) => !r.nextGrantYear)).toBe(true)
 })
 test('F-211: 足りない候補は shortMinutes を持つ', () => {
-  const tight = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 10, carryOverMinutes: 0 } } } } // 未割り当て 120 分
+  const tight = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 10, entitlementMinutes: null } } } } // 未割り当て 120 分
   const [t4] = buildQuarterViews(tight, qs)
   const nov = t4.candidates.find((b) => b.kind === 'group' && b.core === '2026-11-23')
   expect(nov?.kind === 'group' && nov.primary[0].shortMinutes).toBe(360)
@@ -95,8 +95,9 @@ const rowsOf = (v: typeof q4) => v.candidates.flatMap((b) => (b.kind === 'group'
 const shortOfPreview = (input: typeof SHEET, leaveDays: readonly string[]) =>
   previewAdd(input, leaveDays, 'paid').reduce((sum, d) => sum + (d.after <= -1 ? -d.after : 0), 0)
 test('F-209・F-211・R-13: 付与日をまたぐ候補の不足は、面（previewAdd）と同じ。今の付与年に入れた分だけ次の付与年の繰り越しが減る', () => {
-  // 今の付与年の未割り当てが 1 日（付与 0 日、繰り越しは日程の合計 + 1 日）。次の付与年の設定は無い
-  const input = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 0, carryOverMinutes: 9 * 480 + 360 + 480 } } } }
+  // 今の付与年の未割り当てが 1 日（付与 1 日、持ち分の上書きは日程の合計 + 1 日）。次の付与年は付与 0 日で、持ち分は繰り越しだけ（付与日数の 1 日まで）
+  const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 1, entitlementMinutes: 9 * 480 + 360 + 480 }, '2027-05-01': { grantDays: 0, entitlementMinutes: null } } }
+  const input = { ...SHEET, settings }
   const [, , v2] = buildQuarterViews(input, qs)
   const rows = rowsOf(v2)
   const crossing = rows.find((r) => r.leaveDays.join() === '2027-04-28,2027-05-06')
@@ -109,10 +110,10 @@ test('F-209・F-211・R-13: 付与日をまたぐ候補の不足は、面（prev
   }
 })
 test('§3.2・F-211: 0.5 分の端数で 1 分に満たない不足は、不足にしない', () => {
-  // 所定労働時間 465 分、付与 1 日 + 繰り越し 232 分、半日の日程 1 件 → 未割り当て 464.5 分。1 日入れると −0.5 分
+  // 所定労働時間 465 分、持ち分の上書き 697 分（1 日 + 232 分）、半日の日程 1 件 → 未割り当て 464.5 分。1 日入れると −0.5 分
   const input = {
     ...UNSET,
-    settings: { ...UNSET.settings, workMinutes: 465, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 1, carryOverMinutes: 232 } } },
+    settings: { ...UNSET.settings, workMinutes: 465, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 1, entitlementMinutes: 697 } } },
     entries: [{ id: 'h', date: '2026-10-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: true } as const],
   }
   const [v] = buildQuarterViews(input, qs)

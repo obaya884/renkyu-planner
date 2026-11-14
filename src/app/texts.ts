@@ -293,7 +293,7 @@ export function errorText(e: DraftError | GrantError): string {
       return '引く休暇を選んでください'
     case 'invalidGrantDays':
       return '付与日数は、0日から366日まで、0.5日きざみで入れてください'
-    case 'invalidCarryOver':
-      return '繰り越しは、0以上で入れてください'
+    case 'invalidEntitlement':
+      return 'この年に使える日数は、0以上で入れてください'
   }
 }

@@ -92,7 +92,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       const { settings } = state.data
       // 付与日が変わると、キー（付与年の開始日）が合わなくなるので、前の付与年の設定は消す
       const kept = draft.grantDay === settings.grantDay ? settings.grantYears : {}
-      const grantYears = { ...kept, [grantYearStart]: { grantDays: draft.grantDays, carryOverMinutes: draft.carryOverMinutes } }
+      const grantYears = { ...kept, [grantYearStart]: { grantDays: draft.grantDays, entitlementMinutes: draft.entitlementMinutes } }
       change({ ...state.data, settings: { ...settings, grantDay: draft.grantDay, grantYears } })
     },
   }
