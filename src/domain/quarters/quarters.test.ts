@@ -59,3 +59,9 @@ test('R-14: 連休がちょうど四半期の初日に始まるなら、その�
   expect(longBreakOf(cal, q1)).toEqual({ start: '2027-01-01', end: '2027-01-05', days: 5 })
   expect(longBreakOf(cal, q4)).toBeNull()
 })
+
+test('R-10: shift が −1 なら 1 四半期ぶん前から 4 つ', () => {
+  const qs = planningQuarters('2026-11-15', -1)
+  expect(qs).toHaveLength(4)
+  expect(qs[0]).toEqual({ start: '2026-07-01', end: '2026-09-30', label: '2026年 7〜9月' })
+})

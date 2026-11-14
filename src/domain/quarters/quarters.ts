@@ -3,15 +3,19 @@ import { type IsoDate, addDays, quarterEnd, quarterStart } from '../shared/date'
 
 export type Quarter = Readonly<{ start: IsoDate; end: IsoDate; label: string }>
 
-function quarterOf(start: IsoDate): Quarter {
+/** 四半期の初日から四半期を作る */
+export function quarterOf(start: IsoDate): Quarter {
   const [y, m] = start.split('-').map(Number)
   return { start, end: quarterEnd(start), label: `${y}年 ${m}〜${m + 2}月` }
 }
 
-/** 今日が入る四半期から 4 つ（R-10） */
-export function planningQuarters(today: IsoDate): Quarter[] {
+/** 今日が入る四半期から 4 つ（R-10）。`shift` の四半期ぶんだけ始まりをずらす（−1 なら 1 つ前から） */
+export function planningQuarters(today: IsoDate, shift = 0): Quarter[] {
   const quarters: Quarter[] = []
   let start = quarterStart(today)
+  for (let i = 0; i < Math.abs(shift); i++) {
+    start = shift < 0 ? quarterStart(addDays(start, -1)) : addDays(quarterEnd(start), 1)
+  }
   for (let i = 0; i < 4; i++) {
     const q = quarterOf(start)
     quarters.push(q)
