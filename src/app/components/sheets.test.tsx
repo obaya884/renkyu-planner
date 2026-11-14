@@ -73,12 +73,14 @@ test('F-101・F-405・§5.3: 付与日と日数の面。初めては、この年
   expect(first).toContain('<option value="30">30</option>') // 初期の月は 4 月。日は 30 まで
   expect(first).not.toContain('<option value="31">31</option>')
   expect(first.match(/type="number"/g)).toHaveLength(3) // 付与日数、使える日数の日と時間
+  expect(first).toContain('この年にすでに取った休みは、過ぎた四半期を開いて足せます')
   const next = html(<GrantSheetBody input={SHEET} grantYearStart="2027-05-01" onSubmit={noop} onClose={noop} />)
   expect(next).toContain('2027/5/1〜2028/4/30 の分')
   expect(next).toContain('value="14"') // 付与日数の初期値は前の年と同じ
   expect(next.match(/type="number"/g)).toHaveLength(1) // 付与日数だけ
   expect(next).toContain('14 日 ＋ 今の年の残り（いまは 4 日と 2 時間）')
   expect(next).toContain(T.save)
+  expect(next).not.toContain('過ぎた四半期を開いて足せます')
 })
 test('§5.3: 始まった付与年の面は、付与日数と、計算した持ち分を初期値にした使える日数の欄', () => {
   const started = html(<GrantSheetBody input={SHEET} grantYearStart="2026-05-01" onSubmit={noop} onClose={noop} />)

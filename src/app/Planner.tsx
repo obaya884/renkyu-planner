@@ -18,7 +18,8 @@ import { T } from '@/app/texts'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import { type IsoDate, todayInJapan, untilNextDayInJapan } from '@/domain/shared/date'
-import { type Quarter, hasDatesBefore, quartersBetween } from '@/domain/quarters/quarters'
+import { type Quarter, canGoBack as canGoBackFrom, quartersBetween } from '@/domain/quarters/quarters'
+import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 
@@ -90,7 +91,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
     const input = { holidays, settings: data.settings, entries: data.entries, today }
     const shown = quartersBetween(today, shift)
     const tabQuarters = shown.slice(0, 4)
-    const canGoBack = hasDatesBefore(data.entries.map((e) => e.date), shown[0])
+    const canGoBack = canGoBackFrom(data.entries.map((e) => e.date), currentGrantYear(input)?.start ?? null, shown[0])
     return { summary: buildSummary(input), tabQuarters, canGoBack, views: buildQuarterViews(input, shown) }
   }, [data, holidays, today, shift])
 

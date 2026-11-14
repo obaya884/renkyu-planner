@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import data from '@/data/holidays.json'
 import { buildRestCalendar } from '@/domain/calendar/restDays'
 import { addDays } from '@/domain/shared/date'
-import { hasDatesBefore, longBreakOf, planningQuarters, quartersBetween } from './quarters'
+import { canGoBack, longBreakOf, planningQuarters, quartersBetween } from './quarters'
 
 test('F-508・R-10: 今日が入る四半期から 4 つ', () => {
   expect(planningQuarters('2026-11-15')).toEqual([
@@ -98,11 +98,19 @@ test('F-508: 年をまたいでさかのぼる（1〜3 月から 2 つ前）', (
   ])
   expectContiguous(qs)
 })
-test('§3.4・§4: 見えている最初の四半期より前に日程があるときだけ、前へ動ける', () => {
+test('§3.4・§4: 見えている最初の四半期より前に日程があるとき、前へ動ける（付与日が未設定）', () => {
   const [first] = quartersBetween('2026-11-15', 0)
-  expect(hasDatesBefore(['2026-09-30', '2026-12-01'], first)).toBe(true)
-  expect(hasDatesBefore(['2026-10-01', '2026-12-01'], first)).toBe(false)
-  expect(hasDatesBefore([], first)).toBe(false)
+  expect(canGoBack(['2026-09-30', '2026-12-01'], null, first)).toBe(true)
+  expect(canGoBack(['2026-10-01', '2026-12-01'], null, first)).toBe(false)
+  expect(canGoBack([], null, first)).toBe(false)
   const [earlier] = quartersBetween('2026-11-15', -1)
-  expect(hasDatesBefore(['2026-09-30'], earlier)).toBe(false)
+  expect(canGoBack(['2026-09-30'], null, earlier)).toBe(false)
+})
+test('§3.4・§4: 今の付与年が始まった四半期までは、日程が無くても前へ動ける', () => {
+  const [first] = quartersBetween('2026-11-15', 0) // 2026-10-01 から
+  expect(canGoBack([], '2026-05-01', first)).toBe(true)
+  const [q2] = quartersBetween('2026-11-15', -2) // 2026-04-01 から（付与年の開始が入る四半期）
+  expect(canGoBack([], '2026-05-01', q2)).toBe(false)
+  expect(canGoBack([], null, first)).toBe(false)
+  expect(canGoBack(['2025-06-20'], '2026-05-01', q2)).toBe(true) // 付与年の開始より前の日程へも動ける
 })

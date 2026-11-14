@@ -187,6 +187,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
             )}
           </fieldset>
         )}
+        {first && <p className="text-sm text-sub">{T.pastEntriesHint}</p>}
       </div>
       <p className="text-sm text-sub">{T.localOnly}</p>
       <SheetButtons>

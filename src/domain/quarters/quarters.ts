@@ -40,9 +40,12 @@ export function quartersBetween(today: IsoDate, shift: number): Quarter[] {
   return quarters
 }
 
-/** 見えている最初の四半期より前の日付が 1 つでもあるか（「‹ 前」と「過ぎた四半期の記録を見る」を出す条件） */
-export function hasDatesBefore(dates: readonly IsoDate[], first: Quarter): boolean {
-  return dates.some((d) => d < first.start)
+/**
+ * §3.4・§4: 前へ動けるか（「‹ 前」と「過ぎた四半期の記録を見る」を出す条件）。見えている最初の四半期の初日より前に、
+ * 日程がある、または今日が入る付与年の開始日がある（付与日が未設定なら grantYearStart は null で、日程だけを見る）
+ */
+export function canGoBack(dates: readonly IsoDate[], grantYearStart: IsoDate | null, first: Quarter): boolean {
+  return dates.some((d) => d < first.start) || (grantYearStart !== null && grantYearStart < first.start)
 }
 
 /** 開始日がその四半期に入る 5 日以上の連休のうち、最も長いもの。同じ長さなら早いもの（R-14） */
