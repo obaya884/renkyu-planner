@@ -2,10 +2,19 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
-import { T, errorText, grantDayText, grantPeriodText } from '@/app/texts'
+import { T, errorText, grantDayText, grantPeriodText, nextEntitlementText } from '@/app/texts'
 import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
-import { carryOverOf, grantDaysOf } from '@/domain/leave/balance'
-import { grantYearOf } from '@/domain/leave/grantYear'
+import {
+  clampGrantDay,
+  computedEntitlement,
+  entitlementToSave,
+  grantDayChoices,
+  grantSheetMode,
+  joinDaysHours,
+  splitDaysHours,
+} from '@/domain/entries/grantInput'
+import { balanceOf, carryOverOf, grantDaysOf } from '@/domain/leave/balance'
+import { grantYearOf, isValidGrantDay } from '@/domain/leave/grantYear'
 import type { IsoDate } from '@/domain/shared/date'
 import type { PlannerInput } from '@/domain/view/input'
 
@@ -17,39 +26,67 @@ type Props = {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
-const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1)
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
-/** §5.3 の中身。入力欄の値だけを状態に持つ。検証は checkGrantDraft を呼ぶだけ */
+/** §5.3 の中身。入力欄の値だけを状態に持つ。検証・換算・上書きの判断は domain の関数を呼ぶだけ */
 export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Props) {
   const { settings } = input
   const { workMinutes } = settings
-  const first = grantYearStart === null
+  const mode = grantSheetMode(input, grantYearStart)
+  const first = mode === 'first'
 
-  // 初期値は、付与年の設定があればその値、無ければ前の年から引き継ぐ値（R-13・F-405）
-  const carry0 = first ? 0 : carryOverOf({ settings, entries: input.entries, grantYearStart })
+  // 始まった付与年の、この年に使える日数の初期値は、R-13 で計算した持ち分（上書きがあればその値）
+  const startedEntitlement =
+    mode === 'started' && grantYearStart !== null
+      ? (balanceOf({ settings, entries: input.entries, leaveTypeId: 'paid', grantYearStart })?.entitlement ?? 0)
+      : 0
+  const initialSplit = splitDaysHours(startedEntitlement, workMinutes)
   const [month, setMonth] = useState(4)
   const [day, setDay] = useState(1)
-  const [grantDays, setGrantDays] = useState(first ? '' : String(grantDaysOf(settings, grantYearStart)))
-  const [carryDays, setCarryDays] = useState(String(Math.floor(carry0 / workMinutes)))
-  const [carryHours, setCarryHours] = useState(String(Math.floor((carry0 % workMinutes) / 60)))
-  const [carryMins, setCarryMins] = useState(String((carry0 % workMinutes) % 60))
+  const [grantDays, setGrantDays] = useState(grantYearStart === null ? '' : String(grantDaysOf(settings, grantYearStart)))
+  const [touched, setTouched] = useState(false)
+  const [entDays, setEntDays] = useState(String(initialSplit.days))
+  const [entHours, setEntHours] = useState(String(initialSplit.hours))
 
   // 付与年を指定して開いたときの付与日は、設定の付与日（設定が無いことはないが、無ければ付与年の開始日から取る）
-  const grantDay = first ? `${pad(month)}-${pad(day)}` : (settings.grantDay ?? grantYearStart.slice(5))
-  const carryMinutes = Number(carryDays) * workMinutes + Number(carryHours) * 60 + Number(carryMins)
-  const draft: GrantDraft = {
-    grantDay,
-    grantDays: grantDays === '' ? Number.NaN : Number(grantDays),
-    // Task 11 の Step 4 で面を作り直すまでのつなぎ: 繰り越しの欄を変えたときだけ、持ち分の上書きにする
-    entitlementMinutes: carryMinutes === carry0 ? null : (grantDays === '' ? 0 : Number(grantDays)) * workMinutes + carryMinutes,
-  }
+  const grantDay = grantYearStart === null ? `${pad(month)}-${pad(day)}` : (settings.grantDay ?? grantYearStart.slice(5))
+  const grantDaysNumber = grantDays === '' ? Number.NaN : Number(grantDays)
+  // 初めての入力は、入れた付与日と今日から付与年が決まる
+  const year = first && !isValidGrantDay(grantDay) ? null : grantYearOf(grantYearStart ?? input.today, grantDay)
+  const start = grantYearStart ?? year?.start ?? input.today
+
+  const computed = computedEntitlement(input, start, grantDaysNumber)
+  // 初めての入力では、利用者が触るまで、付与日数に合わせて動く
+  const followed = first && !touched
+  const shown = followed
+    ? Number.isFinite(computed)
+      ? splitDaysHours(computed, workMinutes)
+      : null
+    : { days: entDays, hours: entHours }
+  const entered = followed ? computed : joinDaysHours(Number(entDays), Number(entHours), workMinutes)
+  // 次の付与年の面は上書きを作らない。すでに上書きがある付与年なら、それを保つ
+  const entitlementMinutes =
+    mode === 'next' && grantYearStart !== null
+      ? (settings.grantYears[grantYearStart]?.entitlementMinutes ?? null)
+      : entitlementToSave(touched, entered, computed)
+
+  const draft: GrantDraft = { grantDay, grantDays: grantDaysNumber, entitlementMinutes }
   const allErrors = checkGrantDraft(draft)
   const errors = allErrors.filter((e) => !(e === 'invalidGrantDays' && grantDays === ''))
   const canSubmit = allErrors.length === 0
 
-  // 初めての入力は、入れた付与日と今日から付与年が決まる。付与日が正しくないあいだは期間を出さない
-  const year = first && allErrors.includes('invalidGrantDay') ? null : grantYearOf(first ? input.today : grantYearStart, grantDay)
-  const start = grantYearStart ?? year?.start ?? input.today
+  const changeMonth = (m: number) => {
+    setMonth(m)
+    setDay((d) => clampGrantDay(m, d))
+  }
+  const touch = (set: (v: string) => void) => (v: string) => {
+    if (followed && shown !== null) {
+      setEntDays(String(shown.days))
+      setEntHours(String(shown.hours))
+    }
+    setTouched(true)
+    set(v)
+  }
 
   return (
     <>
@@ -62,8 +99,8 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
           <fieldset>
             <legend className="text-sm text-sub">{T.grantDayLabel}</legend>
             <div className="flex items-center gap-2">
-              <select aria-label={T.monthUnit} value={month} onChange={(e) => setMonth(Number(e.target.value))} className={`${FIELD_CLASS} w-20`}>
-                {range(12).map((m) => (
+              <select aria-label={T.monthUnit} value={month} onChange={(e) => changeMonth(Number(e.target.value))} className={`${FIELD_CLASS} w-20`}>
+                {MONTHS.map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>
@@ -71,7 +108,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
               </select>
               {T.monthUnit}
               <select aria-label={T.dayUnit} value={day} onChange={(e) => setDay(Number(e.target.value))} className={`${FIELD_CLASS} w-20`}>
-                {range(31).map((d) => (
+                {grantDayChoices(month).map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -110,22 +147,46 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
             </p>
           )}
         </div>
-        <fieldset>
-          <legend className="text-sm text-sub">{T.carryOverLabel}</legend>
-          <div className="flex items-center gap-2">
-            <input type="number" min={0} inputMode="numeric" aria-label={T.dayUnit} value={carryDays} onChange={(e) => setCarryDays(e.target.value)} className={`${FIELD_CLASS} w-20`} />
-            {T.dayUnit}
-            <input type="number" min={0} inputMode="numeric" aria-label={T.hoursUnit} value={carryHours} onChange={(e) => setCarryHours(e.target.value)} className={`${FIELD_CLASS} w-20`} />
-            {T.hoursUnit}
-            <input type="number" min={0} inputMode="numeric" aria-label={T.minutesUnit} value={carryMins} onChange={(e) => setCarryMins(e.target.value)} className={`${FIELD_CLASS} w-20`} />
-            {T.minutesUnit}
-          </div>
-          {errors.includes('invalidEntitlement') && (
-            <p role="alert" className="text-sm text-danger">
-              {errorText('invalidEntitlement')}
-            </p>
-          )}
-        </fieldset>
+        {mode === 'next' ? (
+          !errors.includes('invalidGrantDays') &&
+          grantDays !== '' && (
+            <Line label={T.entitlementLabel}>
+              {nextEntitlementText(grantDaysNumber, carryOverOf({ settings, entries: input.entries, grantYearStart: start }), workMinutes)}
+            </Line>
+          )
+        ) : (
+          <fieldset>
+            <legend className="text-sm text-sub">{T.entitlementLabel}</legend>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                aria-label={T.dayUnit}
+                value={shown === null ? '' : shown.days}
+                onChange={(e) => touch(setEntDays)(e.target.value)}
+                className={`${FIELD_CLASS} w-20`}
+              />
+              {T.dayUnit}
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                aria-label={T.hoursUnit}
+                value={shown === null ? '' : shown.hours}
+                onChange={(e) => touch(setEntHours)(e.target.value)}
+                className={`${FIELD_CLASS} w-20`}
+              />
+              {T.hoursUnit}
+            </div>
+            {first && <p className="text-sm text-sub">{T.entitlementHint}</p>}
+            {errors.includes('invalidEntitlement') && (
+              <p role="alert" className="text-sm text-danger">
+                {errorText('invalidEntitlement')}
+              </p>
+            )}
+          </fieldset>
+        )}
       </div>
       <p className="text-sm text-sub">{T.localOnly}</p>
       <SheetButtons>

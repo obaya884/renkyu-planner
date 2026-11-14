@@ -83,8 +83,9 @@ export const T = {
   grantDayLabel: '付与日',
   monthUnit: '月',
   dayUnit: '日',
-  grantDaysLabel: '付与日数',
-  carryOverLabel: '前の年からの繰り越し',
+  grantDaysLabel: '1 年に付与される日数',
+  entitlementLabel: 'この年に使える日数',
+  entitlementHint: '前の年から繰り越した分があれば、足した数に直してください',
   submitGrantFirst: '残りを出す',
   // §8.3
   overOneDay: 'この日の合計が 1日を超えています',
@@ -103,6 +104,11 @@ export function formatDay(d: IsoDate): string {
 /** 例: 10/31〜11/3 */
 export function formatPeriod(run: Run): string {
   return `${monthDay(run.start)}〜${monthDay(run.end)}`
+}
+
+/** §5.3 の次の付与年の、この年に使える日数。例: 16 日 ＋ 今の年の残り（いまは 4 日と 2 時間） */
+export function nextEntitlementText(grantDays: number, carryOver: number, workMinutes: number): string {
+  return `${formatMinutes(grantDays * workMinutes, workMinutes)} ＋ 今の年の残り（いまは ${formatMinutes(carryOver, workMinutes)}）`
 }
 
 /** 例: 2027年12月31日 */
