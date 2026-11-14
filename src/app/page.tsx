@@ -2,12 +2,8 @@ import holidays from '@/data/holidays.json'
 import { bestCandidate } from '@/domain/candidates/groupCandidates'
 import { todayInJapan } from '@/domain/shared/date'
 import { APP_DESCRIPTION, APP_NAME } from './site'
-import {
-  describeCandidate,
-  formatJapaneseDate,
-  quarterHeading,
-  staticCandidateGroups,
-} from './staticCandidates'
+import { staticCandidateGroups } from './staticCandidates'
+import { describeCandidate, formatJapaneseDate, quarterHeading } from './texts'
 
 export default function Page() {
   const groups = staticCandidateGroups(holidays, todayInJapan(new Date()))
