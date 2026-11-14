@@ -137,6 +137,19 @@ CSS = """
 .ph .ask .btn2{display:inline-block;margin-top:6px;background:#0d9488;color:#fff;border-radius:6px;padding:5px 12px;font-size:11.5px}
 .ph .ask .f{display:flex;gap:6px;align-items:center;margin-top:6px;font-size:11px}
 .ph .ask .in{border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;background:#fff;min-width:44px;text-align:center}
+.pc.modal{position:relative;height:470px}
+.pc .dim{position:absolute;inset:0;background:rgba(17,24,39,.45)}
+.pc .dlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:380px;background:#fff;border-radius:12px;padding:16px 18px;font-size:12.5px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.pc .dlg h5{margin:0 0 8px;font-size:15px}
+.pc .dlg .kv{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #e5e7eb}
+.pc .dlg .kv span:first-child{color:#6b7280}
+.pc .dlg .in{border:1px solid #d1d5db;border-radius:6px;padding:5px 8px;color:#9ca3af;display:inline-block;min-width:30px}
+.pc .dlg .seg{display:flex;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;font-size:11.5px}
+.pc .dlg .seg span{padding:4px 10px;color:#6b7280}.pc .dlg .seg .on{background:#0d9488;color:#fff}
+.pc .dlg .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;align-items:center}
+.pc .dlg .go{background:#0d9488;color:#fff;border-radius:8px;padding:8px 18px;font-weight:600}
+.pc .dlg .no{color:#6b7280}.pc .dlg .del{color:#b91c1c;margin-right:auto}
+.pc .lnk{color:#0d9488}
 .ph .gnote{font-size:10px;color:#5b21b6;margin:2px 0 4px}
 .ph .nx{color:#5b21b6}
 .ph .tabs i{position:absolute;left:2px;right:2px;bottom:-15px;font-style:normal;font-size:8.5px;color:#92400e;background:#fef3c7;border-radius:6px}
@@ -276,7 +289,8 @@ sp7 = """<div class="bar"><span>‹ 戻る</span> 設定 <span></span></div><div
 </div>"""
 
 # PC
-pchead = '<div class="bar">連休プランナー <span>設定</span></div><div class="head"><div class="bal"><div class="s">有休 残り</div><b>9日2時間</b><div class="s">予定 2日・未割り当て 7日2時間</div></div><div class="lb"><span class="t">長めの休暇</span><span class="chip has">10〜12月 あり</span><span class="chip none">1〜3月 まだ</span><span class="chip none">4〜6月 まだ</span><span class="chip none">7〜9月 まだ</span></div><div style="flex:1;text-align:right" class="s"><span class="add">‹ 過ぎた四半期を見る</span></div></div>'
+pchead = '<div class="bar">連休プランナー <span>設定</span></div><div class="head"><div class="bal"><div class="s">有休 残り</div><b>9日2時間</b><div class="s">予定 2日・未割り当て 7日2時間</div></div><div class="lb"><span class="t">長めの休暇</span><span class="chip has">10〜12月 あり</span><span class="chip none">1〜3月 まだ</span><span class="chip none">4〜6月 まだ</span><span class="chip none">7〜9月 まだ</span></div></div>'
+pcpast = '<div class="more" style="text-align:left;border-top:1px solid #e5e7eb"><span class="add">↑ 過ぎた四半期を見る（2026年 7〜9月）</span></div>'
 pcfoot = '<div class="more" style="text-align:left">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="add">くわしく</span></div>'
 def sec(title, st, c, leg, right, note=""):
     return f'<div class="sec"><div class="l"><h4>{title}</h4><div class="st">{st}</div>{c}{leg}{note}</div><div class="r">{right}</div></div>'
@@ -301,7 +315,7 @@ r2 = """<div class="lab">候補</div>
 <div class="lab">日程 <span class="add">＋ 日を足す</span></div>
 <div class="row"><div class="g s">まだありません</div></div>"""
 pcleg2 = legend2.replace('class="gr"', 'style="outline:2px solid #7c3aed;outline-offset:-1px"')
-pc1 = pchead + sec("2026年 10〜12月", '長めの休暇: 12/26〜1/3（9連休）<span class="tag ok">あり</span>', cals(2026, (10, 11, 12)), legend, r4) \
+pc1 = pchead + pcpast + sec("2026年 10〜12月", '長めの休暇: 12/26〜1/3（9連休）<span class="tag ok">あり</span>', cals(2026, (10, 11, 12)), legend, r4) \
     + sec("2027年 1〜3月", "長めの休暇: まだない", cals(2027, (1, 2, 3)), legend, r1) \
     + sec("2027年 4〜6月", "長めの休暇: まだない", cals(2027, (4, 5, 6)), pcleg2, r2, '<div style="font-size:10.5px;color:#5b21b6;margin-top:4px">5/1 から次の付与年（前の年と同じ 14日で計算中）<span class="add">日数を入れる</span></div>') \
     + '<div class="more">↓ 2027年 7〜9月 と続く</div>' + pcfoot
@@ -312,6 +326,33 @@ r0 = """<div class="lab">候補</div>
 <div class="lab">日程 <span class="add">＋ 日を足す</span></div>
 <div class="row"><div class="g s">まだありません</div></div>"""
 pc0 = pc0head + sec("2026年 10〜12月", "長めの休暇: まだない", pc_empty_cals, legend0, r0) + '<div class="more">↓ 2027年 1〜3月、4〜6月、7〜9月 と続く</div>' + pcfoot
+
+sec4 = sec("2026年 10〜12月", '長めの休暇: 12/26〜1/3（9連休）<span class="tag ok">あり</span>', cals(2026, (10, 11, 12)), legend, r4)
+def pcmodal(base, dlg):
+    return f'<div class="pc modal">{base}<div class="dim"></div><div class="dlg">{dlg}</div></div>'
+dlg_add = """<h5>日程に入れる</h5>
+  <div class="kv"><span>休む日</span><span>11/20(金) 1日</span></div>
+  <div class="kv"><span>連休</span><span>11/20〜11/23 の 4連休</span></div>
+  <div class="kv"><span>引く休暇</span><span>有休（残り 9日2時間）</span></div>
+  <div class="kv"><span>未割り当て</span><span>7日2時間 → 6日2時間</span></div>
+  <div class="kv"><span>予定の名前</span><span class="in" style="width:170px">任意</span></div>
+  <div class="acts"><span class="no">やめる</span><span class="go">予定に入れる</span></div>"""
+dlg_edit = """<h5>12/28(月) の日程</h5>
+  <div class="kv"><span>量</span><span class="seg"><span class="on">1日</span><span>半日</span><span>時間で入れる</span></span></div>
+  <div class="kv"><span>引く休暇</span><span>有休 ▾</span></div>
+  <div class="kv"><span>予定の名前</span><span class="in" style="width:170px;color:#1f2937">年末年始</span></div>
+  <div class="kv"><span>状態</span><span class="seg"><span class="on">予定</span><span>取得済み</span></span></div>
+  <div class="kv"><span>連休</span><span>12/26〜1/3 の 9連休</span></div>
+  <div class="kv"><span>カレンダー</span><span class="lnk">Google カレンダーに追加</span></div>
+  <div class="acts"><span class="del">この日程を消す</span><span class="no">やめる</span><span class="go">保存する</span></div>"""
+dlg_grant = """<h5>有休の付与日と日数</h5>
+  <div class="kv"><span>付与日</span><span><span class="in" style="color:#1f2937">5月</span> <span class="in" style="color:#1f2937">1日</span></span></div>
+  <div class="kv"><span>付与日数</span><span><span class="in" style="color:#1f2937">14</span> 日</span></div>
+  <div class="kv"><span>前の年からの繰り越し</span><span><span class="in">0</span> 日（任意）</span></div>
+  <div class="acts"><span class="no">やめる</span><span class="go">残りを出す</span></div>"""
+pc2 = pcmodal(pchead + pcpast + sec4, dlg_add)
+pc3 = pcmodal(pchead + pcpast + sec4, dlg_edit)
+pc4 = pcmodal(pc0head + sec("2026年 10〜12月", "長めの休暇: まだない", pc_empty_cals, legend0, r0), dlg_grant)
 
 def phone(n, title, why, inner, fixed=False):
     st = "" if fixed else ' style="height:auto;padding-bottom:10px"'
@@ -354,10 +395,16 @@ html = PAGE + CSS + f"""</head><body>
 
 <h2>PC</h2>
 <div class="pcw">
-<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は右上の「過ぎた四半期を見る」から開く。面（日程に入れる、日程を直す、付与日と日数）は、スマホと同じ中身を画面の中央に出す。</p>
+<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は、四半期の並びのいちばん上の「過ぎた四半期を見る」から開く。</p>
 <div class="pc">{pc1}</div>
 <h3>9. 主な画面（何も設定していない人）</h3><p class="why">持ち分の場所に誘いのカード。ほかはスマホの 5 と同じ内容。</p>
 <div class="pc">{pc0}</div>
+<h3>10. 「日程に入れる」を押した面</h3><p class="why">PC では、面を下からでなく画面の中央に出す。中身はスマホの 3 と同じ。ボタンは右下に並べる。</p>
+{pc2}
+<h3>11. 日程を押した面</h3><p class="why">中身はスマホの 4 と同じ。「この日程を消す」は左下に離して置く。</p>
+{pc3}
+<h3>12. 付与日と日数を入れる面</h3><p class="why">何も設定していない人が、誘いのカードを押したところ。中身はスマホの 6 と同じ。</p>
+{pc4}
 </div>
 </body></html>
 """
