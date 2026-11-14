@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* 画面定義書 §7 のデザイントークン（仮）。役割の名前で置き、計画 3 で値を決め直す */
+@theme {
+  --color-primary: #0d9488;
+  --color-primary-soft: #f0fdfa;
+  --color-ink: #1f2937;
+  --color-sub: #6b7280;
+  --color-line: #e5e7eb;
+  --color-card: #f3f4f6;
+  --color-rest-bg: #fee2e2;
+  --color-rest-ink: #b91c1c;
+  --color-company-bg: #e0e7ff;
+  --color-company-ink: #3730a3;
+  --color-candidate-line: #f59e0b;
+  --color-candidate-bg: #fffbeb;
+  --color-has-bg: #d1fae5;
+  --color-has-ink: #065f46;
+  --color-warn-bg: #fef3c7;
+  --color-warn-ink: #92400e;
+  --color-long-bg: #ede9fe;
+  --color-long-ink: #5b21b6;
+  --color-long-line: #7c3aed;
+  --color-danger: #b91c1c;
+}
+
+body {
+  background: #fff;
+  color: var(--color-ink);
+  font-size: 1rem;
+}

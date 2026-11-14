@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, quarterHeading } from './texts'
+import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, longBreakChip, quarterHeading, usablePeriod } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -26,4 +26,11 @@ test('§8.3: 受け付けないときの文言', () => {
 test('P-6: 画面定義書の仮の文言', () => {
   expect(T.addToPlan).toBe('日程に入れる')
   expect(T.cannotSave).toBe('このブラウザでは記録を保存できません。閉じると、入れた内容は消えます。')
+})
+test('§3.2・§3.3・§3.10: 使える期間、長めの休暇の札、祝日の 1 行', () => {
+  expect(usablePeriod('07-01', '09-30')).toBe('7〜9月')
+  expect(usablePeriod('07-15', '09-30')).toBe('7/15〜9/30')
+  expect(longBreakChip('2026-10-01', true)).toBe('10〜12月 あり')
+  expect(longBreakChip('2027-01-01', false)).toBe('1〜3月 まだ')
+  expect(holidayNote('2027-12-31')).toBe('祝日は内閣府の公表データです。2027年12月31日まで確定。')
 })
