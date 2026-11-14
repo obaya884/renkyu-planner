@@ -24,6 +24,27 @@ export function planningQuarters(today: IsoDate, shift = 0): Quarter[] {
   return quarters
 }
 
+/**
+ * PC の並び（§4）。今日が入る四半期から `-shift` だけ前の四半期を先頭に、今日の四半期の 3 つ先までを、
+ * 抜けなく早い順に返す。`shift` は 0 以下の整数（0 なら 4 つ、−5 なら 9 つ）。スマホのタブはこの先頭から 4 つ
+ */
+export function quartersBetween(today: IsoDate, shift: number): Quarter[] {
+  const quarters: Quarter[] = []
+  let start = planningQuarters(today, shift)[0].start
+  const last = planningQuarters(today)[3].start
+  while (start <= last) {
+    const q = quarterOf(start)
+    quarters.push(q)
+    start = addDays(q.end, 1)
+  }
+  return quarters
+}
+
+/** 見えている最初の四半期より前の日付が 1 つでもあるか（「‹ 前」と「過ぎた四半期の記録を見る」を出す条件） */
+export function hasDatesBefore(dates: readonly IsoDate[], first: Quarter): boolean {
+  return dates.some((d) => d < first.start)
+}
+
 /** 開始日がその四半期に入る 5 日以上の連休のうち、最も長いもの。同じ長さなら早いもの（R-14） */
 export function longBreakOf(cal: RestCalendar, q: Quarter): Run | null {
   let best: Run | null = null

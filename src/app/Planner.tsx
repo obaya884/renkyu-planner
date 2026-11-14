@@ -17,8 +17,8 @@ import { APP_DESCRIPTION } from '@/app/site'
 import { T } from '@/app/texts'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import type { HolidayData } from '@/domain/holidays/importCsv'
-import { type IsoDate, todayInJapan } from '@/domain/shared/date'
-import { type Quarter, planningQuarters } from '@/domain/quarters/quarters'
+import { type IsoDate, todayInJapan, untilNextDayInJapan } from '@/domain/shared/date'
+import { type Quarter, hasDatesBefore, quartersBetween } from '@/domain/quarters/quarters'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 
@@ -30,8 +30,27 @@ type OpenSheet =
   | null
 
 // 今日の日付。サーバーの描画とハイドレーションでは null を使い、マウントしたあとに端末の時計から取る。
-// useEffect の中で setState すると react-hooks/set-state-in-effect に当たるので、useSyncExternalStore で読む
-const subscribeToday = () => () => {}
+// useEffect の中で setState すると react-hooks/set-state-in-effect に当たるので、useSyncExternalStore で読む。
+// 見える状態に戻ったときと、次の日本時間 0 時に知らせる。値は文字列なので、同じ日なら描き直さない
+const subscribeToday = (notify: () => void) => {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const schedule = () => {
+    // 0 時ちょうどより少し遅らせ、知らせたときに新しい日付が読めるようにする
+    timer = setTimeout(() => {
+      notify()
+      schedule()
+    }, untilNextDayInJapan(new Date()) + 1000)
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') notify()
+  }
+  schedule()
+  document.addEventListener('visibilitychange', onVisibility)
+  return () => {
+    clearTimeout(timer)
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
+}
 const todayOnClient = () => todayInJapan(new Date())
 const todayOnServer = () => null
 
@@ -69,9 +88,10 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   const built = useMemo(() => {
     if (today === null) return null
     const input = { holidays, settings: data.settings, entries: data.entries, today }
-    const tabQuarters = planningQuarters(today, shift)
-    const shown = [...tabQuarters.slice(0, -shift), ...planningQuarters(today)]
-    return { summary: buildSummary(input), tabQuarters, shown, views: buildQuarterViews(input, shown) }
+    const shown = quartersBetween(today, shift)
+    const tabQuarters = shown.slice(0, 4)
+    const canGoBack = hasDatesBefore(data.entries.map((e) => e.date), shown[0])
+    return { summary: buildSummary(input), tabQuarters, canGoBack, views: buildQuarterViews(input, shown) }
   }, [data, holidays, today, shift])
 
   if (!ready || today === null || built === null) {
@@ -88,9 +108,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   }
 
   const { settings, entries } = data
-  const { summary, tabQuarters, shown, views } = built
+  const { summary, tabQuarters, canGoBack, views } = built
   const mobileSelected = tabQuarters.find((q) => q.start === selected)?.start ?? tabQuarters[0].start
-  const canGoBack = entries.some((e) => e.date < shown[0].start)
   const goBack = () => {
     setShift(shift - 1)
     setSelected(null)
@@ -159,7 +178,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           <button
             type="button"
             onClick={() => {
-              scrollTarget.current = planningQuarters(today, shift - 1)[0].start
+              scrollTarget.current = quartersBetween(today, shift - 1)[0].start
               goBack()
             }}
             className="hidden min-h-11 shrink-0 text-sm text-primary lg:block"

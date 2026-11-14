@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { addDays, diffDays, eachDay, isValidIsoDate, monthEnd, monthStart, quarterEnd, quarterStart, todayInJapan, weekday } from './date'
+import { addDays, diffDays, eachDay, isValidIsoDate, monthEnd, monthStart, quarterEnd, quarterStart, todayInJapan, untilNextDayInJapan, weekday } from './date'
 
 describe('日付の道具（N-07）', () => {
   test('月末と年末をまたいで加算できる', () => {
@@ -31,5 +31,10 @@ describe('日付の道具（N-07）', () => {
   test('Review Focus 1: 今日は端末のタイムゾーンによらず日本の暦日', () => {
     expect(todayInJapan(new Date('2026-12-31T14:59:59Z'))).toBe('2026-12-31')
     expect(todayInJapan(new Date('2026-12-31T15:00:00Z'))).toBe('2027-01-01')
+  })
+  test('N-07: 次の日本時間 0 時までのミリ秒', () => {
+    expect(untilNextDayInJapan(new Date('2026-12-31T14:59:59Z'))).toBe(1000)
+    expect(untilNextDayInJapan(new Date('2026-12-31T15:00:00Z'))).toBe(86_400_000)
+    expect(untilNextDayInJapan(new Date('2026-12-31T03:00:00Z'))).toBe(12 * 3_600_000)
   })
 })

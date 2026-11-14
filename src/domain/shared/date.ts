@@ -74,3 +74,9 @@ export function isValidIsoDate(s: string): boolean {
 export function todayInJapan(now: Date): IsoDate {
   return fromUtcMs(now.getTime() + JST_OFFSET_MS)
 }
+
+/** now から次の日本時間 0 時までのミリ秒（1〜1 日ぶん）。日付が変わったら今日を読み直すため */
+export function untilNextDayInJapan(now: Date): number {
+  const ms = now.getTime() + JST_OFFSET_MS
+  return DAY_MS - (((ms % DAY_MS) + DAY_MS) % DAY_MS)
+}

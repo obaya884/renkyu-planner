@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import data from '@/data/holidays.json'
 import { buildRestCalendar } from '@/domain/calendar/restDays'
-import { longBreakOf, planningQuarters } from './quarters'
+import { addDays } from '@/domain/shared/date'
+import { hasDatesBefore, longBreakOf, planningQuarters, quartersBetween } from './quarters'
 
 test('F-508・R-10: 今日が入る四半期から 4 つ', () => {
   expect(planningQuarters('2026-11-15')).toEqual([
@@ -64,4 +65,44 @@ test('R-10: shift が −1 なら 1 四半期ぶん前から 4 つ', () => {
   const qs = planningQuarters('2026-11-15', -1)
   expect(qs).toHaveLength(4)
   expect(qs[0]).toEqual({ start: '2026-07-01', end: '2026-09-30', label: '2026年 7〜9月' })
+})
+
+/** 隣り合う四半期のあいだに抜けが無い（前の end の翌日が次の start） */
+const expectContiguous = (qs: readonly { start: string; end: string }[]) => {
+  for (let i = 1; i < qs.length; i++) expect(qs[i].start).toBe(addDays(qs[i - 1].end, 1))
+}
+test('F-508・§4: shift の位置から今日の四半期の 3 つ先までを、抜けなく早い順に返す', () => {
+  const zero = quartersBetween('2026-11-15', 0)
+  expect(zero).toEqual(planningQuarters('2026-11-15'))
+  const one = quartersBetween('2026-11-15', -1)
+  expect(one).toHaveLength(5)
+  expect(one[0].start).toBe('2026-07-01')
+  expect(one.at(-1)?.start).toBe('2027-07-01')
+  expectContiguous(one)
+  const five = quartersBetween('2026-11-15', -5)
+  expect(five).toHaveLength(9)
+  expect(five[0]).toEqual({ start: '2025-07-01', end: '2025-09-30', label: '2025年 7〜9月' })
+  expect(five.at(-1)).toEqual({ start: '2027-07-01', end: '2027-09-30', label: '2027年 7〜9月' })
+  expect(five.map((q) => q.start)).toContain('2026-07-01')
+  expectContiguous(five)
+})
+test('F-508: 年をまたいでさかのぼる（1〜3 月から 2 つ前）', () => {
+  const qs = quartersBetween('2026-02-10', -2)
+  expect(qs.map((q) => q.label)).toEqual([
+    '2025年 7〜9月',
+    '2025年 10〜12月',
+    '2026年 1〜3月',
+    '2026年 4〜6月',
+    '2026年 7〜9月',
+    '2026年 10〜12月',
+  ])
+  expectContiguous(qs)
+})
+test('§3.4・§4: 見えている最初の四半期より前に日程があるときだけ、前へ動ける', () => {
+  const [first] = quartersBetween('2026-11-15', 0)
+  expect(hasDatesBefore(['2026-09-30', '2026-12-01'], first)).toBe(true)
+  expect(hasDatesBefore(['2026-10-01', '2026-12-01'], first)).toBe(false)
+  expect(hasDatesBefore([], first)).toBe(false)
+  const [earlier] = quartersBetween('2026-11-15', -1)
+  expect(hasDatesBefore(['2026-09-30'], earlier)).toBe(false)
 })
