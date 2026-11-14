@@ -1,6 +1,6 @@
 import type { EntryDraft, GrantDraft } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
-import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, parseStored, serializeStored } from '@/domain/storage/stored'
+import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVersion, parseStored, serializeStored } from '@/domain/storage/stored'
 
 export type KeyValueStore = Readonly<{
   getItem(key: string): string | null
@@ -13,6 +13,8 @@ export type PlannerStore = Readonly<{
   getState(): PlannerState
   subscribe(listener: () => void): () => void
   load(): void
+  /** 読み込んだあとで、保存できるときだけ読み直す（D-8）。保存を止めているときに読み直すと、メモリにだけある記録が消える */
+  reload(): void
   addEntries(drafts: readonly EntryDraft[]): void
   updateEntry(id: string, draft: EntryDraft): void
   removeEntry(id: string): void
@@ -48,7 +50,8 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       // 写しが無いまま上書きすると元の記録を失うので、保存を止める（D-5）
       return publish({ ready: true, data: EMPTY_STORED, canSave: false, unreadable: true })
     }
-    return publish({ ready: true, data: EMPTY_STORED, canSave: true, unreadable: true })
+    // 新しい版の記録は、写しを取れても上書きしない（D-3）
+    return publish({ ready: true, data: EMPTY_STORED, canSave: !isNewerVersion(text), unreadable: true })
   }
 
   const change = (data: StoredData) => {
@@ -70,6 +73,9 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       return () => void listeners.delete(listener)
     },
     load,
+    reload() {
+      if (state.ready && state.canSave) load()
+    },
     addEntries(drafts) {
       const added = drafts.map((d) => ({ id: newId(), ...d }))
       change({ ...state.data, entries: [...state.data.entries, ...added] })

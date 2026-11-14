@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/domain/types'
-import { EMPTY_STORED, parseStored, serializeStored } from './stored'
+import { EMPTY_STORED, isNewerVersion, parseStored, serializeStored } from './stored'
 
 const entry = { id: 'a', date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }
 const ok = { version: 1, settings: DEFAULT_SETTINGS, entries: [entry] }
@@ -22,6 +22,16 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(parse({ ...ok, version: 2 }).ok).toBe(false)
     expect(parse({ ...ok, version: '1' }).ok).toBe(false)
     expect(parse({ version: 1, entries: [] }).ok).toBe(false)
+  })
+  test('D-3: 版が新しい記録だけを見分ける', () => {
+    expect(isNewerVersion(JSON.stringify({ ...ok, version: 2 }))).toBe(true)
+    expect(isNewerVersion('{"version":2}')).toBe(true)
+    expect(isNewerVersion(JSON.stringify(ok))).toBe(false)
+    expect(isNewerVersion('{"version":0}')).toBe(false)
+    expect(isNewerVersion('{"version":"2"}')).toBe(false)
+    expect(isNewerVersion('{oops')).toBe(false)
+    expect(isNewerVersion('null')).toBe(false)
+    expect(isNewerVersion('[2]')).toBe(false)
   })
   test('D-4: 日程の決まり', () => {
     const bad = (patch: object) => parse({ ...ok, entries: [{ ...entry, ...patch }] }).ok

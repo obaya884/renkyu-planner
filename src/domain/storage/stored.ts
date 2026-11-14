@@ -26,6 +26,18 @@ export function parseStored(text: string): Result<StoredData> {
   }
 }
 
+/** D-3。新しい版が書いた記録（`version` が数で、STORAGE_VERSION より大きい）か。読めない記録のうち、上書きしてはならないものを見分ける */
+export function isNewerVersion(text: string): boolean {
+  try {
+    const v: unknown = JSON.parse(text)
+    if (typeof v !== 'object' || v === null || Array.isArray(v)) return false
+    const version = (v as Readonly<Record<string, unknown>>).version
+    return typeof version === 'number' && version > STORAGE_VERSION
+  } catch {
+    return false
+  }
+}
+
 // 以下は、合わないときに理由つきで例外を投げる。parseStored だけが受け止める
 
 function fail(what: string): never {

@@ -20,13 +20,26 @@ export const plannerStore = createPlannerStore(browserStorage(), () => crypto.ra
 export function usePlanner(): PlannerState {
   const state = useSyncExternalStore(plannerStore.subscribe, plannerStore.getState, plannerStore.getState)
   useEffect(() => {
-    plannerStore.load()
-    // D-8: ほかのタブが書いたら読み直す
+    // 2 つ目の部品がこのフックを呼んでも、読み直さない（メモリにだけある記録を消さないため）
+    if (!plannerStore.getState().ready) plannerStore.load()
+    // D-8: ほかのタブが書いたとき、ページが復元されたとき、見える状態に戻ったときに読み直す
     const onStorage = (e: StorageEvent) => {
-      if (e.key === null || e.key === STORAGE_KEY) plannerStore.load()
+      if (e.key === null || e.key === STORAGE_KEY) plannerStore.reload()
+    }
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) plannerStore.reload()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') plannerStore.reload()
     }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('pageshow', onPageShow)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('pageshow', onPageShow)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
   return state
 }
