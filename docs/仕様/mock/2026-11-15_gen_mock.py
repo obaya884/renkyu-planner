@@ -181,7 +181,7 @@ CSS = """
 
 def tabs(on):
     items = [("2026年", "10〜12月", True), ("2027年", "1〜3月", False), ("2027年", "4〜6月", False), ("2027年", "7〜9月", False)]
-    h = '<div class="tabs"><div class="past">‹ 前</div>'
+    h = '<div class="tabs">'
     for i, (y, m, has) in enumerate(items):
         h += f'<div class="{"on" if i == on else ""}"><small>{y}</small>{m}</div>'
     return h + "</div>"
@@ -196,7 +196,7 @@ def cals(y, ms):
 
 
 
-foot = '<div class="s" style="margin:10px 12px 0;padding-top:6px;border-top:1px solid #e5e7eb">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="lnk">くわしく</span></div>'
+foot = '<div class="s" style="margin:10px 12px 0;padding-top:6px;border-top:1px solid #e5e7eb">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="lnk">くわしく</span><div style="margin-top:6px"><span class="lnk">過ぎた四半期の記録を見る</span></div></div>'
 cand4 = '<div class="row"><div class="g">11/20(金) を休むと 4連休<div class="s">11/20〜11/23</div></div><div class="btn">日程に入れる</div></div>'
 ents4 = """<div class="row"><div class="g">10/7(水) 2時間 体調不良<div class="s">取得済み</div></div><span class="s">›</span></div>
     <div class="row"><div class="g">11/2(月) 1日 連休作成<div class="s">取得済み・10/31〜11/3 の 4連休</div></div><span class="s">›</span></div>
@@ -290,8 +290,7 @@ sp7 = """<div class="bar"><span>‹ 戻る</span> 設定 <span></span></div><div
 
 # PC
 pchead = '<div class="bar">連休プランナー <span>設定</span></div><div class="head"><div class="bal"><div class="s">有休 残り</div><b>9日2時間</b><div class="s">予定 2日・未割り当て 7日2時間</div></div><div class="lb"><span class="t">長めの休暇</span><span class="chip has">10〜12月 あり</span><span class="chip none">1〜3月 まだ</span><span class="chip none">4〜6月 まだ</span><span class="chip none">7〜9月 まだ</span></div></div>'
-pcpast = '<div class="more" style="text-align:left;border-top:1px solid #e5e7eb"><span class="add">↑ 過ぎた四半期を見る（2026年 7〜9月）</span></div>'
-pcfoot = '<div class="more" style="text-align:left">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="add">くわしく</span></div>'
+pcfoot = '<div class="more" style="text-align:left">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="add">くわしく</span><span style="float:right" class="add">過ぎた四半期の記録を見る</span></div>'
 def sec(title, st, c, leg, right, note=""):
     return f'<div class="sec"><div class="l"><h4>{title}</h4><div class="st">{st}</div>{c}{leg}{note}</div><div class="r">{right}</div></div>'
 r4 = """<div class="lab">候補</div>
@@ -315,7 +314,7 @@ r2 = """<div class="lab">候補</div>
 <div class="lab">日程 <span class="add">＋ 日を足す</span></div>
 <div class="row"><div class="g s">まだありません</div></div>"""
 pcleg2 = legend2.replace('class="gr"', 'style="outline:2px solid #7c3aed;outline-offset:-1px"')
-pc1 = pchead + pcpast + sec("2026年 10〜12月", '長めの休暇: 12/26〜1/3（9連休）<span class="tag ok">あり</span>', cals(2026, (10, 11, 12)), legend, r4) \
+pc1 = pchead + sec("2026年 10〜12月", '長めの休暇: 12/26〜1/3（9連休）<span class="tag ok">あり</span>', cals(2026, (10, 11, 12)), legend, r4) \
     + sec("2027年 1〜3月", "長めの休暇: まだない", cals(2027, (1, 2, 3)), legend, r1) \
     + sec("2027年 4〜6月", "長めの休暇: まだない", cals(2027, (4, 5, 6)), pcleg2, r2, '<div style="font-size:10.5px;color:#5b21b6;margin-top:4px">5/1 から次の付与年（前の年と同じ 14日で計算中）<span class="add">日数を入れる</span></div>') \
     + '<div class="more">↓ 2027年 7〜9月 と続く</div>' + pcfoot
@@ -350,8 +349,8 @@ dlg_grant = """<h5>有休の付与日と日数</h5>
   <div class="kv"><span>付与日数</span><span><span class="in" style="color:#1f2937">14</span> 日</span></div>
   <div class="kv"><span>前の年からの繰り越し</span><span><span class="in">0</span> 日（任意）</span></div>
   <div class="acts"><span class="no">やめる</span><span class="go">残りを出す</span></div>"""
-pc2 = pcmodal(pchead + pcpast + sec4, dlg_add)
-pc3 = pcmodal(pchead + pcpast + sec4, dlg_edit)
+pc2 = pcmodal(pchead + sec4, dlg_add)
+pc3 = pcmodal(pchead + sec4, dlg_edit)
 pc4 = pcmodal(pc0head + sec("2026年 10〜12月", "長めの休暇: まだない", pc_empty_cals, legend0, r0), dlg_grant)
 
 def phone(n, title, why, inner, fixed=False):
@@ -382,7 +381,7 @@ html = PAGE + CSS + f"""</head><body>
 
 <h2>スマホ</h2>
 <div class="ph-wrap">
-{phone(1, "主な画面（10〜12月のタブ）", "上から、持ち分、長めの休暇の 1 行、四半期のタブ、タブの中身（長めの休暇、月カレンダー、候補、日程）、祝日の 1 行。日程は 1 日 1 行で、同じ連休の日程は連休の見出しの下にまとめる。", sp1)}
+{phone(1, "主な画面（10〜12月のタブ）", "上から、持ち分、長めの休暇の 1 行、四半期のタブ、タブの中身（長めの休暇、月カレンダー、候補、日程）、祝日の 1 行と「過ぎた四半期の記録を見る」。日程は 1 日 1 行で、同じ連休の日程は連休の見出しの下にまとめる。", sp1)}
 {phone(2, "付与日がある四半期（4〜6月のタブ）", "付与日はカレンダーの日付に紫の枠。次の年の日数が未入力なら「前の年と同じ 14日で計算中」と出す。5/1 以降を休む候補には「次の付与年から引く」。", sp2)}
 {phone(3, "「日程に入れる」を押した面", "下から出る面で、休む日・連休・引く休暇・未割り当ての変化を確かめてから入れる。予定の名前もここで入れられる。", sp3, True)}
 {phone(4, "日程を押した面", "量、引く休暇、予定の名前、状態を直す。Google カレンダーへの追加と、消す操作もここ。「＋ 日を足す」は、日付の欄が加わった同じ面。", sp4, True)}
@@ -395,7 +394,7 @@ html = PAGE + CSS + f"""</head><body>
 
 <h2>PC</h2>
 <div class="pcw">
-<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は、四半期の並びのいちばん上の「過ぎた四半期を見る」から開く。</p>
+<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は、いちばん下の「過ぎた四半期の記録を見る」から開く（めったに押さないので、目立つ場所に置かない）。</p>
 <div class="pc">{pc1}</div>
 <h3>9. 主な画面（何も設定していない人）</h3><p class="why">持ち分の場所に誘いのカード。ほかはスマホの 5 と同じ内容。</p>
 <div class="pc">{pc0}</div>
