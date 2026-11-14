@@ -86,7 +86,6 @@ export const T = {
   grantDaysLabel: '1 年に付与される日数',
   entitlementLabel: 'この年に使える日数',
   entitlementHint: '前の年から繰り越した分があれば、足した数に直してください',
-  pastEntriesHint: 'この年にすでに取った休みは、過ぎた四半期を開いて足せます',
   submitGrantFirst: '残りを出す',
   // §8.3
   overOneDay: 'この日の合計が 1日を超えています',

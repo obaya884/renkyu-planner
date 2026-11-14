@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from '@/domain/view/fixture'
-import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, joinDaysHours, splitDaysHours } from './grantInput'
+import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, joinDaysHours, splitDaysHours } from './grantInput'
 
 test('R-12・§5.3: 付与日の「日」の選択肢は、選んだ月に合わせる。2 月は 1〜28', () => {
   expect(grantDayChoices(2)).toHaveLength(28)
@@ -33,4 +33,12 @@ test('§5.3: 開き方。付与年の指定が無ければ初めて、始まっ�
   expect(grantSheetMode(SHEET, null)).toBe('first')
   expect(grantSheetMode(SHEET, '2026-05-01')).toBe('started')
   expect(grantSheetMode(SHEET, '2027-05-01')).toBe('next')
+})
+
+test('§5.3: 使える日数の日の欄が空なら数にしない。時間の欄が空なら 0 時間', () => {
+  expect(enteredEntitlement('', '', 480)).toBeNaN()
+  expect(enteredEntitlement('', '2', 480)).toBeNaN()
+  expect(enteredEntitlement('16', '', 480)).toBe(16 * 480)
+  expect(enteredEntitlement('16', '2', 480)).toBe(16 * 480 + 120)
+  expect(enteredEntitlement('0', '0', 480)).toBe(0)
 })

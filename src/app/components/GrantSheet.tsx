@@ -7,10 +7,10 @@ import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
 import {
   clampGrantDay,
   computedEntitlement,
+  enteredEntitlement,
   entitlementToSave,
   grantDayChoices,
   grantSheetMode,
-  joinDaysHours,
   splitDaysHours,
 } from '@/domain/entries/grantInput'
 import { balanceOf, carryOverOf, grantDaysOf } from '@/domain/leave/balance'
@@ -63,7 +63,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
       ? splitDaysHours(computed, workMinutes)
       : null
     : { days: entDays, hours: entHours }
-  const entered = followed ? computed : joinDaysHours(Number(entDays), Number(entHours), workMinutes)
+  const entered = followed ? computed : enteredEntitlement(entDays, entHours, workMinutes)
   // 次の付与年の面は上書きを作らない。すでに上書きがある付与年なら、それを保つ
   const entitlementMinutes =
     mode === 'next' && grantYearStart !== null
@@ -72,7 +72,10 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
 
   const draft: GrantDraft = { grantDay, grantDays: grantDaysNumber, entitlementMinutes }
   const allErrors = checkGrantDraft(draft)
-  const errors = allErrors.filter((e) => !(e === 'invalidGrantDays' && grantDays === ''))
+  // 空の欄には誤りの文を出さず、ボタンを押せなくするだけにする
+  const errors = allErrors.filter(
+    (e) => !(e === 'invalidGrantDays' && grantDays === '') && !(e === 'invalidEntitlement' && !followed && entDays === ''),
+  )
   const canSubmit = allErrors.length === 0
 
   const changeMonth = (m: number) => {
@@ -187,7 +190,6 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
             )}
           </fieldset>
         )}
-        {first && <p className="text-sm text-sub">{T.pastEntriesHint}</p>}
       </div>
       <p className="text-sm text-sub">{T.localOnly}</p>
       <SheetButtons>

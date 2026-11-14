@@ -28,6 +28,12 @@ export function joinDaysHours(days: number, hours: number, workMinutes: number):
   return days * workMinutes + hours * 60
 }
 
+/** §5.3: 日と時間の欄の文字から分に直す。日の欄が空なら NaN（保存できない）。時間の欄が空なら 0 時間 */
+export function enteredEntitlement(days: string, hours: string, workMinutes: number): number {
+  if (days === '') return Number.NaN
+  return joinDaysHours(Number(days), hours === '' ? 0 : Number(hours), workMinutes)
+}
+
 /** §5.3: 分を日と時間の欄に分ける。時間に満たない端数（分）は切り捨てて見せる */
 export function splitDaysHours(minutes: number, workMinutes: number): { days: number; hours: number } {
   const days = Math.floor(minutes / workMinutes)
