@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { STORAGE_KEY } from '@/domain/storage/stored'
 import { type KeyValueStore, type PlannerState, createPlannerStore } from './createPlannerStore'
+import { newId } from './newId'
 
 /** window.localStorage を読むだけで SecurityError になるブラウザがあるので、例外なら使えないものとして扱う */
 function browserStorage(): KeyValueStore | null {
@@ -14,7 +15,7 @@ function browserStorage(): KeyValueStore | null {
   }
 }
 
-export const plannerStore = createPlannerStore(browserStorage(), () => crypto.randomUUID())
+export const plannerStore = createPlannerStore(browserStorage(), () => newId(crypto))
 
 /** サーバーの描画とハイドレーションでは、初めの状態を使う。マウントしたあとに読み込む */
 export function usePlanner(): PlannerState {
