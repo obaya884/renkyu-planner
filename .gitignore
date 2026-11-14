@@ -1,0 +1,5 @@
+.superpowers/
+.yomiyasu/
+node_modules/
+dist/
+.env*
