@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, entrySheetTitle, errorText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import { type DraftError, type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
+import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
 import type { Amount, Entry } from '@/domain/types'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
@@ -35,12 +35,12 @@ function Choice({ name, label, checked, onChange }: { name: string; label: strin
   )
 }
 
-function ErrorLines({ errors }: { errors: readonly DraftError[] }) {
+function ErrorLines({ errors, lastAddable }: { errors: readonly DraftError[]; lastAddable: IsoDate }) {
   return (
     <>
       {errors.map((e) => (
         <p key={e} role="alert" className="text-sm text-danger">
-          {errorText(e)}
+          {errorText(e, lastAddable)}
         </p>
       ))}
     </>
@@ -74,7 +74,8 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
         )
       : null
 
-  const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate')
+  const lastAddable = lastAddableDate(input.today)
+  const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate' || e === 'tooFar')
   const amountErrors = errors.filter((e) => e === 'invalidAmount')
   const typeErrors = errors.filter((e) => e === 'unknownLeaveType')
 
@@ -82,15 +83,15 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
     <>
       <div>
         <SheetTitle>{adding ? T.addDayTitle : entrySheetTitle(entry.date)}</SheetTitle>
-        {!adding && <ErrorLines errors={dateErrors} />}
+        {!adding && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
       </div>
       <div className="space-y-3">
         {adding && (
           <div>
             <Field label={T.dateLabel}>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={FIELD_CLASS} />
+              <input type="date" max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} className={FIELD_CLASS} />
             </Field>
-            <ErrorLines errors={dateErrors} />
+            <ErrorLines errors={dateErrors} lastAddable={lastAddable} />
           </div>
         )}
         <fieldset>
@@ -122,7 +123,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
               {T.minutesUnit}
             </div>
           )}
-          <ErrorLines errors={amountErrors} />
+          <ErrorLines errors={amountErrors} lastAddable={lastAddable} />
           {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
         </fieldset>
         {leaveTypes.length >= 2 ? (
@@ -136,7 +137,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
                 ))}
               </select>
             </Field>
-            <ErrorLines errors={typeErrors} />
+            <ErrorLines errors={typeErrors} lastAddable={lastAddable} />
           </div>
         ) : (
           <Line label={T.leaveTypeLabel}>{leaveTypes[0].name}</Line>

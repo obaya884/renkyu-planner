@@ -278,9 +278,11 @@ export function formatAmount(minutes: number, workMinutes: number): string {
   return formatMinutes(minutes, workMinutes)
 }
 
-/** 画面定義書 §8.3。restDay と invalidGrantDay 以外は §8.3 にない仮の文 */
-export function errorText(e: DraftError | GrantError): string {
+/** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
+export function errorText(e: DraftError | GrantError, lastAddable?: IsoDate): string {
   switch (e) {
+    case 'tooFar':
+      return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
     case 'restDay':
       return 'この日は休みの日です。休みの日には入れられません'
     case 'invalidGrantDay':

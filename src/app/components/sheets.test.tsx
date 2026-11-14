@@ -47,6 +47,14 @@ test('F-301〜F-303: 日程を直す面と、日を足す面', () => {
   expect(add).toContain('value="2026-11-16"')
   expect(add).not.toContain(T.remove)
 })
+test('R-19: 日を足す面の日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
+  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(add).toContain('max="2027-09-30"')
+  expect(add).not.toContain('まだ入れられません')
+  const far = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2027-10-01" onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(far).toContain('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
+  expect(far).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
+})
 test('R-17・Review Focus 3: 休みの日と重なった日程を開くと、理由を出し、保存できない', () => {
   const y = { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
   const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, y] }} entry={y} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)

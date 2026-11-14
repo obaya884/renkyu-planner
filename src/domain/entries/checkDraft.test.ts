@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET } from '@/domain/view/fixture'
-import { checkEntryDraft, checkGrantDraft } from './checkDraft'
+import { checkEntryDraft, checkGrantDraft, lastAddableDate } from './checkDraft'
 
 const draft = (date: string, amount: object = { unit: 'day' }) => ({ date, leaveTypeId: 'paid', amount, title: '', done: false }) as never
 
@@ -35,4 +35,12 @@ test('R-12・F-101: 付与日と日数の検証', () => {
   expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 17 * 480 })).toEqual([])
   expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: -1 })).toEqual(['invalidEntitlement'])
   expect(checkGrantDraft({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 1.5 })).toEqual(['invalidEntitlement'])
+})
+test('R-19: 足せる日付は 4 つ目の四半期の末日まで。過ぎた日付は足せる。直すときは当てない', () => {
+  expect(lastAddableDate('2026-11-15')).toBe('2027-09-30')
+  expect(checkEntryDraft(SHEET, draft('2027-09-30'), null).errors).toEqual([])
+  expect(checkEntryDraft(SHEET, draft('2027-10-01'), null).errors).toEqual(['tooFar'])
+  expect(checkEntryDraft(SHEET, draft('2026-10-01'), null).errors).toEqual([]) // 過ぎた平日
+  expect(checkEntryDraft(SHEET, draft('2028-03-01'), '2026-12-28').errors).toEqual([])
+  expect(checkEntryDraft(SHEET, draft('2027-10-02'), null).errors).toEqual(['tooFar', 'restDay']) // 並びは invalidDate、tooFar、restDay の順
 })

@@ -19,6 +19,7 @@ test('R-11: 量は formatMinutes の形のまま', () => {
 test('§8.3: 受け付けないときの文言', () => {
   expect(errorText('restDay')).toBe('この日は休みの日です。休みの日には入れられません')
   expect(errorText('invalidGrantDay')).toBe('2月29日は付与日にできません')
+  expect(errorText('tooFar', '2027-09-30')).toBe('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
   for (const e of ['invalidDate', 'invalidAmount', 'unknownLeaveType', 'invalidGrantDays', 'invalidEntitlement'] as const) {
     expect(errorText(e)).not.toBe('')
   }

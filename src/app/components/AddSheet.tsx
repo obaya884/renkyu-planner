@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassignedChange } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import { type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
+import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import { isShort } from '@/domain/leave/amount'
 import { balanceOf } from '@/domain/leave/balance'
 import type { IsoDate } from '@/domain/shared/date'
@@ -80,7 +80,7 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
         </Field>
         {errors.map((e) => (
           <p key={e} role="alert" className="text-sm text-danger">
-            {errorText(e)}
+            {errorText(e, lastAddableDate(input.today))}
           </p>
         ))}
         {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}

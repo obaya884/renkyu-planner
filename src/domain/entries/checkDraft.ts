@@ -1,13 +1,19 @@
 import { toMinutes } from '../leave/amount'
 import { isValidGrantDay } from '../leave/grantYear'
+import { planningQuarters } from '../quarters/quarters'
 import { type IsoDate, type MonthDay, isValidIsoDate } from '../shared/date'
 import type { Amount } from '../types'
 import { restCalendarOf, type PlannerInput } from '../view/input'
 
 export type EntryDraft = Readonly<{ date: IsoDate; leaveTypeId: string; amount: Amount; title: string; done: boolean }>
-export type DraftError = 'invalidDate' | 'restDay' | 'invalidAmount' | 'unknownLeaveType'
+export type DraftError = 'invalidDate' | 'tooFar' | 'restDay' | 'invalidAmount' | 'unknownLeaveType'
 
-/** R-17・F-306: 日程の入力の検証。editingId は直している日程の id（新規なら null）。overOneDay はエラーではなく知らせ */
+/** R-19: 日程を足せる最後の日。対象の期間（R-10）の末日 */
+export function lastAddableDate(today: IsoDate): IsoDate {
+  return planningQuarters(today)[3].end
+}
+
+/** R-17・R-19・F-306: 日程の入力の検証。editingId は直している日程の id（新規なら null）。overOneDay はエラーではなく知らせ */
 export function checkEntryDraft(
   input: PlannerInput,
   draft: EntryDraft,
@@ -20,6 +26,8 @@ export function checkEntryDraft(
 
   if (!validDate) errors.push('invalidDate')
   else {
+    // R-19: 足すときだけ、対象の期間の末日より先の日付を断る（直すときは当てない）
+    if (editingId === null && draft.date > lastAddableDate(input.today)) errors.push('tooFar')
     const kind = restCalendarOf({ ...input, entries: others }).kindOf(draft.date)
     if (kind === 'weekend' || kind === 'holiday' || kind === 'company') errors.push('restDay')
   }
