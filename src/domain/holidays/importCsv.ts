@@ -12,7 +12,7 @@ const CSV_DATE = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/
 /** 内閣府の祝日 CSV（UTF-8 に直したあと）を読む。1 行でも読めなければ失敗（R-16） */
 export function parseHolidayCsv(text: string): Result<Record<IsoDate, string>> {
   const lines = text
-    .replace(/^﻿/, '')
+    .replace(/^\uFEFF/, '')
     .split(/\r?\n/)
     .slice(1) // 1 行目は見出し
     .filter((line) => line.trim() !== '')

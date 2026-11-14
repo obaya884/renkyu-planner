@@ -11,6 +11,12 @@ test('N-04: 今年と来年の、祝日が確定している期間の候補が�
   expect(all.some((c) => c.leaveDays[0] === '2027-02-12')).toBe(true)
   expect(all.every((c) => c.leaveDays[0] <= '2027-12-31')).toBe(true)
 })
+test('N-04: 確定期限が翌年末より前なら、候補の最初の休む日は確定期限までに収まる', () => {
+  const early = { ...data, confirmedUntil: '2026-12-31' }
+  const all = staticCandidateGroups(early, '2026-11-15').flatMap((g) => g.candidates)
+  expect(all.length).toBeGreaterThan(0)
+  expect(all.every((c) => c.leaveDays[0] <= '2026-12-31')).toBe(true)
+})
 test('候補の 1 行の書き方', () => {
   expect(describeCandidate({ leaveDays: ['2026-11-02'], run: { start: '2026-10-31', end: '2026-11-03', days: 4 }, long: false, unconfirmed: false, core: '2026-11-03' })).toBe('11/2(月) を休むと 4 連休（10/31〜11/3）')
 })

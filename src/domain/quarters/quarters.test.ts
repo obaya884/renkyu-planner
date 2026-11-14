@@ -52,3 +52,10 @@ test('R-14: 複数あれば最も長いもの、同じ長さなら早いもの',
   const longer = buildRestCalendar({ holidays: noHolidays, companyHolidays: [once('2026-10-12', '2026-10-14'), once('2026-11-09', '2026-11-12')], entries: [] })
   expect(longBreakOf(longer, q4)).toEqual({ start: '2026-11-07', end: '2026-11-12', days: 6 })
 })
+test('R-14: 連休がちょうど四半期の初日に始まるなら、その四半期の長めの休暇になる（前の四半期には入らない）', () => {
+  // 2027-01-01 は金曜。1/1（金）〜1/5（火）を会社の休日にすると、前日の 12/31（木）と翌日の 1/6（水）は平日で、5 連休になる
+  const [q4, q1] = planningQuarters('2026-11-15')
+  const cal = buildRestCalendar({ holidays: {}, companyHolidays: [{ kind: 'once', start: '2027-01-01', end: '2027-01-05' }], entries: [] })
+  expect(longBreakOf(cal, q1)).toEqual({ start: '2027-01-01', end: '2027-01-05', days: 5 })
+  expect(longBreakOf(cal, q4)).toBeNull()
+})

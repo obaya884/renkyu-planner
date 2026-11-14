@@ -17,6 +17,7 @@ describe('候補（F-201・F-204・F-207・F-210、R-3・R-4・R-9）', () => {
   })
   test('休む日は 1〜3 日。4 日要る組み合わせは出さない', () => {
     const cs = findCandidates({ ...base, cal: plain, start: '2026-11-01', end: '2026-11-30' })
+    expect(cs.length).toBeGreaterThan(0)
     expect(cs.every((c) => c.leaveDays.length >= 1 && c.leaveDays.length <= 3)).toBe(true)
     expect(cs.every((c) => c.run.days >= c.leaveDays.length + 3)).toBe(true)
   })
@@ -43,6 +44,7 @@ describe('候補（F-201・F-204・F-207・F-210、R-3・R-4・R-9）', () => {
     expect(cs.length).toBeGreaterThan(0)
     expect(cs.filter((c) => c.run.end >= '2027-12-31').every((c) => c.unconfirmed)).toBe(true)
     const nov = findCandidates({ ...base, cal, start: '2027-11-01', end: '2027-11-30' })
+    expect(nov.length).toBeGreaterThan(0)
     expect(nov.every((c) => !c.unconfirmed)).toBe(true)
   })
   test('R-3: 休む日の全部が 1 つの並びに入らない組は出さない（間に平日 11/4 が残る 11/2 と 11/5）', () => {

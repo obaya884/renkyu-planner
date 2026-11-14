@@ -1,5 +1,5 @@
 import type { HolidayData } from '../holidays/importCsv'
-import { type IsoDate, addDays, weekday } from '../shared/date'
+import { type IsoDate, addDays, diffDays, weekday } from '../shared/date'
 import type { CompanyHoliday, Entry } from '../types'
 
 export type RestKind = 'weekend' | 'holiday' | 'company' | 'leave'
@@ -42,13 +42,7 @@ function runAround(cal: RestCalendar, d: IsoDate): Run | null {
   while (cal.isRest(addDays(start, -1))) start = addDays(start, -1)
   let end = d
   while (cal.isRest(addDays(end, 1))) end = addDays(end, 1)
-  return { start, end, days: daysBetween(start, end) }
-}
-
-function daysBetween(start: IsoDate, end: IsoDate): number {
-  let n = 1
-  for (let d = start; d < end; d = addDays(d, 1)) n++
-  return n
+  return { start, end, days: diffDays(start, end) + 1 }
 }
 
 /** start〜end に 1 日でもかかる 3 日以上の連休を、期間の外まで伸ばして開始日の早い順に返す（R-2） */
