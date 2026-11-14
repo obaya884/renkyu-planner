@@ -180,6 +180,11 @@ export function describeCandidate(c: CandidateLike): string {
   return `${c.leaveDays.map(formatDay).join('・')} を休むと ${c.run.days} 連休（${formatPeriod(c.run)}）`
 }
 
+/** §3.7・§3.8 の 2 行目。語句を「・」でつなぐ。例: 11/20〜11/23・2日使う */
+export function joinNotes(parts: readonly string[]): string {
+  return parts.join('・')
+}
+
 /** 主な画面用で、期間を含まない。例: 11/20(金) を休むと 4連休 */
 export function candidateText(c: CandidateLike): string {
   return `${c.leaveDays.map(formatDay).join('・')} を休むと ${c.run.days}連休`

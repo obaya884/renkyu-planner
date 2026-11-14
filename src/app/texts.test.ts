@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, longBreakChip, quarterHeading, unassignedText, usablePeriod } from './texts'
+import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, joinNotes, longBreakChip, quarterHeading, unassignedText, usablePeriod } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -38,4 +38,9 @@ test('§3.2・§5.1: 未割り当ての片側は、1 分以上足りないとき
   expect(unassignedText(-480, 480)).toBe('不足 1 日')
   expect(unassignedText(-0.5, 465)).toBe('0 日')
   expect(unassignedText(0, 480)).toBe('0 日')
+})
+test('§3.7・§3.8: 2 行目の語句は「・」でつなぐ', () => {
+  expect(joinNotes(['11/20〜11/23', '2日使う'])).toBe('11/20〜11/23・2日使う')
+  expect(joinNotes(['予定'])).toBe('予定')
+  expect(joinNotes([])).toBe('')
 })

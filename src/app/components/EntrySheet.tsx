@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
+import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, entrySheetTitle, errorText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type DraftError, type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
@@ -81,7 +81,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   return (
     <>
       <div>
-        <h2 className="text-lg font-bold">{adding ? T.addDayTitle : entrySheetTitle(entry.date)}</h2>
+        <SheetTitle>{adding ? T.addDayTitle : entrySheetTitle(entry.date)}</SheetTitle>
         {!adding && <ErrorLines errors={dateErrors} />}
       </div>
       <div className="space-y-3">

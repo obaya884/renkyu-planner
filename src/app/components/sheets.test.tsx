@@ -5,6 +5,7 @@ import { T } from '@/app/texts'
 import { AddSheetBody } from './AddSheet'
 import { EntrySheetBody } from './EntrySheet'
 import { GrantSheetBody } from './GrantSheet'
+import { SHEET_TITLE_ATTR } from './Sheet'
 
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
@@ -81,4 +82,19 @@ test('F-206: 引く休暇に残りを添える。付与日をまたぐときと�
 test('§5.3: 初めての入力でも、題の下に付与年の期間を出す', () => {
   const h = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
   expect(h).toContain('2026/4/1〜2027/3/31 の分')
+})
+
+test('§5・P-1: 3 つの面の題は、開いたときに焦点を受ける（入力欄に焦点を入れない）', () => {
+  const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
+  const bodies = [
+    <AddSheetBody key="add" input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />,
+    <EntrySheetBody key="entry" input={SHEET} entry={entry} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />,
+    <EntrySheetBody key="new" input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />,
+    <GrantSheetBody key="grant" input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />,
+  ]
+  for (const body of bodies) {
+    const title = html(body).match(/<h2[^>]*>/)?.[0] ?? ''
+    expect(title).toContain('tabindex="-1"')
+    expect(title).toContain(`${SHEET_TITLE_ATTR}=""`)
+  }
 })

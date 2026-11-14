@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
+import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText, grantDayText, grantPeriodText } from '@/app/texts'
 import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
 import { carryOverOf, grantDaysOf } from '@/domain/leave/balance'
@@ -52,7 +52,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
   return (
     <>
       <div>
-        <h2 className="text-lg font-bold">{T.grantTitle}</h2>
+        <SheetTitle>{T.grantTitle}</SheetTitle>
         {year !== null && <p className="text-sm text-sub">{grantPeriodText(year.start, year.end)}</p>}
       </div>
       <div className="space-y-3">

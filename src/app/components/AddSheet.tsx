@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
+import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassignedChange } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
@@ -44,7 +44,7 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
 
   return (
     <>
-      <h2 className="text-lg font-bold">{T.addToPlan}</h2>
+      <SheetTitle>{T.addToPlan}</SheetTitle>
       <div className="space-y-3">
         <Line label={T.restDays}>{restDaysText(leaveDays, workMinutes)}</Line>
         {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}

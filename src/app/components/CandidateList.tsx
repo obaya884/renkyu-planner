@@ -1,4 +1,4 @@
-import { T, candidateText, formatPeriod, leaveDaysUsed, monthGapSummary, restSummary, shortText } from '@/app/texts'
+import { T, candidateText, joinNotes, formatPeriod, leaveDaysUsed, monthGapSummary, restSummary, shortText } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
 import type { CandidateBlock, CandidateRow } from '@/domain/view/quarterView'
 
@@ -19,7 +19,7 @@ function Row({ row, workMinutes, onAdd }: { row: CandidateRow } & Props) {
           {row.unconfirmed && <span className="ml-2 text-sm text-sub">{T.unconfirmed}</span>}
         </div>
         <div className="text-sm text-sub">
-          {second.join('・')}
+          {joinNotes(second)}
           {row.shortMinutes !== null && (
             <span className="ml-2 font-bold text-warn-ink">{shortText(row.shortMinutes, workMinutes)}</span>
           )}

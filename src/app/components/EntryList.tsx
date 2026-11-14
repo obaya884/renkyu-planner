@@ -1,4 +1,4 @@
-import { T, amountText, formatDay, runHeading } from '@/app/texts'
+import { T, amountText, formatDay, joinNotes, runHeading } from '@/app/texts'
 import type { EntryBlock, EntryRow } from '@/domain/view/quarterView'
 
 type RowProps = {
@@ -21,7 +21,7 @@ function Row({ row, inBlock, workMinutes, onOpen, onMarkDone }: { row: EntryRow;
         <span className="min-w-0">
           <span className="block">{first}</span>
           <span className="block text-sm text-sub">
-            <span className={overdue ? 'text-warn-ink' : ''}>{second.join('・')}</span>
+            <span className={overdue ? 'text-warn-ink' : ''}>{joinNotes(second)}</span>
 
             {overlap && <span className="ml-2 text-warn-ink">{T.overlap}</span>}
           </span>
