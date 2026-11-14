@@ -6,7 +6,7 @@ import { isShort } from '../leave/amount'
 import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
-import type { Entry } from '../types'
+import type { Entry, WeekStart } from '../types'
 import { previewAdd } from './addPreview'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
 
@@ -15,8 +15,8 @@ export type DayMark = 'done' | 'planned' | 'candidate' | 'company' | 'off'
 const MARK_ORDER: readonly DayMark[] = ['done', 'planned', 'candidate', 'company', 'off']
 
 export type DayCell = Readonly<{ date: IsoDate; day: number; mark: DayMark | null; grantDay: boolean }>
-/** 日曜始まり。1 週は 7 つで、その月でない所は null */
-export type MonthView = Readonly<{ month: IsoDate; weeks: readonly (readonly (DayCell | null)[])[] }>
+/** 週の始まりは設定に従う（F-108）。1 週は 7 つで、その月でない所は null */
+export type MonthView = Readonly<{ month: IsoDate; weekStart: WeekStart; weeks: readonly (readonly (DayCell | null)[])[] }>
 
 export type CandidateRow = Readonly<{
   leaveDays: readonly IsoDate[]
@@ -156,7 +156,10 @@ function markOf(ctx: Ctx, d: IsoDate, candidateDays: ReadonlySet<IsoDate>): DayM
 function monthView(ctx: Ctx, month: IsoDate, candidateDays: ReadonlySet<IsoDate>): MonthView {
   const grantDay = ctx.input.settings.grantDay
   const weeks: (DayCell | null)[][] = []
-  let week: (DayCell | null)[] = Array.from({ length: weekday(month) }, () => null)
+  const weekStart = ctx.input.settings.weekStart
+  // 月の 1 日の前に空ける数。月曜始まりでは、月曜が 0、日曜が 6
+  const lead = weekStart === 'monday' ? (weekday(month) + 6) % 7 : weekday(month)
+  let week: (DayCell | null)[] = Array.from({ length: lead }, () => null)
   const last = monthEnd(month)
   for (let d = month; d <= last; d = addDays(d, 1)) {
     week.push({ date: d, day: Number(d.slice(8)), mark: markOf(ctx, d, candidateDays), grantDay: grantDay !== null && d.slice(5) === grantDay })
@@ -166,7 +169,7 @@ function monthView(ctx: Ctx, month: IsoDate, candidateDays: ReadonlySet<IsoDate>
     }
   }
   if (week.length > 0) weeks.push([...week, ...Array.from({ length: 7 - week.length }, () => null)])
-  return { month, weeks }
+  return { month, weekStart, weeks }
 }
 
 function monthsOf(q: Quarter): IsoDate[] {

@@ -26,6 +26,9 @@ export type LeaveType = Readonly<{
 /** `entitlementMinutes` は持ち分の上書き（分）。null は計算に任せる（R-13） */
 export type GrantYearSetting = Readonly<{ grantDays: number; entitlementMinutes: number | null }>
 
+/** 月カレンダーの週の始まり（F-108） */
+export type WeekStart = 'monday' | 'sunday'
+
 /** `grantYears` のキーは付与年の開始日 */
 export type Settings = Readonly<{
   workMinutes: number
@@ -33,6 +36,7 @@ export type Settings = Readonly<{
   grantYears: Readonly<Record<IsoDate, GrantYearSetting>>
   companyHolidays: readonly CompanyHoliday[]
   leaveTypes: readonly LeaveType[]
+  weekStart: WeekStart
 }>
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -41,4 +45,5 @@ export const DEFAULT_SETTINGS: Settings = {
   grantYears: {},
   companyHolidays: [],
   leaveTypes: [{ id: 'paid', name: '有休', days: 0, usable: null }],
+  weekStart: 'monday',
 }

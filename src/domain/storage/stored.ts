@@ -3,7 +3,7 @@ import { isValidIsoDate } from '@/domain/shared/date'
 import type { MonthDay } from '@/domain/shared/date'
 import type { Result } from '@/domain/shared/result'
 import { DEFAULT_SETTINGS } from '@/domain/types'
-import type { Amount, CompanyHoliday, Entry, GrantYearSetting, LeaveType, Settings } from '@/domain/types'
+import type { Amount, CompanyHoliday, Entry, GrantYearSetting, LeaveType, Settings, WeekStart } from '@/domain/types'
 
 export const STORAGE_KEY = 'renkyu-planner'
 export const UNREADABLE_KEY = 'renkyu-planner:unreadable'
@@ -165,6 +165,13 @@ function readGrantYears(v: unknown): Record<string, GrantYearSetting> {
   return out
 }
 
+/** D-4・F-108: 項目が無い記録は月曜始まりとして読む */
+function readWeekStart(v: unknown): WeekStart {
+  if (v === undefined) return 'monday'
+  if (v !== 'monday' && v !== 'sunday') fail('weekStart')
+  return v
+}
+
 function readSettings(v: unknown): Settings {
   const o = obj(v, 'settings')
   const leaveTypes = arr(o.leaveTypes, 'leaveTypes').map(readLeaveType)
@@ -178,6 +185,7 @@ function readSettings(v: unknown): Settings {
     grantYears: readGrantYears(o.grantYears),
     companyHolidays: arr(o.companyHolidays, 'companyHolidays').map(readCompanyHoliday),
     leaveTypes,
+    weekStart: readWeekStart(o.weekStart),
   }
 }
 

@@ -10,7 +10,7 @@ const cell = (v: typeof q4, d: string) => v.months.flatMap((m) => m.weeks.flat()
 
 test('F-502: 月カレンダーの印と優先', () => {
   expect(q4.months.map((m) => m.month)).toEqual(['2026-10-01', '2026-11-01', '2026-12-01'])
-  expect(q4.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([1, 2, 3, 4, 5, 6, 7]) // 2026-11-01 は日曜
+  expect(q4.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([null, null, null, null, null, null, 1]) // 月曜始まり。2026-11-01 は日曜
   expect(cell(q4, '2026-11-02')?.mark).toBe('done')
   expect(cell(q4, '2026-10-07')?.mark).toBe('done')      // 時間単位の日程にも印
   expect(cell(q4, '2026-12-28')?.mark).toBe('planned')
@@ -134,4 +134,14 @@ test('§3.2・F-211: 0.5 分の端数で 1 分に満たない不足は、不足�
   expect(previewAdd(input, ['2026-11-20'], 'paid')[0].after).toBe(-0.5)
   expect(row?.shortMinutes).toBeNull()
   expect(rowsOf(v).find((r) => r.leaveDays.length === 2)?.shortMinutes).toBe(465.5)
+})
+
+test('F-108: 週の始まりを日曜にすると、日曜から並ぶ。初期値は月曜', () => {
+  expect(q4.months[1].weekStart).toBe('monday')
+  expect(q4.months[1].weeks[1].map((c) => c?.day ?? null)).toEqual([2, 3, 4, 5, 6, 7, 8])
+  const sunday = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, weekStart: 'sunday' } }, qs)[0].months[1]
+  expect(sunday.weekStart).toBe('sunday')
+  expect(sunday.weeks[0].map((c) => c?.day ?? null)).toEqual([1, 2, 3, 4, 5, 6, 7])
+  expect(sunday.weeks.at(-1)?.map((c) => c?.day ?? null)).toEqual([29, 30, null, null, null, null, null])
+  expect(q4.months[1].weeks.at(-1)?.map((c) => c?.day ?? null)).toEqual([30, null, null, null, null, null, null])
 })

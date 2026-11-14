@@ -1,4 +1,4 @@
-import { WEEKDAY_NAMES, monthCaption } from '@/app/texts'
+import { monthCaption, weekdayHeader } from '@/app/texts'
 import type { DayCell, DayMark, MonthView } from '@/domain/view/quarterView'
 
 /** 色と形の両方で分ける（§3.6、§7）。取得済みは塗り、予定は枠、候補は枠と薄い地、休みは薄い地 */
@@ -30,14 +30,14 @@ function Cell({ cell }: { cell: DayCell | null }) {
   )
 }
 
-/** §3.6。日曜始まりの 1 か月。日付のマスは押せない。印は data-mark に持つ */
+/** §3.6。1 か月。週の始まりは組み立ての結果に従う（F-108）。日付のマスは押せない。印は data-mark に持つ */
 export function MonthCalendar({ month }: { month: MonthView }) {
   return (
     <table className="w-full table-fixed border-separate border-spacing-y-0.5 text-center">
       <caption className="mb-1 text-left text-sm font-bold">{monthCaption(month.month)}</caption>
       <thead>
         <tr>
-          {WEEKDAY_NAMES.map((w) => (
+          {weekdayHeader(month.weekStart).map((w) => (
             <th key={w} className="text-[11px] font-normal text-sub">
               {w}
             </th>

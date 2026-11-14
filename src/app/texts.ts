@@ -2,7 +2,7 @@ import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
-import type { Amount } from '@/domain/types'
+import type { Amount, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import { weekday } from '@/domain/shared/date'
 
@@ -91,8 +91,13 @@ export const T = {
   overOneDay: 'この日の合計が 1日を超えています',
 } as const
 
-/** 日曜始まり。月カレンダーの曜日の行にも使う */
+/** 日曜始まり（曜日の番号の順）。月カレンダーの曜日の行は weekdayHeader を使う */
 export const WEEKDAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const
+
+/** §3.6・F-108: 月カレンダーの曜日の行。週の始まりから並べる */
+export function weekdayHeader(weekStart: WeekStart): readonly string[] {
+  return weekStart === 'monday' ? [...WEEKDAY_NAMES.slice(1), WEEKDAY_NAMES[0]] : WEEKDAY_NAMES
+}
 
 const monthDay = (d: IsoDate) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
 

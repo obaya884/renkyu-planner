@@ -64,4 +64,13 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(grant({ grantDays: 14 })).toBe(false)
     expect(grant({ grantDays: 14, carryOverMinutes: 0 })).toBe(false)
   })
+  test('F-108・D-4: weekStart は monday か sunday。項目が無ければ monday として読む', () => {
+    const { weekStart: _omit, ...old } = DEFAULT_SETTINGS
+    const read = parse({ ...ok, settings: old })
+    expect(read.ok && read.value.settings.weekStart).toBe('monday')
+    const sunday = parse({ ...ok, settings: { ...DEFAULT_SETTINGS, weekStart: 'sunday' } })
+    expect(sunday.ok && sunday.value.settings.weekStart).toBe('sunday')
+    expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, weekStart: 'tuesday' } }).ok).toBe(false)
+    expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, weekStart: null } }).ok).toBe(false)
+  })
 })

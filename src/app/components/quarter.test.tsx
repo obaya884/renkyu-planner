@@ -17,8 +17,11 @@ const [q4, , q2] = buildQuarterViews(SHEET, qs)
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 
-test('F-502: 月カレンダーは日曜始まりで、印を data-mark に持つ', () => {
+test('F-502・F-108: 月カレンダーは月曜始まりで、印を data-mark に持つ。設定で日曜始まりになる', () => {
   const h = html(<MonthCalendar month={q4.months[1]} />)
+  expect(h.replace(/<[^>]+>/g, '')).toContain('月火水木金土日')
+  const sunday = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, weekStart: 'sunday' } }, qs)[0].months[1]
+  expect(html(<MonthCalendar month={sunday} />).replace(/<[^>]+>/g, '')).toContain('日月火水木金土')
   expect(h).toContain('11月')
   expect(h).toMatch(/data-mark="done"[^>]*>2</)
   expect(h).toMatch(/data-mark="candidate"[^>]*>20</)
