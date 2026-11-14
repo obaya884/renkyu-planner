@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { AddSheet } from '@/app/components/AddSheet'
 import { BalanceCards } from '@/app/components/BalanceCards'
+import { EntrySheet } from '@/app/components/EntrySheet'
+import { GrantSheet } from '@/app/components/GrantSheet'
 import { InviteCard } from '@/app/components/InviteCard'
 import { LongBreakStrip } from '@/app/components/LongBreakStrip'
 import { Notices } from '@/app/components/Notices'
@@ -9,17 +12,22 @@ import { QuarterSection } from '@/app/components/QuarterSection'
 import { QuarterTabs } from '@/app/components/QuarterTabs'
 import { StickySummary } from '@/app/components/StickySummary'
 import { HolidayNote } from '@/app/components/StaticCandidates'
+import { defaultDayFor } from '@/app/defaultDay'
 import { APP_DESCRIPTION } from '@/app/site'
 import { T } from '@/app/texts'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import { type IsoDate, todayInJapan } from '@/domain/shared/date'
-import { planningQuarters } from '@/domain/quarters/quarters'
+import { type Quarter, planningQuarters } from '@/domain/quarters/quarters'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 
-/** Task 9 で面を開く操作に差し替える */
-const noop = () => {}
+/** 開いている面（1 つだけ）。entry の id が null なら「日を足す」で、その初期の日付を持つ */
+type OpenSheet =
+  | { kind: 'add'; leaveDays: readonly IsoDate[] }
+  | { kind: 'entry'; id: string | null; defaultDate: IsoDate }
+  | { kind: 'grant'; grantYearStart: IsoDate | null }
+  | null
 
 // 今日の日付。サーバーの描画とハイドレーションでは null を使い、マウントしたあとに端末の時計から取る。
 // useEffect の中で setState すると react-hooks/set-state-in-effect に当たるので、useSyncExternalStore で読む
@@ -38,6 +46,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
   const [shift, setShift] = useState(0)
   const [selected, setSelected] = useState<IsoDate | null>(null)
+  const [sheet, setSheet] = useState<OpenSheet>(null)
   // 持ち分のカードの包みが画面に見えているか。見えていないあいだだけ、持ち分の 1 行を張り付ける（§3.4）
   const [cardsEl, setCardsEl] = useState<HTMLDivElement | null>(null)
   const [cardsVisible, setCardsVisible] = useState(true)
@@ -90,6 +99,10 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
     const e = entries.find((x) => x.id === id)
     if (e) plannerStore.updateEntry(id, { date: e.date, leaveTypeId: e.leaveTypeId, amount: e.amount, title: e.title, done: true })
   }
+  const input = { holidays, settings, entries, today }
+  const closeSheet = () => setSheet(null)
+  const openAddDay = (quarter: Quarter) => setSheet({ kind: 'entry', id: null, defaultDate: defaultDayFor(input, quarter) })
+  const openedEntry = sheet?.kind === 'entry' && sheet.id !== null ? entries.find((e) => e.id === sheet.id) : undefined
   return (
     <>
       <Notices canSave={canSave} unreadable={unreadable} />
@@ -97,7 +110,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div ref={setCardsEl} className="lg:w-1/2">
           {summary.state === 'unset' ? (
-            <InviteCard onOpen={noop} />
+            <InviteCard onOpen={() => setSheet({ kind: 'grant', grantYearStart: null })} />
           ) : (
             <BalanceCards summary={summary} workMinutes={settings.workMinutes} />
           )}
@@ -131,11 +144,11 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
             <QuarterSection
               view={view}
               workMinutes={settings.workMinutes}
-              onAdd={noop}
-              onOpen={noop}
+              onAdd={(leaveDays) => setSheet({ kind: 'add', leaveDays })}
+              onOpen={(id) => setSheet({ kind: 'entry', id, defaultDate: today })}
               onMarkDone={markDone}
-              onAddDay={noop}
-              onEnterGrant={noop}
+              onAddDay={() => openAddDay(view.quarter)}
+              onEnterGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
             />
           </div>
         ))}
@@ -155,6 +168,47 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           </button>
         )}
       </div>
+      {sheet?.kind === 'add' && (
+        <AddSheet
+          input={input}
+          leaveDays={sheet.leaveDays}
+          onSubmit={(drafts) => {
+            plannerStore.addEntries(drafts)
+            closeSheet()
+          }}
+          onClose={closeSheet}
+        />
+      )}
+      {sheet?.kind === 'entry' && (sheet.id === null || openedEntry !== undefined) && (
+        <EntrySheet
+          key={sheet.id ?? 'new'}
+          input={input}
+          entry={openedEntry ?? null}
+          defaultDate={sheet.defaultDate}
+          onSubmit={(draft) => {
+            if (openedEntry) plannerStore.updateEntry(openedEntry.id, draft)
+            else plannerStore.addEntries([draft])
+            closeSheet()
+          }}
+          onRemove={() => {
+            if (openedEntry) plannerStore.removeEntry(openedEntry.id)
+            closeSheet()
+          }}
+          onClose={closeSheet}
+        />
+      )}
+      {sheet?.kind === 'grant' && (
+        <GrantSheet
+          key={sheet.grantYearStart ?? 'first'}
+          input={input}
+          grantYearStart={sheet.grantYearStart}
+          onSubmit={(draft, grantYearStart) => {
+            plannerStore.setGrant(draft, grantYearStart)
+            closeSheet()
+          }}
+          onClose={closeSheet}
+        />
+      )}
     </>
   )
 }

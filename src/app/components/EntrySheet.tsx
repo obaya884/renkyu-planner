@@ -1,0 +1,180 @@
+'use client'
+
+import { useState } from 'react'
+import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
+import { T, entrySheetTitle, errorText, runHeading } from '@/app/texts'
+import { runContaining } from '@/domain/calendar/restDays'
+import { type DraftError, type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
+import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
+import type { Amount, Entry } from '@/domain/types'
+import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+
+type Props = {
+  input: PlannerInput
+  entry: Entry | null
+  defaultDate: IsoDate
+  onSubmit: (draft: EntryDraft) => void
+  onRemove: () => void
+  onClose: () => void
+}
+
+type AmountKind = Amount['unit']
+
+const AMOUNT_CHOICES: readonly { kind: AmountKind; label: string }[] = [
+  { kind: 'day', label: T.amountDay },
+  { kind: 'half', label: T.amountHalf },
+  { kind: 'minutes', label: T.amountMinutes },
+]
+
+function Choice({ name, label, checked, onChange }: { name: string; label: string; checked: boolean; onChange: () => void }) {
+  return (
+    <label className="flex min-h-11 items-center gap-2">
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="h-5 w-5 accent-primary" />
+      {label}
+    </label>
+  )
+}
+
+function ErrorLines({ errors }: { errors: readonly DraftError[] }) {
+  return (
+    <>
+      {errors.map((e) => (
+        <p key={e} role="alert" className="text-sm text-danger">
+          {errorText(e)}
+        </p>
+      ))}
+    </>
+  )
+}
+
+/** §5.2 の中身。入力欄の値だけを状態に持つ。検証は checkEntryDraft、連休は runContaining を呼ぶだけ */
+export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, onClose }: Props) {
+  const { leaveTypes } = input.settings
+  const adding = entry === null
+  const [date, setDate] = useState(entry?.date ?? defaultDate)
+  const [kind, setKind] = useState<AmountKind>(entry?.amount.unit ?? 'day')
+  const initialMinutes = entry?.amount.unit === 'minutes' ? entry.amount.minutes : 0
+  const [hours, setHours] = useState(String(Math.floor(initialMinutes / 60)))
+  const [mins, setMins] = useState(String(initialMinutes % 60))
+  const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === 'paid')?.id ?? leaveTypes[0].id)
+  const [title, setTitle] = useState(entry?.title ?? '')
+  const [done, setDone] = useState(entry?.done ?? false)
+
+  const amount: Amount =
+    kind === 'minutes' ? { unit: 'minutes', minutes: Number(hours) * 60 + Number(mins) } : { unit: kind }
+  const draft: EntryDraft = { date, leaveTypeId, amount, title, done }
+  const { errors, overOneDay } = checkEntryDraft(input, draft, entry?.id ?? null)
+
+  // 1 日分のときだけ、その日が作る連休を出す。直しているときは、自分を除いた記録に今の入力を足して求める
+  const run =
+    kind === 'day' && isValidIsoDate(date)
+      ? runContaining(
+          restCalendarOf({ ...input, entries: [...input.entries.filter((e) => e.id !== entry?.id), { id: 'draft', ...draft }] }),
+          date,
+        )
+      : null
+
+  const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate')
+  const amountErrors = errors.filter((e) => e === 'invalidAmount')
+  const typeErrors = errors.filter((e) => e === 'unknownLeaveType')
+
+  return (
+    <>
+      <div>
+        <h2 className="text-lg font-bold">{adding ? T.addDayTitle : entrySheetTitle(entry.date)}</h2>
+        {!adding && <ErrorLines errors={dateErrors} />}
+      </div>
+      <div className="space-y-3">
+        {adding && (
+          <div>
+            <Field label={T.dateLabel}>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={FIELD_CLASS} />
+            </Field>
+            <ErrorLines errors={dateErrors} />
+          </div>
+        )}
+        <fieldset>
+          <legend className="text-sm text-sub">{T.amountLabel}</legend>
+          {AMOUNT_CHOICES.map((c) => (
+            <Choice key={c.kind} name="amount" label={c.label} checked={kind === c.kind} onChange={() => setKind(c.kind)} />
+          ))}
+          {kind === 'minutes' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                aria-label={T.hoursUnit}
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                className={`${FIELD_CLASS} w-20`}
+              />
+              {T.hoursUnit}
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                aria-label={T.minutesUnit}
+                value={mins}
+                onChange={(e) => setMins(e.target.value)}
+                className={`${FIELD_CLASS} w-20`}
+              />
+              {T.minutesUnit}
+            </div>
+          )}
+          <ErrorLines errors={amountErrors} />
+          {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
+        </fieldset>
+        {leaveTypes.length >= 2 ? (
+          <div>
+            <Field label={T.leaveTypeLabel}>
+              <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={FIELD_CLASS}>
+                {leaveTypes.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <ErrorLines errors={typeErrors} />
+          </div>
+        ) : (
+          <Line label={T.leaveTypeLabel}>{leaveTypes[0].name}</Line>
+        )}
+        <Field label={T.entryTitleLabel}>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
+        </Field>
+        <fieldset>
+          <legend className="text-sm text-sub">{T.statusLabel}</legend>
+          <Choice name="status" label={T.planned} checked={!done} onChange={() => setDone(false)} />
+          <Choice name="status" label={T.done} checked={done} onChange={() => setDone(true)} />
+        </fieldset>
+        {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
+      </div>
+      <SheetButtons
+        left={
+          !adding && (
+            <button type="button" onClick={onRemove} className="min-h-11 rounded-md px-2 text-sm text-danger">
+              {T.remove}
+            </button>
+          )
+        }
+      >
+        <button type="button" onClick={onClose} className={SECONDARY_BUTTON_CLASS}>
+          {T.cancel}
+        </button>
+        <button type="button" disabled={errors.length > 0} onClick={() => onSubmit(draft)} className={PRIMARY_BUTTON_CLASS}>
+          {T.save}
+        </button>
+      </SheetButtons>
+    </>
+  )
+}
+
+export function EntrySheet(props: Props) {
+  return (
+    <Sheet title={props.entry === null ? T.addDayTitle : entrySheetTitle(props.entry.date)} onClose={props.onClose}>
+      <EntrySheetBody {...props} />
+    </Sheet>
+  )
+}

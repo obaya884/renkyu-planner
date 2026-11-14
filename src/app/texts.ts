@@ -55,6 +55,37 @@ export const T = {
   localOnly: '入れた内容は、このブラウザの中にだけ保存します。運営には送られません。',
   // D-5 の文
   unreadable: '保存されていた記録を読めませんでした',
+  // §5 共通
+  save: '保存する',
+  cancel: 'やめる',
+  // §5.1
+  submitAdd: '予定に入れる',
+  restDays: '休む日',
+  runLabel: '連休',
+  leaveTypeLabel: '引く休暇',
+  entryTitleLabel: '予定の名前',
+  thisGrantYear: '今の付与年',
+  nextGrantYearLabel: '次の付与年',
+  enterGrantToSee: '付与日と日数を入れると、残りが出ます',
+  // §5.2
+  addDayTitle: '日を足す',
+  dateLabel: '日付',
+  amountLabel: '量',
+  amountDay: '1日',
+  amountHalf: '半日',
+  amountMinutes: '時間で入れる',
+  hoursUnit: '時間',
+  minutesUnit: '分',
+  statusLabel: '状態',
+  remove: 'この日程を消す',
+  // §5.3
+  grantTitle: '有休の付与日と日数',
+  grantDayLabel: '付与日',
+  monthUnit: '月',
+  dayUnit: '日',
+  grantDaysLabel: '付与日数',
+  carryOverLabel: '前の年からの繰り越し',
+  submitGrantFirst: '残りを出す',
   // §8.3
   overOneDay: 'この日の合計が 1日を超えています',
 } as const
@@ -199,6 +230,37 @@ export function grantNoteText(date: IsoDate, entered: boolean, grantDays: number
 export function summaryLine(name: string, remaining: number, unassigned: number, short: boolean, workMinutes: number): string {
   const rest = short ? `${T.short} ${formatAmount(unassigned, workMinutes)}` : `${T.unassigned} ${formatAmount(Math.max(0, unassigned), workMinutes)}`
   return `${remainingLabel(name)} ${formatAmount(remaining, workMinutes)}・${rest}`
+}
+
+/** §5.1 の未割り当ての 1 行の片側。負なら「不足 ◯」。例: 3 日と 2 時間、不足 1 日 */
+export function unassignedText(minutes: number, workMinutes: number): string {
+  return minutes < 0 ? `${T.short} ${formatAmount(minutes, workMinutes)}` : formatAmount(minutes, workMinutes)
+}
+
+/** §5.1 の未割り当ての 1 行。例: 未割り当て 4 日と 2 時間 → 3 日と 2 時間。ラベルは 1 行のときは未割り当て、2 行のときは付与年 */
+export function unassignedChange(label: string, before: number, after: number, workMinutes: number): string {
+  return `${label} ${unassignedText(before, workMinutes)} → ${unassignedText(after, workMinutes)}`
+}
+
+/** §5.1 の休む日の行。例: 11/20(金)・11/23(月) 2 日 */
+export function restDaysText(days: readonly IsoDate[], workMinutes: number): string {
+  return `${days.map(formatDay).join('・')} ${formatAmount(days.length * workMinutes, workMinutes)}`
+}
+
+/** §5.2 の題。例: 12/28(月) の日程 */
+export function entrySheetTitle(d: IsoDate): string {
+  return `${formatDay(d)} の日程`
+}
+
+/** §5.3 の題の下。例: 2027/5/1〜2028/4/30 の分 */
+export function grantPeriodText(start: IsoDate, end: IsoDate): string {
+  const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
+  return `${ymd(start)}〜${ymd(end)} の分`
+}
+
+/** §5.3 の付与日の文字。例: 5月1日 */
+export function grantDayText(md: MonthDay): string {
+  return `${Number(md.slice(0, 2))}月${Number(md.slice(3, 5))}日`
 }
 
 /** R-11 の形のまま */

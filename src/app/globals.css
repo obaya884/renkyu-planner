@@ -29,3 +29,8 @@ body {
   color: var(--color-ink);
   font-size: 1rem;
 }
+
+/* 面（dialog）を開いているあいだ、下の画面をスクロールさせない（画面定義書 §5） */
+body:has(dialog[open]) {
+  overflow: hidden;
+}
