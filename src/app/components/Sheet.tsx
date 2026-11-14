@@ -10,6 +10,8 @@ import { useEffect, useRef } from 'react'
  */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
+  // 押した所が面の外（dialog 自身）だったか。文字をドラッグで選んで面の外で離したときに閉じないよう、押した所も見る
+  const pressedOutside = useRef(false)
   useEffect(() => {
     const dialog = ref.current
     // StrictMode の開発時は effect が 2 回走る。開いているのに showModal() すると例外になる
@@ -20,9 +22,13 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       ref={ref}
       aria-label={title}
       onClose={onClose}
+      onPointerDown={(e) => {
+        pressedOutside.current = e.target === e.currentTarget
+      }}
       onClick={(e) => {
         // 中身は padding のある内側の div が全面を覆うので、dialog 自身が押されたのは ::backdrop を押したとき
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget && pressedOutside.current) onClose()
+        pressedOutside.current = false
       }}
       className="m-0 mx-auto mt-auto max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-xl bg-white text-ink backdrop:bg-black/50 lg:m-auto lg:max-w-md lg:rounded-xl"
     >

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/domain/types'
-import { balanceOf } from './balance'
+import { balanceOf, carryOverOf } from './balance'
 
 const e = (date: string, amount: object, done: boolean, leaveTypeId = 'paid') => ({ id: date, date, leaveTypeId, amount, title: '', done }) as never
 const D = { unit: 'day' }
@@ -49,4 +49,13 @@ test('F-405: 直前の年の未割り当てが負なら繰り越しは 0', () =>
 test('種類が settings に無ければ（有休以外）持ち分は 0', () => {
   const b = balanceOf({ settings, entries: [], leaveTypeId: 'unknown', grantYearStart: '2026-05-01' })
   expect(b?.entitlement).toBe(0)
+})
+
+test('F-405・R-13: carryOverOf。設定があればその値、無ければ直前の未割り当て（負なら 0）、直前も無ければ 0', () => {
+  expect(carryOverOf({ settings: { ...settings, grantYears: { '2026-05-01': { grantDays: 14, carryOverMinutes: 90 } } }, entries: [], grantYearStart: '2026-05-01' })).toBe(90)
+  expect(carryOverOf({ settings, entries: sheet, grantYearStart: '2027-05-01' })).toBe(4 * 480 + 120)
+  const over = { ...settings, grantYears: { '2026-05-01': { grantDays: 1, carryOverMinutes: 0 } } }
+  expect(carryOverOf({ settings: over, entries: [e('2026-06-01', D, false), e('2026-06-02', D, false)], grantYearStart: '2027-05-01' })).toBe(0)
+  expect(carryOverOf({ settings, entries: sheet, grantYearStart: '2028-05-01' })).toBe(0)
+  expect(carryOverOf({ settings: DEFAULT_SETTINGS, entries: [], grantYearStart: '2026-05-01' })).toBe(0)
 })

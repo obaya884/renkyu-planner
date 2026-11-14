@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { SHEET } from '@/domain/view/fixture'
-import { planningQuarters } from '@/domain/quarters/quarters'
+import { SHEET } from './fixture'
+import { planningQuarters } from '../quarters/quarters'
 import { defaultDayFor } from './defaultDay'
 
 const [q4, q1] = planningQuarters('2026-11-15')

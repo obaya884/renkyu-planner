@@ -50,7 +50,7 @@ test('R-17・Review Focus 3: 休みの日と重なった日程を開くと、理
   const y = { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
   const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, y] }} entry={y} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('この日は休みの日です。休みの日には入れられません')
-  expect(h).toMatch(/<button[^>]*disabled[^>]*>保存する/)
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
   expect(h).toContain(T.remove)
 })
 test('F-101・F-405: 付与日と日数の面。次の付与年は、繰り越しの初期値が今の未割り当て', () => {
@@ -62,4 +62,23 @@ test('F-101・F-405: 付与日と日数の面。次の付与年は、繰り越�
   expect(next).toContain('value="14"') // 付与日数の初期値は前の年と同じ
   expect(next).toContain('value="4"') // 繰り越しの日
   expect(next).toContain('value="2"') // 繰り越しの時間
+})
+
+test('R-17・F-306: 休む日が会社の休日と重なったら、理由を出して入れられない（日程に入れる面）', () => {
+  const input = { ...SHEET, settings: { ...SHEET.settings, companyHolidays: [...SHEET.settings.companyHolidays, { kind: 'once', start: '2026-11-20', end: '2026-11-20' } as const] } }
+  const h = html(<AddSheetBody input={input} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('この日は休みの日です。休みの日には入れられません')
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>予定に入れる/)
+  expect(h.split('この日は休みの日です').length).toBe(2) // 同じ理由は 1 回だけ
+  const ok = html(<AddSheetBody input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)
+  expect(ok).not.toMatch(/<button[^>]*disabled=""[^>]*>予定に入れる/)
+})
+test('F-206: 引く休暇に残りを添える。付与日をまたぐときと付与日が未設定のときは名前だけ', () => {
+  expect(html(<AddSheetBody input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)).toContain('残り 9 日と 2 時間')
+  expect(html(<AddSheetBody input={SHEET} leaveDays={['2027-04-28', '2027-05-06']} onSubmit={noop} onClose={noop} />)).not.toContain('（残り')
+  expect(html(<AddSheetBody input={UNSET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)).not.toContain('（残り')
+})
+test('§5.3: 初めての入力でも、題の下に付与年の期間を出す', () => {
+  const h = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('2026/4/1〜2027/3/31 の分')
 })

@@ -247,6 +247,11 @@ export function restDaysText(days: readonly IsoDate[], workMinutes: number): str
   return `${days.map(formatDay).join('・')} ${formatAmount(days.length * workMinutes, workMinutes)}`
 }
 
+/** §5.1 の引く休暇。例: 有休（残り 9 日と 2 時間） */
+export function leaveTypeWithRemaining(name: string, remaining: number, workMinutes: number): string {
+  return `${name}（${T.remaining} ${unassignedText(remaining, workMinutes)}）`
+}
+
 /** §5.2 の題。例: 12/28(月) の日程 */
 export function entrySheetTitle(d: IsoDate): string {
   return `${formatDay(d)} の日程`

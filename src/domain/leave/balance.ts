@@ -44,6 +44,26 @@ function withEntitlement(input: Input, grantDay: string, entitlement: number): B
   return { entitlement, taken, planned, remaining, unassigned: remaining - planned }
 }
 
+/** R-13・F-405: 有休の付与年の繰り越し（分）。その付与年の設定があればその値。無ければ、直前の付与年の設定があるときに限り、直前の付与年の未割り当て（0 未満なら 0）。付与日が未設定なら 0 */
+export function carryOverOf(input: Readonly<{ settings: Settings; entries: readonly Entry[]; grantYearStart: IsoDate }>): number {
+  const { settings, entries, grantYearStart } = input
+  const grantDay = settings.grantDay
+  if (grantDay === null) return 0
+  const current = settings.grantYears[grantYearStart]
+  if (current) return current.carryOverMinutes
+  // この付与年の設定が無いときの繰り越しは、直前の 1 年だけさかのぼる
+  const prevStart = previousStart(grantYearStart)
+  const prev = settings.grantYears[prevStart]
+  if (!prev) return 0
+  const work = settings.workMinutes
+  const prevBalance = withEntitlement(
+    { settings, entries, leaveTypeId: 'paid', grantYearStart: prevStart },
+    grantDay,
+    prev.grantDays * work + prev.carryOverMinutes,
+  )
+  return Math.max(0, prevBalance.unassigned)
+}
+
 /** R-13・F-405: 休暇の種類と付与年ごとの持ち分と、取得済み・予定・残り・未割り当て。付与日が未設定なら null */
 export function balanceOf(input: Input): Balance | null {
   const { settings, leaveTypeId, grantYearStart } = input
@@ -57,13 +77,5 @@ export function balanceOf(input: Input): Balance | null {
   }
 
   const grantMinutes = grantDaysOf(settings, grantYearStart) * work
-  const current = settings.grantYears[grantYearStart]
-  if (current) return withEntitlement(input, grantDay, grantMinutes + current.carryOverMinutes)
-
-  // この付与年の設定が無いときの繰り越しは、直前の 1 年だけさかのぼる
-  const prevStart = previousStart(grantYearStart)
-  const prev = settings.grantYears[prevStart]
-  if (!prev) return withEntitlement(input, grantDay, grantMinutes)
-  const prevBalance = withEntitlement({ ...input, grantYearStart: prevStart }, grantDay, prev.grantDays * work + prev.carryOverMinutes)
-  return withEntitlement(input, grantDay, grantMinutes + Math.max(0, prevBalance.unassigned))
+  return withEntitlement(input, grantDay, grantMinutes + carryOverOf({ settings, entries: input.entries, grantYearStart }))
 }

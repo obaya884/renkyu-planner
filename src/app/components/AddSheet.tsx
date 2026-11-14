@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
-import { T, restDaysText, runHeading, unassignedChange } from '@/app/texts'
+import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassignedChange } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import type { EntryDraft } from '@/domain/entries/checkDraft'
+import { type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
+import { balanceOf } from '@/domain/leave/balance'
 import type { IsoDate } from '@/domain/shared/date'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from '@/domain/view/input'
 import { previewAdd } from '@/domain/view/addPreview'
@@ -23,6 +24,18 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
   const [title, setTitle] = useState('')
 
   const deltas = previewAdd(input, leaveDays, leaveTypeId)
+  const drafts: readonly EntryDraft[] = leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title, done: false }))
+  // R-17・F-306: 別のタブで記録が変わっていても、休みの日と重なる日程は入れない
+  const checks = drafts.map((d) => checkEntryDraft(input, d, null))
+  const errors = [...new Set(checks.flatMap((c) => c.errors))]
+  const overOneDay = checks.some((c) => c.overOneDay)
+  // 休む日が 1 つの付与年に入るときだけ、その付与年の残りを添える（§5.1）
+  const remainingOf = (typeId: string): number | null =>
+    deltas.length === 1 ? (balanceOf({ settings: input.settings, entries: input.entries, leaveTypeId: typeId, grantYearStart: deltas[0].grantYearStart })?.remaining ?? null) : null
+  const typeLabel = (t: { id: string; name: string }) => {
+    const remaining = remainingOf(t.id)
+    return remaining === null ? t.name : leaveTypeWithRemaining(t.name, remaining, workMinutes)
+  }
   const thisStart = currentGrantYear(input)?.start
   // 休む日を休みに足したときの連休。候補の行の連休と同じ（F-203）
   const added = leaveDays.map((date, i) => ({ id: `add-${i}`, date, leaveTypeId, amount: { unit: 'day' } as const, title: '', done: false }))
@@ -39,13 +52,13 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
             <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={FIELD_CLASS}>
               {leaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {typeLabel(t)}
                 </option>
               ))}
             </select>
           </Field>
         ) : (
-          <Line label={T.leaveTypeLabel}>{leaveTypes[0].name}</Line>
+          <Line label={T.leaveTypeLabel}>{typeLabel(leaveTypes[0])}</Line>
         )}
         {deltas.length === 0 ? (
           <p className="text-sm text-sub">{T.enterGrantToSee}</p>
@@ -64,6 +77,12 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
         <Field label={T.entryTitleLabel}>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
+        {errors.map((e) => (
+          <p key={e} role="alert" className="text-sm text-danger">
+            {errorText(e)}
+          </p>
+        ))}
+        {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
       </div>
       <SheetButtons>
         <button type="button" onClick={onClose} className={SECONDARY_BUTTON_CLASS}>
@@ -71,7 +90,8 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => onSubmit(leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title, done: false })))}
+          disabled={errors.length > 0}
+          onClick={() => onSubmit(drafts)}
           className={PRIMARY_BUTTON_CLASS}
         >
           {T.submitAdd}

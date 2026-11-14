@@ -1,6 +1,6 @@
-import { type IsoDate, addDays } from '@/domain/shared/date'
-import type { Quarter } from '@/domain/quarters/quarters'
-import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import { type IsoDate, addDays } from '../shared/date'
+import type { Quarter } from '../quarters/quarters'
+import { type PlannerInput, restCalendarOf } from './input'
 
 /**
  * 画面定義書 §5.2: 「日を足す」の日付の初期値。開いている四半期の中の、今日以降で最も早い平日

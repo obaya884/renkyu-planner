@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons } from '@/app/components/Sheet'
 import { T, errorText, grantDayText, grantPeriodText } from '@/app/texts'
 import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
-import { balanceOf, grantDaysOf } from '@/domain/leave/balance'
+import { carryOverOf, grantDaysOf } from '@/domain/leave/balance'
 import { grantYearOf } from '@/domain/leave/grantYear'
-import { type IsoDate, addDays } from '@/domain/shared/date'
-import { type PlannerInput, currentGrantYear } from '@/domain/view/input'
+import type { IsoDate } from '@/domain/shared/date'
+import type { PlannerInput } from '@/domain/view/input'
 
 type Props = {
   input: PlannerInput
@@ -19,26 +19,17 @@ type Props = {
 const pad = (n: number) => String(n).padStart(2, '0')
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1)
 
-/** 繰り越しの初期値（F-405）。設定があればその値。無ければ、今の付与年の次の付与年のときだけ、今の有休の未割り当て（0 未満なら 0） */
-function initialCarryOver(input: PlannerInput, start: IsoDate): number {
-  const set = input.settings.grantYears[start]
-  if (set) return set.carryOverMinutes
-  const current = currentGrantYear(input)
-  if (current === null || addDays(current.end, 1) !== start) return 0
-  const balance = balanceOf({ settings: input.settings, entries: input.entries, leaveTypeId: 'paid', grantYearStart: current.start })
-  return Math.max(0, balance?.unassigned ?? 0)
-}
-
 /** §5.3 の中身。入力欄の値だけを状態に持つ。検証は checkGrantDraft を呼ぶだけ */
 export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Props) {
   const { settings } = input
   const { workMinutes } = settings
   const first = grantYearStart === null
 
-  const carry0 = first ? 0 : initialCarryOver(input, grantYearStart)
+  // 初期値は、付与年の設定があればその値、無ければ前の年から引き継ぐ値（R-13・F-405）
+  const carry0 = first ? 0 : carryOverOf({ settings, entries: input.entries, grantYearStart })
   const [month, setMonth] = useState(4)
   const [day, setDay] = useState(1)
-  const [grantDays, setGrantDays] = useState(first ? '' : String(settings.grantYears[grantYearStart]?.grantDays ?? grantDaysOf(settings, grantYearStart)))
+  const [grantDays, setGrantDays] = useState(first ? '' : String(grantDaysOf(settings, grantYearStart)))
   const [carryDays, setCarryDays] = useState(String(Math.floor(carry0 / workMinutes)))
   const [carryHours, setCarryHours] = useState(String(Math.floor((carry0 % workMinutes) / 60)))
   const [carryMins, setCarryMins] = useState(String((carry0 % workMinutes) % 60))
@@ -50,16 +41,19 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
     grantDays: grantDays === '' ? Number.NaN : Number(grantDays),
     carryOverMinutes: Number(carryDays) * workMinutes + Number(carryHours) * 60 + Number(carryMins),
   }
-  const errors = checkGrantDraft(draft).filter((e) => !(e === 'invalidGrantDays' && grantDays === ''))
-  const canSubmit = checkGrantDraft(draft).length === 0
+  const allErrors = checkGrantDraft(draft)
+  const errors = allErrors.filter((e) => !(e === 'invalidGrantDays' && grantDays === ''))
+  const canSubmit = allErrors.length === 0
 
-  const start = grantYearStart ?? grantYearOf(input.today, grantDay).start
+  // 初めての入力は、入れた付与日と今日から付与年が決まる。付与日が正しくないあいだは期間を出さない
+  const year = first && allErrors.includes('invalidGrantDay') ? null : grantYearOf(first ? input.today : grantYearStart, grantDay)
+  const start = grantYearStart ?? year?.start ?? input.today
 
   return (
     <>
       <div>
         <h2 className="text-lg font-bold">{T.grantTitle}</h2>
-        {!first && <p className="text-sm text-sub">{grantPeriodText(grantYearStart, grantYearOf(grantYearStart, grantDay).end)}</p>}
+        {year !== null && <p className="text-sm text-sub">{grantPeriodText(year.start, year.end)}</p>}
       </div>
       <div className="space-y-3">
         {first ? (
