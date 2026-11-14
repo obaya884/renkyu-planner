@@ -1,15 +1,21 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BalanceCards } from '@/app/components/BalanceCards'
 import { InviteCard } from '@/app/components/InviteCard'
 import { LongBreakStrip } from '@/app/components/LongBreakStrip'
 import { Notices } from '@/app/components/Notices'
+import { QuarterSection } from '@/app/components/QuarterSection'
+import { QuarterTabs } from '@/app/components/QuarterTabs'
+import { StickySummary } from '@/app/components/StickySummary'
 import { HolidayNote } from '@/app/components/StaticCandidates'
 import { APP_DESCRIPTION } from '@/app/site'
-import { usePlanner } from '@/app/store/usePlanner'
+import { T } from '@/app/texts'
+import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import { type IsoDate, todayInJapan } from '@/domain/shared/date'
+import { planningQuarters } from '@/domain/quarters/quarters'
+import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 
 /** Task 9 で面を開く操作に差し替える */
@@ -29,6 +35,16 @@ const todayOnServer = () => null
 export function Planner({ holidays, children }: { holidays: HolidayData; children: React.ReactNode }) {
   const { ready, data, canSave, unreadable } = usePlanner()
   const today: IsoDate | null = useSyncExternalStore(subscribeToday, todayOnClient, todayOnServer)
+  // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
+  const [shift, setShift] = useState(0)
+  const [selected, setSelected] = useState<IsoDate | null>(null)
+  // PC の「過ぎた四半期の記録を見る」で足した節まで動かすための印（描いたあとに動かす）
+  const scrollTarget = useRef<IsoDate | null>(null)
+  useEffect(() => {
+    if (scrollTarget.current === null) return
+    document.getElementById(`quarter-${scrollTarget.current}`)?.scrollIntoView({ block: 'start' })
+    scrollTarget.current = null
+  }, [shift])
 
   if (!ready || today === null) {
     return (
@@ -45,6 +61,21 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
 
   const { settings, entries } = data
   const summary = buildSummary({ holidays, settings, entries, today })
+
+  // スマホのタブは shift の位置から 4 つ。PC は、その最初から今日の四半期の 3 つ先まで全部（HTML は 1 つ）
+  const tabQuarters = planningQuarters(today, shift)
+  const shown = [...tabQuarters.slice(0, -shift), ...planningQuarters(today)]
+  const views = buildQuarterViews({ holidays, settings, entries, today }, shown)
+  const mobileSelected = tabQuarters.find((q) => q.start === selected)?.start ?? tabQuarters[0].start
+  const canGoBack = entries.some((e) => e.date < shown[0].start)
+  const goBack = () => {
+    setShift(shift - 1)
+    setSelected(null)
+  }
+  const markDone = (id: string) => {
+    const e = entries.find((x) => x.id === id)
+    if (e) plannerStore.updateEntry(id, { date: e.date, leaveTypeId: e.leaveTypeId, amount: e.amount, title: e.title, done: true })
+  }
   return (
     <>
       <Notices canSave={canSave} unreadable={unreadable} />
@@ -61,7 +92,56 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           <LongBreakStrip summary={summary} />
         </div>
       </div>
-      <HolidayNote confirmedUntil={holidays.confirmedUntil} />
+      <div className="sticky top-0 z-20 bg-white lg:hidden">
+        {summary.state === 'set' && <StickySummary summary={summary} workMinutes={settings.workMinutes} />}
+        <QuarterTabs
+          quarters={tabQuarters}
+          selected={mobileSelected}
+          onSelect={setSelected}
+          canGoBack={canGoBack}
+          canGoForward={shift < 0}
+          onBack={goBack}
+          onForward={() => {
+            setShift(shift + 1)
+            setSelected(null)
+          }}
+        />
+      </div>
+      <div className="space-y-6">
+        {views.map((view) => (
+          <div
+            key={view.quarter.start}
+            id={`quarter-${view.quarter.start}`}
+            className={view.quarter.start === mobileSelected ? '' : 'hidden lg:block'}
+          >
+            <QuarterSection
+              view={view}
+              workMinutes={settings.workMinutes}
+              leaveTypes={settings.leaveTypes}
+              onAdd={noop}
+              onOpen={noop}
+              onMarkDone={markDone}
+              onAddDay={noop}
+              onEnterGrant={noop}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <HolidayNote confirmedUntil={holidays.confirmedUntil} />
+        {canGoBack && (
+          <button
+            type="button"
+            onClick={() => {
+              scrollTarget.current = planningQuarters(today, shift - 1)[0].start
+              goBack()
+            }}
+            className="hidden min-h-11 shrink-0 text-sm text-primary lg:block"
+          >
+            {T.viewPast}
+          </button>
+        )}
+      </div>
     </>
   )
 }

@@ -1,7 +1,8 @@
 import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
-import { formatMinutes } from '@/domain/leave/amount'
+import { formatMinutes, toMinutes } from '@/domain/leave/amount'
+import type { Amount } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import { weekday } from '@/domain/shared/date'
 
@@ -25,6 +26,20 @@ export const T = {
   inviteButton: '付与日と日数を入れる',
   // 最初の HTML の一覧（N-04。見出しは画面定義書にない仮）
   staticCandidatesHeading: '連休の候補',
+  // §3.4〜§3.8
+  back: '‹ 前',
+  forward: '次 ›',
+  tabsLabel: '四半期',
+  candidates: '候補',
+  noCandidates: 'この四半期の候補はありません',
+  restHasLong: '長めあり',
+  enterGrant: '日数を入れる',
+  noLongBreak: 'まだない',
+  done: '取得済み',
+  legendOff: '土日・祝日',
+  legendCompany: '会社の休日',
+  legendGrant: '付与日',
+  viewPast: '過ぎた四半期の記録を見る',
   // §3.5〜§3.8
   addToPlan: '日程に入れる',
   entries: '日程',
@@ -45,7 +60,8 @@ export const T = {
   overOneDay: 'この日の合計が 1日を超えています',
 } as const
 
-const WEEKDAY_NAMES = ['日', '月', '火', '水', '木', '金', '土']
+/** 日曜始まり。月カレンダーの曜日の行にも使う */
+export const WEEKDAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const
 
 const monthDay = (d: IsoDate) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
 
@@ -62,6 +78,16 @@ export function formatPeriod(run: Run): string {
 /** 例: 2027年12月31日 */
 export function formatJapaneseDate(d: IsoDate): string {
   return `${d.slice(0, 4)}年${Number(d.slice(5, 7))}月${Number(d.slice(8, 10))}日`
+}
+
+/** 月カレンダーの見出し。例: 11月 */
+export function monthCaption(month: IsoDate): string {
+  return `${Number(month.slice(5, 7))}月`
+}
+
+/** タブの上の行。例: 2026年 */
+export function yearLabel(d: IsoDate): string {
+  return `${d.slice(0, 4)}年`
 }
 
 /** 例: 2026年 10〜12月 */
@@ -127,6 +153,53 @@ export function describeCandidate(c: CandidateLike): string {
 /** 主な画面用で、期間を含まない。例: 11/20(金) を休むと 4連休 */
 export function candidateText(c: CandidateLike): string {
   return `${c.leaveDays.map(formatDay).join('・')} を休むと ${c.run.days}連休`
+}
+
+/** 日程の量（1 日・半日・分）。例: 1 日、2 時間 */
+export function amountText(amount: Amount, workMinutes: number): string {
+  return formatAmount(toMinutes(amount, workMinutes), workMinutes)
+}
+
+/** §3.7 のまとめた行。例: 2 日以上休む取り方（7） */
+export function restSummary(count: number): string {
+  return `2 日以上休む取り方（${count}）`
+}
+
+/** §3.7 の祝日のない月の行。例: 12月は祝日がありません。金曜か月曜を休むと 3連休（8） */
+export function monthGapSummary(month: IsoDate, runDays: number, count: number): string {
+  return `${Number(month.slice(5, 7))}月は祝日がありません。金曜か月曜を休むと ${runDays}連休（${count}）`
+}
+
+/** §3.7 の 2 行目。例: 2日使う */
+export function leaveDaysUsed(days: number): string {
+  return `${days}日使う`
+}
+
+/** F-211。例: 有休が 6 時間足りません */
+export function shortText(minutes: number, workMinutes: number): string {
+  return `有休が ${formatAmount(minutes, workMinutes)}足りません`
+}
+
+/** §3.8 の連休の見出し・添え書き。例: 12/26〜1/3 の 9連休 */
+export function runHeading(run: Run): string {
+  return `${formatPeriod(run)} の ${run.days}連休`
+}
+
+/** §3.5。例: 長めの休暇: 12/26〜1/3（9連休） */
+export function longBreakLine(run: Run | null): string {
+  return `${T.longBreak}: ${run === null ? T.noLongBreak : `${formatPeriod(run)}（${run.days}連休）`}`
+}
+
+/** §3.6 の付与日の 1 行。例: 5/1 から次の付与年（前の年と同じ 14日で計算中） */
+export function grantNoteText(date: IsoDate, entered: boolean, grantDays: number): string {
+  const head = `${monthDay(date)} から次の付与年`
+  return entered ? `${head}（有休 ${grantDays}日）` : `${head}（前の年と同じ ${grantDays}日で計算中）`
+}
+
+/** §3.4 の持ち分の 1 行。例: 有休 残り 9 日と 2 時間・未割り当て 4 日と 2 時間。不足なら「不足 6 時間」 */
+export function summaryLine(name: string, remaining: number, unassigned: number, short: boolean, workMinutes: number): string {
+  const rest = short ? `${T.short} ${formatAmount(unassigned, workMinutes)}` : `${T.unassigned} ${formatAmount(Math.max(0, unassigned), workMinutes)}`
+  return `${remainingLabel(name)} ${formatAmount(remaining, workMinutes)}・${rest}`
 }
 
 /** R-11 の形のまま */
