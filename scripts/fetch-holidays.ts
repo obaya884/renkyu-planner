@@ -15,7 +15,11 @@ async function main(): Promise<void> {
   const parsed = parseHolidayCsv(text)
   if (!parsed.ok) throw new Error(parsed.reason)
 
-  const prev: HolidayData | null = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf-8')) : null
+  // checkedAt を足す前の holidays.json には無いので、updatedAt で補ってから渡す
+  const stored: (Omit<HolidayData, 'checkedAt'> & { checkedAt?: HolidayData['checkedAt'] }) | null = existsSync(OUT)
+    ? JSON.parse(readFileSync(OUT, 'utf-8'))
+    : null
+  const prev: HolidayData | null = stored && { ...stored, checkedAt: stored.checkedAt ?? stored.updatedAt }
   const merged = mergeHolidayData(prev, parsed.value, todayInJapan(new Date()))
   if (!merged.ok) throw new Error(merged.reason)
 

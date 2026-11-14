@@ -3,19 +3,19 @@ import type { Result } from '../shared/result'
 
 export type HolidayData = Readonly<{
   updatedAt: IsoDate
+  checkedAt: IsoDate
   confirmedUntil: IsoDate
   holidays: Readonly<Record<IsoDate, string>>
 }>
 
+const CSV_HEADER = '国民の祝日・休日月日,国民の祝日・休日名称'
 const CSV_DATE = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/
 
 /** 内閣府の祝日 CSV（UTF-8 に直したあと）を読む。1 行でも読めなければ失敗（R-16） */
 export function parseHolidayCsv(text: string): Result<Record<IsoDate, string>> {
-  const lines = text
-    .replace(/^\uFEFF/, '')
-    .split(/\r?\n/)
-    .slice(1) // 1 行目は見出し
-    .filter((line) => line.trim() !== '')
+  const [header, ...rest] = text.replace(/^\uFEFF/, '').split(/\r?\n/)
+  if (header.trim() !== CSV_HEADER) return { ok: false, reason: `見出しの行が違います: ${header.trim()}` }
+  const lines = rest.filter((line) => line.trim() !== '')
   const holidays: Record<IsoDate, string> = {}
   for (const line of lines) {
     const cols = line.split(',')
@@ -23,6 +23,7 @@ export function parseHolidayCsv(text: string): Result<Record<IsoDate, string>> {
     if (!m) return { ok: false, reason: `読めない行があります: ${line}` }
     const date = `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
     if (!isValidIsoDate(date)) return { ok: false, reason: `日付の形が違う行があります: ${line}` }
+    if (date in holidays) return { ok: false, reason: `同じ日付の行が 2 つ以上あります: ${date}` }
     holidays[date] = cols[1].trim()
   }
   if (Object.keys(holidays).length === 0) return { ok: false, reason: '祝日が 1 件も読めませんでした' }
@@ -40,8 +41,8 @@ export function mergeHolidayData(
 
   if (prev) {
     const prevDates = Object.keys(prev.holidays)
-    const lost = prevDates.find((d) => d < today && !(d in next))
-    if (lost) return { ok: false, reason: `過去の祝日が消えています: ${lost}` }
+    const lost = prevDates.find((d) => !(d in next))
+    if (lost) return { ok: false, reason: `既存の祝日が消えています: ${lost}` }
     if (dates.length < prevDates.length * 0.9) {
       return { ok: false, reason: `件数が既存の 9 割未満です（${dates.length} 件 / 既存 ${prevDates.length} 件）` }
     }
@@ -57,6 +58,7 @@ export function mergeHolidayData(
     ok: true,
     value: {
       updatedAt: unchanged ? prev.updatedAt : today,
+      checkedAt: today,
       confirmedUntil: `${dates[dates.length - 1].slice(0, 4)}-12-31`,
       holidays,
     },

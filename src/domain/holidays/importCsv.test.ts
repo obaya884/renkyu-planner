@@ -16,7 +16,7 @@ describe('祝日の取り込み（F-601・F-603・F-604、R-16）', () => {
     expect(r.ok && r.value.updatedAt).toBe('2026-11-15')
   })
   test('F-605: 内容が同じなら更新日を変えない。変われば今日にする', () => {
-    const prev = { updatedAt: '2026-02-03', confirmedUntil: '2027-12-31', holidays: { '2026-11-03': '文化の日', '2027-01-01': '元日' } }
+    const prev = { updatedAt: '2026-02-03', checkedAt: '2026-02-03', confirmedUntil: '2027-12-31', holidays: { '2026-11-03': '文化の日', '2027-01-01': '元日' } }
     const same = mergeHolidayData(prev, { ...prev.holidays }, '2026-12-01')
     expect(same.ok && same.value.updatedAt).toBe('2026-02-03')
     const added = mergeHolidayData(prev, { ...prev.holidays, '2028-01-01': '元日' }, '2027-02-05')
@@ -29,7 +29,7 @@ describe('祝日の取り込み（F-601・F-603・F-604、R-16）', () => {
   })
   test('Review Focus 5: 過去の祝日が消えた・件数が 9 割未満なら反映しない', () => {
     const holidays = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`2026-01-${String(i + 1).padStart(2, '0')}`, '祝']))
-    const prev = { updatedAt: '2026-02-03', confirmedUntil: '2026-12-31', holidays }
+    const prev = { updatedAt: '2026-02-03', checkedAt: '2026-02-03', confirmedUntil: '2026-12-31', holidays }
     const { ['2026-01-05']: _gone, ...lostOne } = holidays
     expect(mergeHolidayData(prev, lostOne, '2026-11-15').ok).toBe(false)
     const few = Object.fromEntries(Object.entries(holidays).slice(0, 17))
@@ -37,5 +37,30 @@ describe('祝日の取り込み（F-601・F-603・F-604、R-16）', () => {
   })
   test('R-16: 祝日が 1 件もない表は反映しない', () => {
     expect(mergeHolidayData(null, {}, '2026-11-15').ok).toBe(false)
+  })
+  test('R-16: 見出しの行が違えば失敗', () => {
+    const garbled = ['蝗ｽ豌代・逾晄律繝ｻ莨第律譛域律,蝗ｽ豌代・逾晄律繝ｻ莨第律蜷咲ｧｰ', '2026/11/3,文化の日', ''].join('\r\n')
+    expect(parseHolidayCsv(garbled).ok).toBe(false)
+    expect(parseHolidayCsv(['名前,日付', '2026/11/3,文化の日'].join('\r\n')).ok).toBe(false)
+  })
+  test('R-16: 同じ日付の行が 2 つあれば失敗', () => {
+    const dup = [CSV.split('\r\n')[0], '2026/11/3,文化の日', '2026/11/03,文化の日', ''].join('\r\n')
+    expect(parseHolidayCsv(dup).ok).toBe(false)
+  })
+  test('R-16・Review Focus 5: 行の境目で切れて今日以降の祝日だけが消えた内容は反映しない', () => {
+    const holidays = Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`2026-01-${String(i + 1).padStart(2, '0')}`, '祝']))
+    const prev = { updatedAt: '2026-02-03', checkedAt: '2026-02-03', confirmedUntil: '2026-12-31', holidays }
+    const { ['2026-01-20']: _gone, ...lostLast } = holidays
+    expect(mergeHolidayData(prev, lostLast, '2025-12-01').ok).toBe(false)
+    expect(mergeHolidayData(prev, lostLast, '2026-01-10').ok).toBe(false)
+  })
+  test('R-16: 確認した日は成功するたびに今日。内容が同じなら更新日は変えない', () => {
+    const prev = { updatedAt: '2026-02-03', checkedAt: '2026-02-03', confirmedUntil: '2027-12-31', holidays: { '2026-11-03': '文化の日', '2027-01-01': '元日' } }
+    const same = mergeHolidayData(prev, { ...prev.holidays }, '2026-12-01')
+    expect(same.ok && same.value).toMatchObject({ updatedAt: '2026-02-03', checkedAt: '2026-12-01' })
+    const added = mergeHolidayData(prev, { ...prev.holidays, '2028-01-01': '元日' }, '2027-02-05')
+    expect(added.ok && added.value).toMatchObject({ updatedAt: '2027-02-05', checkedAt: '2027-02-05' })
+    const first = mergeHolidayData(null, { ...prev.holidays }, '2026-11-15')
+    expect(first.ok && first.value.checkedAt).toBe('2026-11-15')
   })
 })

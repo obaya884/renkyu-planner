@@ -25,11 +25,17 @@ jobs:
       - name: 差分があれば main へ push する
         run: |
           if git diff --quiet -- src/data/holidays.json; then
-            echo "祝日データに変更はありません"
+            echo "祝日データに差分はありません"
             exit 0
+          fi
+          # checkedAt の行だけの差分なら、内容は変わっていない
+          if git diff -I'"checkedAt"' --quiet -- src/data/holidays.json; then
+            message="chore(holidays): 祝日データを確認（変更なし）"
+          else
+            message="chore(holidays): 祝日データを更新"
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/data/holidays.json
-          git commit -m "chore(holidays): 祝日データを更新"
+          git commit -m "$message"
           git push origin HEAD:main
