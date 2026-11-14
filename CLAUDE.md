@@ -49,12 +49,15 @@ npm run holidays:fetch  # 内閣府の CSV から src/data/holidays.json を更�
 
 ```
 src/domain/   計算の純関数。I/O・引数なしの new Date()・Date.now()・クラスを書かない。型は Readonly。React と Next.js を知らない
-  view/       表示用の組み立て（持ち分のカード、四半期の節など）。画面は計算せず、ここの結果を描く
+  view/       表示用の組み立て（持ち分、四半期の節など）。文言を含まないデータ。画面は計算せず、ここの結果を描く
+  storage/    保存するデータの検証
+  entries/    入力の検証
 src/data/     同梱する祝日データ（holidays.json）
 src/app/      Next.js の画面。site.ts にサービス名・題・説明文を持つ
-  store/      記録のストア（localStorage への読み書きと、変える操作）
-  components/ 表示だけの部品。props で受けた組み立てと文言を描く
-  texts.ts    画面に出す文言（部品の中に日本語を直接書かない）
+  Planner.tsx 端末で動く主な画面
+  store/      記録のストア。localStorage に触るのはここだけ
+  components/ 表示だけの部品。計算をしない
+  texts.ts    画面の文言は全部ここ
 scripts/      祝日の取り込み
 ```
 
@@ -63,6 +66,10 @@ scripts/      祝日の取り込み
 - 週の休みは土曜と日曜に固定（F-105）
 - MVP ではサーバー側の処理（API ルート、Server Actions、`cookies()` などの動的 API）を書かない（N-01）。`output: 'export'` は使わない
 - テストはコロケーション（`foo.ts` の隣に `foo.test.ts`）。モックを使わない。テスト名は日本語で、対応する要求 ID か規則 ID を入れる
+- 画面の部品に日本語の文字列を直接書かない。文言は `src/app/texts.ts` に置く
+- 部品は `src/domain/view/` の組み立てを描くだけにし、計算や判定をしない
+- 部品のテストは `renderToStaticMarkup` で HTML を確かめる
+- テストは日本以外のタイムゾーン（`vitest.config.mts` の `TZ`）で流れる
 - `src/domain/**` の禁止事項は ESLint の `no-restricted-syntax` が守る（`eslint.config.mjs`）
 
 ## 開発の進め方
