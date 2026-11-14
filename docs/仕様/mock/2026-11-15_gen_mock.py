@@ -181,7 +181,7 @@ CSS = """
 
 def tabs(on):
     items = [("2026年", "10〜12月", True), ("2027年", "1〜3月", False), ("2027年", "4〜6月", False), ("2027年", "7〜9月", False)]
-    h = '<div class="tabs">'
+    h = '<div class="tabs"><div class="past">‹ 前</div>'
     for i, (y, m, has) in enumerate(items):
         h += f'<div class="{"on" if i == on else ""}"><small>{y}</small>{m}</div>'
     return h + "</div>"
@@ -196,7 +196,7 @@ def cals(y, ms):
 
 
 
-foot = '<div class="s" style="margin:10px 12px 0;padding-top:6px;border-top:1px solid #e5e7eb">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="lnk">くわしく</span><div style="margin-top:6px"><span class="lnk">過ぎた四半期の記録を見る</span></div></div>'
+foot = '<div class="s" style="margin:10px 12px 0;padding-top:6px;border-top:1px solid #e5e7eb">祝日は内閣府の公表データです。2027年12月31日まで確定。<span class="lnk">くわしく</span></div>'
 cand4 = '<div class="row"><div class="g">11/20(金) を休むと 4連休<div class="s">11/20〜11/23</div></div><div class="btn">日程に入れる</div></div>'
 ents4 = """<div class="row"><div class="g">10/7(水) 2時間 体調不良<div class="s">取得済み</div></div><span class="s">›</span></div>
     <div class="row"><div class="g">11/2(月) 1日 連休作成<div class="s">取得済み・10/31〜11/3 の 4連休</div></div><span class="s">›</span></div>
@@ -263,6 +263,7 @@ sp6 = empty("""<div class="dim"></div><div class="sheet">
   <div class="kv"><span>付与日</span><span><span class="in" style="width:auto;color:#1f2937">5月</span> <span class="in" style="width:auto;color:#1f2937">1日</span></span></div>
   <div class="kv"><span>付与日数</span><span><span class="in" style="width:auto;color:#1f2937">14</span> 日</span></div>
   <div class="kv"><span>前の年からの繰り越し</span><span><span class="in" style="width:auto">0</span> 日（任意）</span></div>
+  <div class="s" style="padding:8px 0 0">入れた内容は、このブラウザの中にだけ保存します。運営には送られません。</div>
   <div class="go">残りを出す</div><div class="no">やめる</div></div>""")
 pc_empty_cals = cals(2026, (10, 11, 12))
 EMPTY = False
@@ -348,6 +349,7 @@ dlg_grant = """<h5>有休の付与日と日数</h5>
   <div class="kv"><span>付与日</span><span><span class="in" style="color:#1f2937">5月</span> <span class="in" style="color:#1f2937">1日</span></span></div>
   <div class="kv"><span>付与日数</span><span><span class="in" style="color:#1f2937">14</span> 日</span></div>
   <div class="kv"><span>前の年からの繰り越し</span><span><span class="in">0</span> 日（任意）</span></div>
+  <div style="color:#6b7280;font-size:11px;padding-top:10px;border-top:1px solid #e5e7eb">入れた内容は、このブラウザの中にだけ保存します。運営には送られません。</div>
   <div class="acts"><span class="no">やめる</span><span class="go">残りを出す</span></div>"""
 pc2 = pcmodal(pchead + sec4, dlg_add)
 pc3 = pcmodal(pchead + sec4, dlg_edit)
@@ -381,20 +383,20 @@ html = PAGE + CSS + f"""</head><body>
 
 <h2>スマホ</h2>
 <div class="ph-wrap">
-{phone(1, "主な画面（10〜12月のタブ）", "上から、持ち分、長めの休暇の 1 行、四半期のタブ、タブの中身（長めの休暇、月カレンダー、候補、日程）、祝日の 1 行と「過ぎた四半期の記録を見る」。日程は 1 日 1 行で、同じ連休の日程は連休の見出しの下にまとめる。", sp1)}
+{phone(1, "主な画面（10〜12月のタブ）", "上から、持ち分、長めの休暇の 1 行、四半期のタブ、タブの中身（長めの休暇、月カレンダー、候補、日程）、祝日の 1 行。過ぎた四半期は、タブの左の「‹ 前」で見返す。日程は 1 日 1 行で、同じ連休の日程は連休の見出しの下にまとめる。", sp1)}
 {phone(2, "付与日がある四半期（4〜6月のタブ）", "付与日はカレンダーの日付に紫の枠。次の年の日数が未入力なら「前の年と同じ 14日で計算中」と出す。5/1 以降を休む候補には「次の付与年から引く」。", sp2)}
 {phone(3, "「日程に入れる」を押した面", "下から出る面で、休む日・連休・引く休暇・未割り当ての変化を確かめてから入れる。予定の名前もここで入れられる。", sp3, True)}
 {phone(4, "日程を押した面", "量、引く休暇、予定の名前、状態を直す。Google カレンダーへの追加と、消す操作もここ。「＋ 日を足す」は、日付の欄が加わった同じ面。", sp4, True)}
 </div>
 <div class="ph-wrap">
 {phone(5, "何も設定していない人の主な画面", "候補は土日と祝日だけで計算して出す。持ち分の場所に、付与日と日数の入力を誘うカードを置く。", sp5)}
-{phone(6, "付与日と日数を入れる面", "誘いのカードを押すと下から出る。付与日、付与日数、繰り越し（任意）。", sp6, True)}
+{phone(6, "付与日と日数を入れる面", "誘いのカードを押すと下から出る。付与日、付与日数、繰り越し（任意）。ボタンの上に、ブラウザの中にだけ保存して運営には送らないことを 1 行で伝える。", sp6, True)}
 {phone(7, "設定の面", "主な画面とは別の 1 枚。有休、所定労働時間、会社の休日、休暇の種類、記録の持ち出し、祝日について。", sp7)}
 </div>
 
 <h2>PC</h2>
 <div class="pcw">
-<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は、いちばん下の「過ぎた四半期の記録を見る」から開く（めったに押さないので、目立つ場所に置かない）。</p>
+<h3>8. 主な画面（設定済み）</h3><p class="why">タブを置かず、4 つの四半期を縦に並べる。カレンダーを左、候補と日程を右。過ぎた四半期は、いちばん下の「過ぎた四半期の記録を見る」から開く（めったに押さないので、目立つ場所に置かない。スマホはタブの左の「‹ 前」）。</p>
 <div class="pc">{pc1}</div>
 <h3>9. 主な画面（何も設定していない人）</h3><p class="why">持ち分の場所に誘いのカード。ほかはスマホの 5 と同じ内容。</p>
 <div class="pc">{pc0}</div>
@@ -402,7 +404,7 @@ html = PAGE + CSS + f"""</head><body>
 {pc2}
 <h3>11. 日程を押した面</h3><p class="why">中身はスマホの 4 と同じ。「この日程を消す」は左下に離して置く。</p>
 {pc3}
-<h3>12. 付与日と日数を入れる面</h3><p class="why">何も設定していない人が、誘いのカードを押したところ。中身はスマホの 6 と同じ。</p>
+<h3>12. 付与日と日数を入れる面</h3><p class="why">何も設定していない人が、誘いのカードを押したところ。中身はスマホの 6 と同じ（保存先を伝える 1 行も同じ）。</p>
 {pc4}
 </div>
 </body></html>
