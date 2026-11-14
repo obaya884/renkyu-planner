@@ -45,14 +45,15 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
     try {
       storage.setItem(UNREADABLE_KEY, text)
     } catch {
-      // 写しを取れなくても、空の記録で始める
+      // 写しが無いまま上書きすると元の記録を失うので、保存を止める（D-5）
+      return publish({ ready: true, data: EMPTY_STORED, canSave: false, unreadable: true })
     }
     return publish({ ready: true, data: EMPTY_STORED, canSave: true, unreadable: true })
   }
 
   const change = (data: StoredData) => {
     let canSave = state.canSave
-    if (storage !== null) {
+    if (storage !== null && canSave) {
       try {
         storage.setItem(STORAGE_KEY, serializeStored(data))
       } catch {

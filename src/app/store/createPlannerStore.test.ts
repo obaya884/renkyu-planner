@@ -57,7 +57,25 @@ test('D-5: 写しを書けなくても、空の記録で始める', () => {
   const m = memory({ [STORAGE_KEY]: 'x' })
   const s = createPlannerStore({ getItem: m.getItem, setItem: () => { throw new Error('full') } }, ids())
   s.load()
-  expect(s.getState()).toMatchObject({ ready: true, data: EMPTY_STORED, unreadable: true })
+  expect(s.getState()).toMatchObject({ ready: true, data: EMPTY_STORED, unreadable: true, canSave: false })
+})
+test('D-5: 写しを書けなかったときは、元の記録を上書きしない', () => {
+  const m = memory({ [STORAGE_KEY]: '{"version":2}' })
+  const s = createPlannerStore(
+    {
+      getItem: m.getItem,
+      setItem: (k, v) => {
+        if (k === UNREADABLE_KEY) throw new Error('full')
+        m.setItem(k, v)
+      },
+    },
+    ids(),
+  )
+  s.load()
+  expect(s.getState()).toMatchObject({ ready: true, unreadable: true, canSave: false })
+  s.addEntries([draft('2026-12-28')])
+  expect(m.dump()[STORAGE_KEY]).toBe('{"version":2}')
+  expect(s.getState().data.entries).toHaveLength(1)
 })
 test('Review Focus 4・D-8: 読み直すと、ほかのタブが書いた内容になる', () => {
   const m = memory()
