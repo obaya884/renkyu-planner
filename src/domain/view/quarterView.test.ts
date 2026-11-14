@@ -20,7 +20,7 @@ test('F-502: 月カレンダーの印と優先', () => {
   expect(cell(q4, '2026-11-04')?.mark).toBeNull()
   expect(q4.marks).toEqual(['done', 'planned', 'candidate', 'company', 'off'])
 })
-test('F-203・R-7: 候補の組。効率が同じ最良の候補を全部 primary に、残りを rest に', () => {
+test('F-203・R-7: 候補の組。休む日数がいちばん少ない候補を全部 primary に、残りを rest に', () => {
   const groups = q4.candidates.filter((b) => b.kind === 'group')
   expect(groups.map((g) => g.core)).toEqual(['2026-12-30', '2026-11-23']) // 12/25 を休むと 10 連休（効率 10）が先
   const nov = groups[1]
@@ -29,6 +29,19 @@ test('F-203・R-7: 候補の組。効率が同じ最良の候補を全部 primar
   expect(nov.rest).toHaveLength(7)
   expect(nov.restHasLong).toBe(true)
   expect(q4.candidates.some((b) => b.kind === 'monthGap')).toBe(false) // 12 月は平日に会社の休日がある
+})
+test('F-203・§5.1: primary は休む日数がいちばん少ない候補の全部（効率の差を問わない）。連休の長い順', () => {
+  const plan = (date: string) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }) as const
+  const input = { ...SHEET, entries: [...SHEET.entries, plan('2026-11-24'), plan('2026-11-25'), plan('2026-11-26')] }
+  const [v] = buildQuarterViews(input, qs)
+  const nov = v.candidates.find((b) => b.kind === 'group' && b.core === '2026-11-23')
+  if (nov?.kind !== 'group') throw new Error('11/23 の組が無い')
+  const primary = nov.primary.map((r) => r.leaveDays)
+  expect(primary).toContainEqual(['2026-11-27'])
+  expect(primary).toContainEqual(['2026-11-20'])
+  expect(primary.findIndex((d) => d[0] === '2026-11-27')).toBeLessThan(primary.findIndex((d) => d[0] === '2026-11-20'))
+  expect(nov.primary.every((r) => r.leaveDays.length === 1)).toBe(true)
+  expect(nov.rest.some((r) => r.leaveDays.length === 1)).toBe(false)
 })
 test('F-205・R-8: 祝日のない月は、組の後ろに 1 日ずつ', () => {
   const [u4] = buildQuarterViews(UNSET, qs)

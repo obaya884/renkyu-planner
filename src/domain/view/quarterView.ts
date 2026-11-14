@@ -115,11 +115,11 @@ function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { placed: Placed
   const cands = findCandidates({ ...range, entryDates: new Set(input.entries.map((e) => e.date)) })
 
   for (const g of groupCandidates(cands)) {
-    // 効率（run.days ÷ leaveDays.length）が最大のもの全部。掛け算で比べる
-    const best = g.candidates.reduce((a, b) => (b.run.days * a.leaveDays.length > a.run.days * b.leaveDays.length ? b : a))
-    const isBest = (c: Candidate) => c.run.days * best.leaveDays.length === best.run.days * c.leaveDays.length
-    const primary = g.candidates.filter(isBest).map((c) => candidateRow(ctx, c))
-    const rest = g.candidates.filter((c) => !isBest(c)).map((c) => candidateRow(ctx, c))
+    // §5.1: 休む日数がいちばん少ないもの全部を開かずに見せる。順は groupCandidates の R-7 のまま
+    const fewest = Math.min(...g.candidates.map((c) => c.leaveDays.length))
+    const isPrimary = (c: Candidate) => c.leaveDays.length === fewest
+    const primary = g.candidates.filter(isPrimary).map((c) => candidateRow(ctx, c))
+    const rest = g.candidates.filter((c) => !isPrimary(c)).map((c) => candidateRow(ctx, c))
     for (const r of primary) for (const d of r.leaveDays) primaryDays.add(d)
     placed.push({
       quarterStart: g.quarterStart,

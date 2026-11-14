@@ -195,9 +195,9 @@ export function amountText(amount: Amount, workMinutes: number): string {
   return formatAmount(toMinutes(amount, workMinutes), workMinutes)
 }
 
-/** §3.7 のまとめた行。例: 2 日以上休む取り方（7） */
+/** §3.7 のまとめた行。例: もっと多く休む取り方（7） */
 export function restSummary(count: number): string {
-  return `2 日以上休む取り方（${count}）`
+  return `もっと多く休む取り方（${count}）`
 }
 
 /** §3.7 の祝日のない月の行。例: 12月は祝日がありません。金曜か月曜を休むと 3連休（8） */

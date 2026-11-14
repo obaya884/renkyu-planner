@@ -28,7 +28,7 @@ test('F-203: 最良の候補は 1 件 1 行。残りは 1 行にまとめ、長�
   const h = html(<CandidateList blocks={q4.candidates} workMinutes={480} onAdd={noop} />)
   expect(h).toContain('11/20(金) を休むと 4連休')
   expect(h).toContain('11/24(火) を休むと 4連休')
-  expect(h).toContain('2 日以上休む取り方（7）')
+  expect(h).toContain('もっと多く休む取り方（7）')
   expect(h).toContain(T.restHasLong)
   expect(h).toContain('<details')
   expect(h.indexOf('12/25(金) を休むと 10連休')).toBeLessThan(h.indexOf('11/20(金) を休むと 4連休')) // 効率の順
