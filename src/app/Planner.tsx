@@ -10,7 +10,7 @@ import { LongBreakStrip } from '@/app/components/LongBreakStrip'
 import { Notices } from '@/app/components/Notices'
 import { QuarterSection } from '@/app/components/QuarterSection'
 import { QuarterTabs } from '@/app/components/QuarterTabs'
-import { StickySummary } from '@/app/components/StickySummary'
+import { BELOW_SUMMARY_TOP, StickySummary } from '@/app/components/StickySummary'
 import { HolidayNote } from '@/app/components/StaticCandidates'
 import { defaultDayFor } from '@/domain/view/defaultDay'
 import { APP_DESCRIPTION } from '@/app/site'
@@ -109,6 +109,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
 
   const { settings, entries } = data
   const { summary, tabQuarters, canGoBack, views } = built
+  // 持ち分のカードが画面の外へ流れたあと、スマホと PC の両方で 1 行を張り付ける（§3.4・§4）
+  const summaryShown = summary.state === 'set' && !cardsVisible
   const mobileSelected = tabQuarters.find((q) => q.start === selected)?.start ?? tabQuarters[0].start
   const goBack = () => {
     setShift(shift - 1)
@@ -138,8 +140,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           <LongBreakStrip summary={summary} />
         </div>
       </div>
-      <div className="sticky top-0 z-20 bg-white lg:hidden">
-        {summary.state === 'set' && !cardsVisible && <StickySummary summary={summary} workMinutes={settings.workMinutes} />}
+      {summaryShown && <StickySummary summary={summary} workMinutes={settings.workMinutes} />}
+      <div className={`sticky z-20 bg-white lg:hidden ${summaryShown ? BELOW_SUMMARY_TOP : 'top-0'}`}>
         <QuarterTabs
           quarters={tabQuarters}
           selected={mobileSelected}
@@ -168,6 +170,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
               onMarkDone={markDone}
               onAddDay={() => openAddDay(view.quarter)}
               onEnterGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
+              belowSummary={summaryShown}
             />
           </div>
         ))}

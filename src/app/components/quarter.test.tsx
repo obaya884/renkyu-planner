@@ -103,3 +103,14 @@ test('F-401: 持ち分の 1 行は有休だけ。不足なら不足と出す。�
   expect(html(<StickySummary summary={s} workMinutes={480} />)).toContain('不足 6 時間')
   expect(html(<StickySummary summary={buildSummary(UNSET)} workMinutes={480} />)).toBe('')
 })
+test('§3.4・§4・F-401: 持ち分の 1 行は PC でも隠さず、流れの外（fixed）に置く。節の見出しは、1 行が出ているあいだその下に張り付く', () => {
+  const line = html(<StickySummary summary={buildSummary(SHEET)} workMinutes={480} />)
+  expect(line).not.toContain('lg:hidden')
+  expect(line).toContain('fixed')
+  expect(line).toContain('h-7')
+  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  expect(html(<QuarterSection view={q4} {...props} belowSummary />)).toContain('lg:top-7')
+  const top = html(<QuarterSection view={q4} {...props} belowSummary={false} />)
+  expect(top).toContain('lg:top-0')
+  expect(top).not.toContain('lg:top-7')
+})
