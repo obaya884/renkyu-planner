@@ -30,11 +30,21 @@ export type CandidateRow = Readonly<{
 
 export type CandidateBlock = Readonly<
   | { kind: 'group'; core: IsoDate; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }
-  | { kind: 'monthGap'; month: IsoDate; unconfirmed: boolean; rows: readonly CandidateRow[] }
+  | { kind: 'monthGap'; month: IsoDate; unconfirmed: boolean; runDays: number; rows: readonly CandidateRow[] }
 >
 
-export type EntryRow = Readonly<{ entry: Entry; overdue: boolean; overlap: boolean; run: Run | null }>
-export type EntryBlock = Readonly<{ run: Run | null; rows: readonly EntryRow[] }>
+export type EntryRow = Readonly<{
+  entry: Entry
+  overdue: boolean
+  overlap: boolean
+  run: Run | null
+  /** run が長め（5 日以上）。run が null なら false */
+  long: boolean
+  /** 有休以外の休暇の種類の名前。有休か、種類が見つからないときは null */
+  leaveTypeName: string | null
+}>
+/** run があるのは、同じ連休に入る日程が 2 件以上の塊。long はその run が長め */
+export type EntryBlock = Readonly<{ run: Run | null; long: boolean; rows: readonly EntryRow[] }>
 
 export type GrantNote = Readonly<{ date: IsoDate; entered: boolean; grantDays: number }>
 
@@ -50,6 +60,9 @@ export type QuarterView = Readonly<{
 }>
 
 const LONG_RUN_DAYS = 5
+
+/** 連休が長め（5 日以上）か。連休の長めはここで 1 つに決める */
+const isLongRun = (run: Run | null): boolean => run !== null && run.days >= LONG_RUN_DAYS
 
 type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; nextGrantYearStart: IsoDate | null }>
 
@@ -75,19 +88,19 @@ function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[]): num
   return short > 0 ? short : null
 }
 
-function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, unconfirmed: boolean): CandidateRow {
+function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean, unconfirmed: boolean): CandidateRow {
   const next = ctx.nextGrantYearStart
   return {
     leaveDays,
     run,
-    long: run.days >= LONG_RUN_DAYS,
+    long,
     unconfirmed,
     nextGrantYear: next !== null && leaveDays.some((d) => d >= next),
     shortMinutes: shortMinutesOf(ctx.input, leaveDays),
   }
 }
 
-const candidateRow = (ctx: Ctx, c: Candidate) => rowOf(ctx, c.leaveDays, c.run, c.unconfirmed)
+const candidateRow = (ctx: Ctx, c: Candidate) => rowOf(ctx, c.leaveDays, c.run, c.long, c.unconfirmed)
 
 /** d を休みの日に足したカレンダーで、d を含む連休 */
 function runWithLeave(cal: RestCalendar, d: IsoDate): Run | null {
@@ -127,9 +140,13 @@ function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { placed: Placed
 
   for (const gap of monthGaps({ ...range, entries: input.entries })) {
     // 金曜か月曜を休めば土日と続くので、連休は必ずある
-    const rows = gap.options.map((d) => rowOf(ctx, [d], runWithLeave(cal, d) as Run, gap.unconfirmed))
+    const rows = gap.options.map((d) => {
+      const run = runWithLeave(cal, d) as Run
+      return rowOf(ctx, [d], run, isLongRun(run), gap.unconfirmed)
+    })
+    const runDays = Math.min(...rows.map((r) => r.run.days))
     const quarter = active.find((q) => q.start <= gap.month && gap.month <= q.end)
-    if (quarter) placed.push({ quarterStart: quarter.start, block: { kind: 'monthGap', month: gap.month, unconfirmed: gap.unconfirmed, rows } })
+    if (quarter) placed.push({ quarterStart: quarter.start, block: { kind: 'monthGap', month: gap.month, unconfirmed: gap.unconfirmed, runDays, rows } })
   }
   return { placed, primaryDays }
 }
@@ -192,28 +209,31 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
     .map((entry) => {
       const kind = cal.kindOf(entry.date)
+      const run = entry.amount.unit === 'day' ? runContaining(cal, entry.date) : null
       return {
         entry,
         overdue: !entry.done && entry.date < input.today,
         overlap: kind !== null && kind !== 'leave',
-        run: entry.amount.unit === 'day' ? runContaining(cal, entry.date) : null,
+        run,
+        long: isLongRun(run),
+        leaveTypeName: entry.leaveTypeId === 'paid' ? null : (input.settings.leaveTypes.find((t) => t.id === entry.leaveTypeId)?.name ?? null),
       }
     })
   const keyOf = (run: Run) => `${run.start}/${run.end}`
   const counts = new Map<string, number>()
   for (const r of rows) if (r.run) counts.set(keyOf(r.run), (counts.get(keyOf(r.run)) ?? 0) + 1)
 
-  const blocks: { run: Run | null; rows: EntryRow[] }[] = []
-  const shared = new Map<string, { run: Run | null; rows: EntryRow[] }>()
+  const blocks: { run: Run | null; long: boolean; rows: EntryRow[] }[] = []
+  const shared = new Map<string, { run: Run | null; long: boolean; rows: EntryRow[] }>()
   for (const r of rows) {
     const key = r.run ? keyOf(r.run) : null
     if (key === null || (counts.get(key) ?? 0) < 2) {
-      blocks.push({ run: null, rows: [r] })
+      blocks.push({ run: null, long: false, rows: [r] })
       continue
     }
     let block = shared.get(key)
     if (!block) {
-      block = { run: r.run, rows: [] }
+      block = { run: r.run, long: isLongRun(r.run), rows: [] }
       shared.set(key, block)
       blocks.push(block)
     }

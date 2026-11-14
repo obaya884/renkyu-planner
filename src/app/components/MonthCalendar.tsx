@@ -13,7 +13,7 @@ export const MARK_CLASS: Readonly<Record<DayMark, string>> = {
 function Cell({ cell }: { cell: DayCell | null }) {
   if (cell === null) return <td />
   const classes = [
-    'mx-auto flex h-[18px] w-[18px] items-center justify-center rounded-sm text-[11px] leading-none',
+    'mx-auto flex aspect-square w-full max-w-[18px] items-center justify-center rounded-sm text-[11px] leading-none',
     cell.mark === null ? '' : MARK_CLASS[cell.mark],
     cell.grantDay ? 'outline outline-2 outline-offset-1 outline-long-line' : '',
   ]

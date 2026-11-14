@@ -5,5 +5,5 @@ import type { SummaryView } from '@/domain/view/summary'
 export function StickySummary({ summary, workMinutes }: { summary: SummaryView; workMinutes: number }) {
   const card = summary.cards.find((c) => c.leaveTypeId === 'paid')
   if (summary.state === 'unset' || card === undefined) return null
-  return <p className="px-1 py-1 text-sm">{summaryLine(card.name, card.remaining, card.unassigned, card.short, workMinutes)}</p>
+  return <p className={`px-1 py-1 text-sm ${card.short ? 'font-bold text-warn-ink' : ''}`}>{summaryLine(card.name, card.remaining, card.unassigned, card.short, workMinutes)}</p>
 }

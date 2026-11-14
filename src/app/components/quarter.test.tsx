@@ -16,7 +16,6 @@ const qs = planningQuarters('2026-11-15')
 const [q4, , q2] = buildQuarterViews(SHEET, qs)
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
-const types = SHEET.settings.leaveTypes
 
 test('F-502: 月カレンダーは日曜始まりで、印を data-mark に持つ', () => {
   const h = html(<MonthCalendar month={q4.months[1]} />)
@@ -47,7 +46,8 @@ test('F-209・F-211: 次の付与年から引く・足りない、の添え書�
   expect(html(<CandidateList blocks={t4.candidates} workMinutes={480} onAdd={noop} />)).toContain('有休が 6 時間足りません')
 })
 test('F-304・F-305・R-17: 日程の行。連休の見出し、過ぎた予定、重なり', () => {
-  const h = html(<EntryList blocks={q4.entries} workMinutes={480} leaveTypes={types} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
+  const h = html(<EntryList blocks={q4.entries} workMinutes={480} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
+  expect(h.split('12/26〜1/3 の 9連休')).toHaveLength(2) // §3.8: 見出しだけ。各行の 2 行目には出さない
   expect(h).toContain('12/26〜1/3 の 9連休')
   expect(h).toContain('12/28(月)')
   expect(h).toContain('年末年始')
@@ -55,13 +55,13 @@ test('F-304・F-305・R-17: 日程の行。連休の見出し、過ぎた予定�
   expect(h).not.toContain(T.overdue)
   const entries = [...SHEET.entries, { id: 'x', date: '2026-11-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院', done: false } as const, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const]
   const [v] = buildQuarterViews({ ...SHEET, entries }, qs)
-  const h2 = html(<EntryList blocks={v.entries} workMinutes={480} leaveTypes={types} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
+  const h2 = html(<EntryList blocks={v.entries} workMinutes={480} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
   expect(h2).toContain(T.overdue)
   expect(h2).toContain(T.markDone)
   expect(h2).toContain(T.overlap)
 })
 test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は候補の欄を描かない', () => {
-  const props = { workMinutes: 480, leaveTypes: types, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={q4} {...props} />)
   expect(h).toContain('2026年 10〜12月')
   expect(h).toContain('12/26〜1/3（9連休）')
@@ -72,7 +72,7 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
   expect(html(<QuarterSection view={q2} {...props} />)).toContain('前の年と同じ 14日で計算中')
 })
 test('§3.6: 付与日の 1 行。入力済みなら有休の日数を出す', () => {
-  const props = { workMinutes: 480, leaveTypes: types, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q2} {...props} />)).toContain(T.enterGrant)
   const entered = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, carryOverMinutes: 0 } } } }
   const [, , e2] = buildQuarterViews(entered, qs)
@@ -91,6 +91,11 @@ test('F-507・§3.4: タブ。年と月の 2 行、前・次の出し分け', ()
   const h2 = html(<QuarterTabs {...props} canGoBack canGoForward />)
   expect(h2).toContain(T.back)
   expect(h2).toContain(T.forward)
+})
+test('§3.4: 持ち分の 1 行は不足のとき警告の色', () => {
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, carryOverMinutes: 0 } } } })
+  expect(html(<StickySummary summary={s} workMinutes={480} />)).toContain('text-warn-ink')
+  expect(html(<StickySummary summary={buildSummary(SHEET)} workMinutes={480} />)).not.toContain('text-warn-ink')
 })
 test('F-401: 持ち分の 1 行は有休だけ。不足なら不足と出す。設定なしは出さない', () => {
   expect(html(<StickySummary summary={buildSummary(SHEET)} workMinutes={480} />)).toContain('有休 残り 9 日と 2 時間・未割り当て 4 日と 2 時間')

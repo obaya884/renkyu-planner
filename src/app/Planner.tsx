@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { BalanceCards } from '@/app/components/BalanceCards'
 import { InviteCard } from '@/app/components/InviteCard'
 import { LongBreakStrip } from '@/app/components/LongBreakStrip'
@@ -38,6 +38,15 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
   const [shift, setShift] = useState(0)
   const [selected, setSelected] = useState<IsoDate | null>(null)
+  // 持ち分のカードの包みが画面に見えているか。見えていないあいだだけ、持ち分の 1 行を張り付ける（§3.4）
+  const [cardsEl, setCardsEl] = useState<HTMLDivElement | null>(null)
+  const [cardsVisible, setCardsVisible] = useState(true)
+  useEffect(() => {
+    if (cardsEl === null) return
+    const observer = new IntersectionObserver(([entry]) => setCardsVisible(entry.isIntersecting))
+    observer.observe(cardsEl)
+    return () => observer.disconnect()
+  }, [cardsEl])
   // PC の「過ぎた四半期の記録を見る」で足した節まで動かすための印（描いたあとに動かす）
   const scrollTarget = useRef<IsoDate | null>(null)
   useEffect(() => {
@@ -46,7 +55,17 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
     scrollTarget.current = null
   }, [shift])
 
-  if (!ready || today === null) {
+  // 記録・祝日・今日・見せる範囲が変わったときだけ組み立て直す。スマホのタブは shift の位置から 4 つ。
+  // PC は、その最初から今日の四半期の 3 つ先まで全部（HTML は 1 つ）
+  const built = useMemo(() => {
+    if (today === null) return null
+    const input = { holidays, settings: data.settings, entries: data.entries, today }
+    const tabQuarters = planningQuarters(today, shift)
+    const shown = [...tabQuarters.slice(0, -shift), ...planningQuarters(today)]
+    return { summary: buildSummary(input), tabQuarters, shown, views: buildQuarterViews(input, shown) }
+  }, [data, holidays, today, shift])
+
+  if (!ready || today === null || built === null) {
     return (
       <>
         <p className="text-sm">{APP_DESCRIPTION}</p>
@@ -60,12 +79,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   }
 
   const { settings, entries } = data
-  const summary = buildSummary({ holidays, settings, entries, today })
-
-  // スマホのタブは shift の位置から 4 つ。PC は、その最初から今日の四半期の 3 つ先まで全部（HTML は 1 つ）
-  const tabQuarters = planningQuarters(today, shift)
-  const shown = [...tabQuarters.slice(0, -shift), ...planningQuarters(today)]
-  const views = buildQuarterViews({ holidays, settings, entries, today }, shown)
+  const { summary, tabQuarters, shown, views } = built
   const mobileSelected = tabQuarters.find((q) => q.start === selected)?.start ?? tabQuarters[0].start
   const canGoBack = entries.some((e) => e.date < shown[0].start)
   const goBack = () => {
@@ -81,7 +95,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
       <Notices canSave={canSave} unreadable={unreadable} />
       {settings.grantDay === null && <p className="text-sm">{APP_DESCRIPTION}</p>}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
-        <div className="lg:w-1/2">
+        <div ref={setCardsEl} className="lg:w-1/2">
           {summary.state === 'unset' ? (
             <InviteCard onOpen={noop} />
           ) : (
@@ -93,7 +107,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
         </div>
       </div>
       <div className="sticky top-0 z-20 bg-white lg:hidden">
-        {summary.state === 'set' && <StickySummary summary={summary} workMinutes={settings.workMinutes} />}
+        {summary.state === 'set' && !cardsVisible && <StickySummary summary={summary} workMinutes={settings.workMinutes} />}
         <QuarterTabs
           quarters={tabQuarters}
           selected={mobileSelected}
@@ -117,7 +131,6 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
             <QuarterSection
               view={view}
               workMinutes={settings.workMinutes}
-              leaveTypes={settings.leaveTypes}
               onAdd={noop}
               onOpen={noop}
               onMarkDone={markDone}

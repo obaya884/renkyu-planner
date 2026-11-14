@@ -45,10 +45,9 @@ export function CandidateList({ blocks, workMinutes, onAdd }: { blocks: readonly
     <div className="space-y-2">
       {blocks.map((block) => {
         if (block.kind === 'monthGap') {
-          const runDays = Math.min(...block.rows.map((r) => r.run.days))
           return (
             <details key={`gap-${block.month}`}>
-              <summary className={SUMMARY_CLASS}>{monthGapSummary(block.month, runDays, block.rows.length)}</summary>
+              <summary className={SUMMARY_CLASS}>{monthGapSummary(block.month, block.runDays, block.rows.length)}</summary>
               <ul className="mt-1 divide-y divide-line">
                 {block.rows.map((row) => (
                   <Row key={row.leaveDays.join()} row={row} workMinutes={workMinutes} onAdd={onAdd} />

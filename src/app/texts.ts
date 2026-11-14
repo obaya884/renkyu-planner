@@ -38,7 +38,6 @@ export const T = {
   done: '取得済み',
   legendOff: '土日・祝日',
   legendCompany: '会社の休日',
-  legendGrant: '付与日',
   viewPast: '過ぎた四半期の記録を見る',
   // §3.5〜§3.8
   addToPlan: '日程に入れる',

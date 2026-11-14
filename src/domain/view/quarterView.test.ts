@@ -74,3 +74,18 @@ test('F-508: 過ぎた四半期は候補を出さない', () => {
   expect(past.entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2026-08-10', '2026-09-04'])
   expect(past.marks).not.toContain('candidate')
 })
+test('F-304・R-14: 日程の塊と行に、長めかどうかと休暇の種類の名前を持つ', () => {
+  expect(q4.entries[2]).toMatchObject({ long: true }) // 12/26〜1/3 の 9 連休
+  expect(q4.entries[1]).toMatchObject({ long: false })
+  expect(q4.entries[1].rows[0]).toMatchObject({ long: false, leaveTypeName: null }) // 10/31〜11/3 の 4 連休、有休
+  expect(q4.entries[2].rows[0].long).toBe(true)
+  expect(q4.entries[0].rows[0].long).toBe(false) // 連休に入らない
+  const types = [...SHEET.settings.leaveTypes, { id: 'sum', name: '夏季休暇', days: 3, usable: null }]
+  const entries = [...SHEET.entries, { id: 'z', date: '2026-11-30', leaveTypeId: 'sum', amount: { unit: 'half' }, title: '', done: false } as const]
+  const [v] = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: types }, entries }, qs)
+  expect(v.entries.flatMap((b) => b.rows).find((r) => r.entry.id === 'z')?.leaveTypeName).toBe('夏季休暇')
+})
+test('R-8: 祝日のない月の塊は、できる連休の日数を持つ', () => {
+  const [u4] = buildQuarterViews(UNSET, qs)
+  expect(u4.candidates.at(-1)).toMatchObject({ kind: 'monthGap', runDays: 3 })
+})

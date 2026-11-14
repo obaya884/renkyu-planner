@@ -1,23 +1,18 @@
 import { T, amountText, formatDay, runHeading } from '@/app/texts'
-import type { LeaveType } from '@/domain/types'
 import type { EntryBlock, EntryRow } from '@/domain/view/quarterView'
-
-/** 「長め」の札を付ける連休の日数（R-14）。組み立て側の定数と同じ値 */
-const LONG_RUN_DAYS = 5
 
 type RowProps = {
   workMinutes: number
-  leaveTypes: readonly LeaveType[]
   onOpen: (id: string) => void
   onMarkDone: (id: string) => void
 }
 
-function Row({ row, workMinutes, leaveTypes, onOpen, onMarkDone }: { row: EntryRow } & RowProps) {
-  const { entry, overdue, overlap, run } = row
-  const typeName = leaveTypes.find((t) => t.id === entry.leaveTypeId)?.name
+/** inBlock: 連休の見出しの下の行。連休は見出しに出すので、2 行目には添えない（§3.8） */
+function Row({ row, inBlock, workMinutes, onOpen, onMarkDone }: { row: EntryRow; inBlock: boolean } & RowProps) {
+  const { entry, overdue, overlap, run, leaveTypeName } = row
   const first = [formatDay(entry.date), amountText(entry.amount, workMinutes), entry.title].filter((s) => s !== '').join(' ')
   const status = entry.done ? T.done : T.planned
-  const second = [status, overdue ? T.overdue : null, entry.leaveTypeId === 'paid' ? null : (typeName ?? null), run === null ? null : runHeading(run)].filter(
+  const second = [status, overdue ? T.overdue : null, leaveTypeName, run === null || inBlock ? null : runHeading(run)].filter(
     (s) => s !== null,
   )
   return (
@@ -65,12 +60,12 @@ export function EntryList({ blocks, onAddDay, ...rowProps }: { blocks: readonly 
               {block.run !== null && (
                 <div className="pt-1 text-sm font-bold text-long-ink">
                   {runHeading(block.run)}
-                  {block.run.days >= LONG_RUN_DAYS && <span className="ml-2 rounded bg-long-bg px-1.5">{T.long}</span>}
+                  {block.long && <span className="ml-2 rounded bg-long-bg px-1.5">{T.long}</span>}
                 </div>
               )}
               <ul>
                 {block.rows.map((row) => (
-                  <Row key={row.entry.id} row={row} {...rowProps} />
+                  <Row key={row.entry.id} row={row} inBlock={block.run !== null} {...rowProps} />
                 ))}
               </ul>
             </li>

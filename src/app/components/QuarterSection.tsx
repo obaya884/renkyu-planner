@@ -3,13 +3,11 @@ import { EntryList } from '@/app/components/EntryList'
 import { MARK_CLASS, MonthCalendar } from '@/app/components/MonthCalendar'
 import { T, grantNoteText, longBreakLine, quarterHeading } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
-import type { LeaveType } from '@/domain/types'
 import type { DayMark, QuarterView } from '@/domain/view/quarterView'
 
 type Props = {
   view: QuarterView
   workMinutes: number
-  leaveTypes: readonly LeaveType[]
   onAdd: (leaveDays: readonly IsoDate[]) => void
   onOpen: (id: string) => void
   onMarkDone: (id: string) => void
@@ -27,7 +25,7 @@ const LEGEND: Readonly<Record<DayMark, string>> = {
 const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', 'candidate']
 
 /** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
-export function QuarterSection({ view, workMinutes, leaveTypes, onAdd, onOpen, onMarkDone, onAddDay, onEnterGrant }: Props) {
+export function QuarterSection({ view, workMinutes, onAdd, onOpen, onMarkDone, onAddDay, onEnterGrant }: Props) {
   const { quarter, past, longBreak, months, marks, grantNote, candidates, entries } = view
   return (
     <section className="space-y-3">
@@ -70,7 +68,7 @@ export function QuarterSection({ view, workMinutes, leaveTypes, onAdd, onOpen, o
               <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
             </div>
           )}
-          <EntryList blocks={entries} workMinutes={workMinutes} leaveTypes={leaveTypes} onOpen={onOpen} onMarkDone={onMarkDone} onAddDay={onAddDay} />
+          <EntryList blocks={entries} workMinutes={workMinutes} onOpen={onOpen} onMarkDone={onMarkDone} onAddDay={onAddDay} />
         </div>
       </div>
     </section>
