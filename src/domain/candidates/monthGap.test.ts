@@ -34,3 +34,7 @@ test('F-205: 日程のある日は選択肢にしない（半日などの日程�
   const gaps = monthGaps({ ...base, entries: [entry], start: '2027-06-01', end: '2027-06-30' })
   expect(gaps[0].options).not.toContain('2027-06-04')
 })
+test('R-8: 選べる日が 1 つもない月には出さない', () => {
+  // 2027-06-29（火）。6 月の最後の月曜は 28 日なので、今日以降に金曜も月曜も残らない
+  expect(monthGaps({ ...base, today: '2027-06-29', start: '2027-06-01', end: '2027-06-30' })).toEqual([])
+})

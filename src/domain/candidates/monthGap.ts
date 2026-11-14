@@ -4,7 +4,7 @@ import type { Entry } from '@/domain/types'
 
 export type MonthGap = Readonly<{ month: IsoDate; unconfirmed: boolean; options: readonly IsoDate[] }>
 
-/** R-8・R-9: 月〜金に祝日も会社の休日もない月の、休み候補の金曜と月曜 */
+/** R-8・R-9: 月〜金に祝日も会社の休日もない月の、休み候補の金曜と月曜。選べる日が 1 つもない月は返さない */
 export function monthGaps(input: {
   cal: RestCalendar
   entries: readonly Entry[]
@@ -32,6 +32,7 @@ export function monthGaps(input: {
       const w = weekday(d)
       return (w === 5 || w === 1) && d >= today && !cal.isRest(d) && !entryDates.has(d)
     })
+    if (options.length === 0) continue
     gaps.push({ month, unconfirmed: last > confirmedUntil, options })
   }
   return gaps

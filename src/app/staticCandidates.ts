@@ -33,14 +33,6 @@ export function describeCandidate(c: Candidate): string {
   return `${leave} を休むと ${c.run.days} 連休（${monthDay(c.run.start)}〜${monthDay(c.run.end)}）`
 }
 
-/** 組の中で効率（連休の日数 ÷ 休む日数）が最大のもの。同じなら休む日数の少ないもの。比較は掛け算で行う */
-export function bestCandidate(group: CandidateGroup): Candidate {
-  return group.candidates.reduce((best, c) => {
-    const diff = c.run.days * best.leaveDays.length - best.run.days * c.leaveDays.length
-    return diff > 0 || (diff === 0 && c.leaveDays.length < best.leaveDays.length) ? c : best
-  })
-}
-
 /** 例: 2026年 10〜12月 */
 export function quarterHeading(quarterStart: IsoDate): string {
   const m = Number(quarterStart.slice(5, 7))

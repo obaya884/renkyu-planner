@@ -1,8 +1,8 @@
 import holidays from '@/data/holidays.json'
+import { bestCandidate } from '@/domain/candidates/groupCandidates'
 import { todayInJapan } from '@/domain/shared/date'
 import { APP_DESCRIPTION, APP_NAME } from './site'
 import {
-  bestCandidate,
   describeCandidate,
   formatJapaneseDate,
   quarterHeading,
