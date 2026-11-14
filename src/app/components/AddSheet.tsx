@@ -5,6 +5,7 @@ import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS,
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassignedChange } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type EntryDraft, checkEntryDraft } from '@/domain/entries/checkDraft'
+import { isShort } from '@/domain/leave/amount'
 import { balanceOf } from '@/domain/leave/balance'
 import type { IsoDate } from '@/domain/shared/date'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from '@/domain/view/input'
@@ -64,7 +65,7 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
           <p className="text-sm text-sub">{T.enterGrantToSee}</p>
         ) : (
           deltas.map((d) => (
-            <p key={d.grantYearStart} className={d.after < 0 ? 'font-bold text-warn-ink' : ''}>
+            <p key={d.grantYearStart} className={isShort(d.after) ? 'font-bold text-warn-ink' : ''}>
               {unassignedChange(
                 deltas.length === 1 ? T.unassigned : d.grantYearStart === thisStart ? T.thisGrantYear : T.nextGrantYearLabel,
                 d.before,

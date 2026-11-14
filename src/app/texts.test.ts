@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, longBreakChip, quarterHeading, usablePeriod } from './texts'
+import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, longBreakChip, quarterHeading, unassignedText, usablePeriod } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -33,4 +33,9 @@ test('§3.2・§3.3・§3.10: 使える期間、長めの休暇の札、祝日�
   expect(longBreakChip('2026-10-01', true)).toBe('10〜12月 あり')
   expect(longBreakChip('2027-01-01', false)).toBe('1〜3月 まだ')
   expect(holidayNote('2027-12-31')).toBe('祝日は内閣府の公表データです。2027年12月31日まで確定。')
+})
+test('§3.2・§5.1: 未割り当ての片側は、1 分以上足りないときだけ「不足」', () => {
+  expect(unassignedText(-480, 480)).toBe('不足 1 日')
+  expect(unassignedText(-0.5, 465)).toBe('0 日')
+  expect(unassignedText(0, 480)).toBe('0 日')
 })

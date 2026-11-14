@@ -2,11 +2,12 @@ import { type RestCalendar, type RestKind, type Run, runContaining } from '../ca
 import { type Candidate, findCandidates } from '../candidates/findCandidates'
 import { groupCandidates } from '../candidates/groupCandidates'
 import { monthGaps } from '../candidates/monthGap'
-import { balanceOf, grantDaysOf } from '../leave/balance'
-import { grantYearOf } from '../leave/grantYear'
+import { isShort } from '../leave/amount'
+import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import type { Entry } from '../types'
+import { previewAdd } from './addPreview'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */
@@ -68,23 +69,11 @@ type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; nextGrantYearStart
 
 // ---- 候補 ----
 
-/** leaveDays を、その日が入る付与年の有休から 1 日分ずつ引いたときの不足の合計 */
+/** leaveDays を 1 日分の有休の予定として足したときの、不足している付与年の不足の合計。面（previewAdd）と同じ数え方（§3.7） */
 function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[]): number | null {
-  const { settings, entries } = input
-  const grantDay = settings.grantDay
-  if (grantDay === null) return null
-  const countByYear = new Map<IsoDate, number>()
-  for (const d of leaveDays) {
-    const { start } = grantYearOf(d, grantDay)
-    countByYear.set(start, (countByYear.get(start) ?? 0) + 1)
-  }
+  if (input.settings.grantDay === null) return null
   let short = 0
-  for (const [grantYearStart, count] of countByYear) {
-    const b = balanceOf({ settings, entries, leaveTypeId: 'paid', grantYearStart })
-    if (b === null) return null
-    const after = b.unassigned - count * settings.workMinutes
-    if (after < 0) short += -after
-  }
+  for (const { after } of previewAdd(input, leaveDays, 'paid')) if (isShort(after)) short += -after
   return short > 0 ? short : null
 }
 

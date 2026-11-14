@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { formatMinutes, toMinutes } from './amount'
+import { formatMinutes, isShort, toMinutes } from './amount'
 
 test('R-11: 量を分に直す', () => {
   expect(toMinutes({ unit: 'day' }, 480)).toBe(480)
@@ -16,4 +16,11 @@ test('F-401・R-11: 日と時間で出し、小数にしない', () => {
 })
 test('R-11: 1 時間に満たない量は分だけで出す', () => {
   expect(formatMinutes(45, 480)).toBe('45 分')
+})
+test('§3.2・F-211: 不足は 1 分以上足りないとき。0.5 分の端数は不足にしない', () => {
+  expect(isShort(-1)).toBe(true)
+  expect(isShort(-480)).toBe(true)
+  expect(isShort(-0.5)).toBe(false)
+  expect(isShort(0)).toBe(false)
+  expect(isShort(120)).toBe(false)
 })

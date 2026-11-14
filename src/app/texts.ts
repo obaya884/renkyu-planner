@@ -1,7 +1,7 @@
 import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
-import { formatMinutes, toMinutes } from '@/domain/leave/amount'
+import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import { weekday } from '@/domain/shared/date'
@@ -232,9 +232,9 @@ export function summaryLine(name: string, remaining: number, unassigned: number,
   return `${remainingLabel(name)} ${formatAmount(remaining, workMinutes)}・${rest}`
 }
 
-/** §5.1 の未割り当ての 1 行の片側。負なら「不足 ◯」。例: 3 日と 2 時間、不足 1 日 */
+/** §5.1 の未割り当ての 1 行の片側。不足（isShort）なら「不足 ◯」。例: 3 日と 2 時間、不足 1 日 */
 export function unassignedText(minutes: number, workMinutes: number): string {
-  return minutes < 0 ? `${T.short} ${formatAmount(minutes, workMinutes)}` : formatAmount(minutes, workMinutes)
+  return isShort(minutes) ? `${T.short} ${formatAmount(minutes, workMinutes)}` : formatAmount(Math.max(0, minutes), workMinutes)
 }
 
 /** §5.1 の未割り当ての 1 行。例: 未割り当て 4 日と 2 時間 → 3 日と 2 時間。ラベルは 1 行のときは未割り当て、2 行のときは付与年 */

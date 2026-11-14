@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { planningQuarters } from '@/domain/quarters/quarters'
+import { previewAdd } from './addPreview'
 import { SHEET, UNSET } from './fixture'
 import { buildQuarterViews } from './quarterView'
 
@@ -88,4 +89,35 @@ test('F-304・R-14: 日程の塊と行に、長めかどうかと休暇の種類
 test('R-8: 祝日のない月の塊は、できる連休の日数を持つ', () => {
   const [u4] = buildQuarterViews(UNSET, qs)
   expect(u4.candidates.at(-1)).toMatchObject({ kind: 'monthGap', runDays: 3 })
+})
+const rowsOf = (v: typeof q4) => v.candidates.flatMap((b) => (b.kind === 'group' ? [...b.primary, ...b.rest] : b.rows))
+/** 面と同じ数え方の不足の合計（§3.7・§5.1） */
+const shortOfPreview = (input: typeof SHEET, leaveDays: readonly string[]) =>
+  previewAdd(input, leaveDays, 'paid').reduce((sum, d) => sum + (d.after <= -1 ? -d.after : 0), 0)
+test('F-209・F-211・R-13: 付与日をまたぐ候補の不足は、面（previewAdd）と同じ。今の付与年に入れた分だけ次の付与年の繰り越しが減る', () => {
+  // 今の付与年の未割り当てが 1 日（付与 0 日、繰り越しは日程の合計 + 1 日）。次の付与年の設定は無い
+  const input = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 0, carryOverMinutes: 9 * 480 + 360 + 480 } } } }
+  const [, , v2] = buildQuarterViews(input, qs)
+  const rows = rowsOf(v2)
+  const crossing = rows.find((r) => r.leaveDays.join() === '2027-04-28,2027-05-06')
+  expect(crossing).toBeDefined()
+  // 4/28 で今の付与年は 0 になり、次の付与年の繰り越しも 0 になるので、5/6 の 1 日が足りない
+  expect(crossing?.shortMinutes).toBe(480)
+  for (const r of rows.filter((x) => x.leaveDays.some((d) => d < '2027-05-01') && x.leaveDays.some((d) => d >= '2027-05-01'))) {
+    const expected = shortOfPreview(input, r.leaveDays)
+    expect(r.shortMinutes).toBe(expected > 0 ? expected : null)
+  }
+})
+test('§3.2・F-211: 0.5 分の端数で 1 分に満たない不足は、不足にしない', () => {
+  // 所定労働時間 465 分、付与 1 日 + 繰り越し 232 分、半日の日程 1 件 → 未割り当て 464.5 分。1 日入れると −0.5 分
+  const input = {
+    ...UNSET,
+    settings: { ...UNSET.settings, workMinutes: 465, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 1, carryOverMinutes: 232 } } },
+    entries: [{ id: 'h', date: '2026-10-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: true } as const],
+  }
+  const [v] = buildQuarterViews(input, qs)
+  const row = rowsOf(v).find((r) => r.leaveDays.join() === '2026-11-20')
+  expect(previewAdd(input, ['2026-11-20'], 'paid')[0].after).toBe(-0.5)
+  expect(row?.shortMinutes).toBeNull()
+  expect(rowsOf(v).find((r) => r.leaveDays.length === 2)?.shortMinutes).toBe(465.5)
 })

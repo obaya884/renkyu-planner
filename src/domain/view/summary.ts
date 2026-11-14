@@ -1,3 +1,4 @@
+import { isShort } from '../leave/amount'
 import { balanceOf } from '../leave/balance'
 import { type FiveDayStatus, fiveDayStatus } from '../leave/fiveDays'
 import { type Quarter, longBreakOf, planningQuarters } from '../quarters/quarters'
@@ -45,7 +46,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
       remaining: b.remaining,
       planned: b.planned,
       unassigned: b.unassigned,
-      short: b.unassigned <= -1,
+      short: isShort(b.unassigned),
       usable: type.usable,
     })
   }
