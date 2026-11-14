@@ -29,6 +29,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   domainRules,
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", { varsIgnorePattern: "^_" }],
+    },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "coverage/**"]),
 ]);
 
