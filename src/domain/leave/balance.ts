@@ -56,13 +56,14 @@ export function balanceOf(input: Input): Balance | null {
     return withEntitlement(input, grantDay, type ? type.days * work : 0)
   }
 
+  const grantMinutes = grantDaysOf(settings, grantYearStart) * work
   const current = settings.grantYears[grantYearStart]
-  if (current) return withEntitlement(input, grantDay, current.grantDays * work + current.carryOverMinutes)
+  if (current) return withEntitlement(input, grantDay, grantMinutes + current.carryOverMinutes)
 
-  // この付与年の設定が無いときは、直前の 1 年だけさかのぼる
+  // この付与年の設定が無いときの繰り越しは、直前の 1 年だけさかのぼる
   const prevStart = previousStart(grantYearStart)
   const prev = settings.grantYears[prevStart]
-  if (!prev) return withEntitlement(input, grantDay, 0)
+  if (!prev) return withEntitlement(input, grantDay, grantMinutes)
   const prevBalance = withEntitlement({ ...input, grantYearStart: prevStart }, grantDay, prev.grantDays * work + prev.carryOverMinutes)
-  return withEntitlement(input, grantDay, prev.grantDays * work + Math.max(0, prevBalance.unassigned))
+  return withEntitlement(input, grantDay, grantMinutes + Math.max(0, prevBalance.unassigned))
 }
