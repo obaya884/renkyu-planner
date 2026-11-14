@@ -1,5 +1,5 @@
 import type { RestCalendar, RestKind, Run } from '@/domain/calendar/restDays'
-import { runContaining } from '@/domain/calendar/restDays'
+import { MAX_RUN_DAYS, runContaining } from '@/domain/calendar/restDays'
 import { type IsoDate, addDays, weekday } from '@/domain/shared/date'
 
 export type Candidate = Readonly<{
@@ -23,7 +23,7 @@ function withLeaveDays(cal: RestCalendar, leaveDays: readonly IsoDate[]): RestCa
 
 function lastRestDayFrom(cal: RestCalendar, d: IsoDate): IsoDate {
   let end = d
-  while (cal.isRest(addDays(end, 1))) end = addDays(end, 1)
+  for (let i = 1; i < MAX_RUN_DAYS && cal.isRest(addDays(end, 1)); i++) end = addDays(end, 1)
   return end
 }
 

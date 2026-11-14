@@ -58,6 +58,12 @@ describe('候補（F-201・F-204・F-207・F-210、R-3・R-4・R-9）', () => {
     const cs = findCandidates({ ...base, cal, entryDates: new Set(['2026-10-23']), start: '2026-10-26', end: '2026-10-26' })
     expect(cs.find((c) => c.leaveDays[0] === '2026-10-26')?.core).toBe('2026-10-24')
   })
+  test('R-5: 祝日に 1 日分の日程が重なっても核はその祝日', () => {
+    const entry = { id: 'a', date: '2026-11-03', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+    const cal = buildRestCalendar({ holidays: data.holidays, companyHolidays: [], entries: [entry] })
+    const cs = findCandidates({ ...base, cal, entryDates: new Set(['2026-11-03']), start: '2026-11-02', end: '2026-11-02' })
+    expect(cs.find((c) => c.leaveDays.join(',') === '2026-11-02')?.core).toBe('2026-11-03')
+  })
   test('並びは leaveDays[0] の早い順、同じなら休む日数の少ない順', () => {
     const cs = findCandidates({ ...base, cal: plain, start: '2026-10-26', end: '2026-11-30' })
     const keys = cs.map((c) => [c.leaveDays[0], c.leaveDays.length] as const)
