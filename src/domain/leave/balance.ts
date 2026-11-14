@@ -22,6 +22,11 @@ function previousStart(start: IsoDate): IsoDate {
   return `${String(Number(start.slice(0, 4)) - 1).padStart(4, '0')}${start.slice(4)}`
 }
 
+/** その付与年の付与日数。設定が無ければ直前の付与年の値、それも無ければ 0（R-13） */
+export function grantDaysOf(settings: Settings, grantYearStart: IsoDate): number {
+  return (settings.grantYears[grantYearStart] ?? settings.grantYears[previousStart(grantYearStart)])?.grantDays ?? 0
+}
+
 /** 持ち分が決まっているときの、取得済み・予定・残り・未割り当て（R-13） */
 function withEntitlement(input: Input, grantDay: string, entitlement: number): Balance {
   const { settings, entries, leaveTypeId, grantYearStart } = input

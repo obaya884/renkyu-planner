@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 挙動の契約はドキュメント群にある。実装中に挙動レベルの仕様判断が発生した場合、**コードより先に該当ドキュメントを更新する**。判断はオーナーとの対話でのみ決め、AI が単独で決めない。
 
 - 価値・スコープ・要求の一覧（機能 F-XXX・非機能 N-XX）: [要求定義書](./docs/仕様/11_要求定義書.md) §6
-- 計算の規則（R-1〜R-16）: [要件定義書](./docs/仕様/12_要件定義書.md) §5
-- 画面の構成・配置・寸法・文言: 画面定義書（13。未作成。実装計画 2 の前に書く）
+- 計算の規則（R-1〜R-18）: [要件定義書](./docs/仕様/12_要件定義書.md) §5
+- 画面の構成・配置・寸法・文言: [画面定義書](./docs/仕様/13_画面定義書.md)
 - 実装計画は `docs/案件/` に置き、完了したら削除する（経緯は git 履歴）
 
 ## docs の書き方の規約（hitosuji・bassdrill と同じ）
@@ -49,8 +49,12 @@ npm run holidays:fetch  # 内閣府の CSV から src/data/holidays.json を更�
 
 ```
 src/domain/   計算の純関数。I/O・引数なしの new Date()・Date.now()・クラスを書かない。型は Readonly。React と Next.js を知らない
+  view/       表示用の組み立て（持ち分のカード、四半期の節など）。画面は計算せず、ここの結果を描く
 src/data/     同梱する祝日データ（holidays.json）
 src/app/      Next.js の画面。site.ts にサービス名・題・説明文を持つ
+  store/      記録のストア（localStorage への読み書きと、変える操作）
+  components/ 表示だけの部品。props で受けた組み立てと文言を描く
+  texts.ts    画面に出す文言（部品の中に日本語を直接書かない）
 scripts/      祝日の取り込み
 ```
 

@@ -7,6 +7,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // 日本以外のタイムゾーンでも日付の計算が変わらないことを、全テストで確かめる
+    env: { TZ: "America/Los_Angeles" },
     include: ["src/**/*.test.ts"],
   },
 });
