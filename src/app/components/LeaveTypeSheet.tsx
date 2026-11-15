@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
-import { FIELD_CLASS, Field, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { FIELD_CLASS, Field, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
 import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { grantDayChoices } from '@/domain/entries/grantInput'
@@ -52,7 +52,7 @@ export function LeaveTypeSheetBody({ type, hasEntries, today, onSubmit, onRemove
         </Field>
         <div>
           <Field label={T.leaveDaysLabel}>
-            <input type="number" min={0} max={366} step={0.5} inputMode="decimal" value={days} onChange={(e) => setDays(e.target.value)} className={`${FIELD_CLASS} w-28`} />
+            <input type="number" min={0} max={366} step={0.5} inputMode="decimal" value={days} onChange={(e) => setDays(e.target.value)} className={`${SHORT_FIELD_CLASS} w-28`} />
           </Field>
           {days !== '' && errors.includes('invalidDays') && (
             <p role="alert" className="text-sm text-danger">

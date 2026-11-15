@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DATE_FIELD_CLASS, FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { DATE_FIELD_CLASS, FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
@@ -151,7 +151,7 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
                   aria-label={T.hoursUnit}
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className={`${FIELD_CLASS} w-20`}
+                  className={`${SHORT_FIELD_CLASS} w-20`}
                 />
                 {T.hoursUnit}
                 <input
@@ -161,7 +161,7 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
                   aria-label={T.minutesUnit}
                   value={mins}
                   onChange={(e) => setMins(e.target.value)}
-                  className={`${FIELD_CLASS} w-20`}
+                  className={`${SHORT_FIELD_CLASS} w-20`}
                 />
                 {T.minutesUnit}
               </div>

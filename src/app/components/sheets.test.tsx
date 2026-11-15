@@ -290,3 +290,14 @@ test('画面定義書 §5・§7: 日付の欄は幅に収まり（min-w-0・appe
   expect(selects.length).toBeGreaterThan(0)
   for (const s of selects) expect(classesOf(s)).toContain('h-11')
 })
+test('画面定義書 §7: 短い数の欄は決めた幅で出し、w-full を付けない（単位の文字が折れないように）', () => {
+  const minutesEntry = SHEET.entries.find((e) => e.amount.unit === 'minutes')!
+  const entry = html(<EntrySheetBody input={SHEET} entry={minutesEntry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const grant = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
+  const numbers = [...tagsOf(entry, /<input type="number"[^>]*>/g), ...tagsOf(grant, /<input type="number"[^>]*>/g)]
+  expect(numbers).toHaveLength(5) // 時間・分、1 年に付与される日数、この年に使える日数の日・時間
+  for (const n of numbers) {
+    expect(classesOf(n)).not.toContain('w-full')
+    expect(classesOf(n).some((c) => c === 'w-20' || c === 'w-24')).toBe(true)
+  }
+})

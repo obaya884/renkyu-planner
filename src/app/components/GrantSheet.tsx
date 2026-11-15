@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText, grantDayText, grantPeriodText, nextEntitlementText } from '@/app/texts'
 import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
 import {
@@ -150,7 +150,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
                 inputMode="decimal"
                 value={grantDays}
                 onChange={(e) => setGrantDays(e.target.value)}
-                className={`${FIELD_CLASS} w-24`}
+                className={`${SHORT_FIELD_CLASS} w-24`}
               />
               {T.dayUnit}
             </span>
@@ -179,7 +179,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
                 aria-label={T.dayUnit}
                 value={shown === null ? '' : shown.days}
                 onChange={(e) => touch(setEntDays)(e.target.value)}
-                className={`${FIELD_CLASS} w-20`}
+                className={`${SHORT_FIELD_CLASS} w-20`}
               />
               {T.dayUnit}
               <input
@@ -189,7 +189,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
                 aria-label={T.hoursUnit}
                 value={shown === null ? '' : shown.hours}
                 onChange={(e) => touch(setEntHours)(e.target.value)}
-                className={`${FIELD_CLASS} w-20`}
+                className={`${SHORT_FIELD_CLASS} w-20`}
               />
               {T.hoursUnit}
             </div>

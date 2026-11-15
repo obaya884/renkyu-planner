@@ -188,3 +188,11 @@ test('D-10・§5.4・§5.5: 会社の休日と休暇の種類の名前の欄は 
   expect(html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={noop} onRemove={noop} onClose={noop} />)).toContain('maxLength="100"')
   expect(html(<LeaveTypeSheetBody type={null} hasEntries={false} today="2026-11-15" onSubmit={noop} onRemove={noop} onClose={noop} />)).toContain('maxLength="100"')
 })
+
+test('画面定義書 §7: 休暇の種類のモーダルの日数の欄は w-28 で出し、w-full を付けない', () => {
+  const h = html(<LeaveTypeSheetBody type={null} hasEntries={false} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  const tag = h.match(/<input type="number"[^>]*>/)![0]
+  const classes = (tag.match(/class="([^"]*)"/)?.[1] ?? '').split(' ')
+  expect(classes).toContain('w-28')
+  expect(classes).not.toContain('w-full')
+})
