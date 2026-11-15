@@ -31,3 +31,12 @@ test('F-211: 持ち分を超えると short', () => {
   const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
   expect(s.cards[0]).toMatchObject({ unassigned: -360, short: true })
 })
+
+const only = (keys: string[]) => ({ ...SHEET, settings: { ...SHEET.settings, grantYears: Object.fromEntries(keys.map((k) => [k, { grantDays: 14, entitlementMinutes: null }])) } })
+test('F-407: 今の付与年に設定が無く、前の年にあれば知らせる', () => {
+  expect(buildSummary(only(['2025-05-01'])).newGrantYearStart).toBe('2026-05-01')
+  expect(buildSummary(SHEET).newGrantYearStart).toBeNull()
+  expect(buildSummary(only(['2027-05-01'])).newGrantYearStart).toBeNull() // 前の年に設定が無い
+  expect(buildSummary(only(['2025-05-01', '2026-05-01'])).newGrantYearStart).toBeNull()
+  expect(buildSummary(UNSET).newGrantYearStart).toBeNull()
+})

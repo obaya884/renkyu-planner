@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/domain/types'
+import { SHEET } from '@/domain/view/fixture'
 import { fiveDayStatus } from './fiveDays'
 
 const e = (date: string, amount: object, done: boolean, leaveTypeId = 'paid') => ({ id: date, date, leaveTypeId, amount, title: '', done }) as never
@@ -26,4 +27,15 @@ test('R-18: 付与日数が 10 未満・付与日が未設定・ほかの休暇�
   expect(fiveDayStatus({ ...base, settings: DEFAULT_SETTINGS, entries: [] })).toBeNull()
   const s = fiveDayStatus({ ...base, entries: [e('2026-08-12', D, true, 'summer'), e('2027-05-06', D, false)] })
   expect(s?.remainingDays).toBe(5)
+})
+
+// 手計算: 2026-05-01〜2027-04-30 の paid の 1 日分。取得済みは 5/15・6/22・8/10・11/2 の 4 日（5/21・9/4・10/7 は時間単位で数えない）。
+// 予定は 12/28・12/29・2/12・2/22・4/30 の 5 日。残り = max(0, 5 - 4 - 5) = 0。今日 11/15 は末日 4/30 まで 166 日で警告なし
+test('R-18: 付与日数がちょうど 10 の付与年は対象になる', () => {
+  const ten = { ...settings, grantYears: { '2026-05-01': { grantDays: 10, entitlementMinutes: null } } }
+  expect(fiveDayStatus({ ...base, settings: ten, entries: SHEET.entries })).toEqual({ doneDays: 4, plannedDays: 5, remainingDays: 0, warn: false })
+})
+test('R-18: 今の付与年に設定が無ければ、前の付与年の付与日数（14）で対象になる', () => {
+  const prev = { ...settings, grantYears: { '2025-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  expect(fiveDayStatus({ ...base, settings: prev, entries: SHEET.entries })).toEqual({ doneDays: 4, plannedDays: 5, remainingDays: 0, warn: false })
 })

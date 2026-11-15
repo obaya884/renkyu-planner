@@ -110,7 +110,11 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           {summary.state === 'unset' ? (
             <InviteCard onOpen={() => setSheet({ kind: 'grant', grantYearStart: null })} />
           ) : (
-            <BalanceCards summary={summary} workMinutes={settings.workMinutes} />
+            <BalanceCards
+              summary={summary}
+              workMinutes={settings.workMinutes}
+              onConfirmNewYear={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
+            />
           )}
         </div>
         <div className="lg:w-1/2">

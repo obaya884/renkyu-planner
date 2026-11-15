@@ -2,7 +2,7 @@ import { isShort } from '../leave/amount'
 import { balanceOf } from '../leave/balance'
 import { type FiveDayStatus, fiveDayStatus } from '../leave/fiveDays'
 import { type Quarter, longBreakOf, planningQuarters } from '../quarters/quarters'
-import type { MonthDay } from '../shared/date'
+import type { IsoDate, MonthDay } from '../shared/date'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
 
 /** 量は分のまま持つ。文字にするのは文言の層 */
@@ -24,6 +24,8 @@ export type SummaryView = Readonly<{
   fiveDays: FiveDayStatus | null
   longBreaks: readonly LongBreakChip[]
   holidaysOnly: boolean
+  /** F-407。今の付与年に設定が無く、前の付与年に設定があるとき、今の付与年の開始日 */
+  newGrantYearStart: IsoDate | null
 }>
 
 /** 主な画面の上の部分（持ち分・年 5 日の取得・長めの休暇）の組み立て */
@@ -34,7 +36,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
   const longBreaks = planningQuarters(today).map((quarter) => ({ quarter, has: longBreakOf(cal, quarter) !== null }))
   const holidaysOnly = settings.companyHolidays.length === 0 && entries.length === 0
 
-  if (grantYear === null) return { state: 'unset', cards: [], fiveDays: null, longBreaks, holidaysOnly }
+  if (grantYear === null) return { state: 'unset', cards: [], fiveDays: null, longBreaks, holidaysOnly, newGrantYearStart: null }
 
   const cards: BalanceCard[] = []
   for (const type of settings.leaveTypes) {
@@ -52,5 +54,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
   }
   const five = fiveDayStatus({ settings, entries, grantYearStart: grantYear.start, today })
   const fiveDays = five !== null && five.remainingDays > 0 ? five : null
-  return { state: 'set', cards, fiveDays, longBreaks, holidaysOnly }
+  const keys = Object.keys(settings.grantYears)
+  const newGrantYearStart = !keys.includes(grantYear.start) && keys.some((k) => k < grantYear.start) ? grantYear.start : null
+  return { state: 'set', cards, fiveDays, longBreaks, holidaysOnly, newGrantYearStart }
 }

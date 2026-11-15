@@ -10,7 +10,7 @@ import { Notices } from './Notices'
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 
 test('F-401: 持ち分のカードに、残り・予定・未割り当てが出る', () => {
-  const h = html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} />)
+  const h = html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} onConfirmNewYear={() => {}} />)
   expect(h).toContain('9 日と 2 時間')
   expect(h).toContain('5 日')
   expect(h).toContain('4 日と 2 時間')
@@ -18,17 +18,17 @@ test('F-401: 持ち分のカードに、残り・予定・未割り当てが出�
 })
 test('F-211・R-11: 未割り当てが負なら「不足」と絶対値', () => {
   const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 9, entitlementMinutes: null } } } })
-  const h = html(<BalanceCards summary={s} workMinutes={480} />)
+  const h = html(<BalanceCards summary={s} workMinutes={480} onConfirmNewYear={() => {}} />)
   expect(h).toContain(T.short)
   expect(h).toContain('6 時間')
 })
 test('F-404: 年 5 日の取得に届いていなければ 1 行出す', () => {
   const s = buildSummary({ ...SHEET, entries: SHEET.entries.slice(0, 3) })
-  expect(html(<BalanceCards summary={s} workMinutes={480} />)).toContain('あと 3日')
-  expect(html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} />)).not.toContain(T.fiveDaysLabel)
+  expect(html(<BalanceCards summary={s} workMinutes={480} onConfirmNewYear={() => {}} />)).toContain('あと 3日')
+  expect(html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} onConfirmNewYear={() => {}} />)).not.toContain(T.fiveDaysLabel)
 })
 test('F-106: 付与日が無ければカードを描かない。長めの休暇の見出しに但し書き', () => {
-  expect(html(<BalanceCards summary={buildSummary(UNSET)} workMinutes={480} />)).toBe('')
+  expect(html(<BalanceCards summary={buildSummary(UNSET)} workMinutes={480} onConfirmNewYear={() => {}} />)).toBe('')
   expect(html(<LongBreakStrip summary={buildSummary(UNSET)} />)).toContain(T.longBreakHolidaysOnly)
   expect(html(<LongBreakStrip summary={buildSummary(SHEET)} />)).not.toContain(T.longBreakHolidaysOnly)
 })
@@ -46,8 +46,16 @@ test('N-08・D-5: 保存できない・読めなかったときの 1 行', () =>
 
 test('F-102・R-11: 所定労働時間が 7 時間 45 分なら、持ち分も 465 分を 1 日として出す', () => {
   const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, workMinutes: 465 } })
-  const h = html(<BalanceCards summary={s} workMinutes={465} />)
+  const h = html(<BalanceCards summary={s} workMinutes={465} onConfirmNewYear={() => {}} />)
   expect(h).toContain('9 日と 1 時間 45 分') // 残り 4290 分
   expect(h).toContain('4 日と 1 時間 45 分') // 未割り当て 1965 分
   expect(h).not.toContain(T.short)
+})
+
+test('F-407・§3.2: 知らせの 1 行は、年 5 日の取得の 1 行より上', () => {
+  const s = buildSummary({ ...SHEET, entries: SHEET.entries.slice(0, 3), settings: { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 14, entitlementMinutes: null } } } })
+  const h = html(<BalanceCards summary={s} workMinutes={480} onConfirmNewYear={() => {}} />)
+  expect(h).toContain(T.newGrantYear)
+  expect(h.indexOf(T.newGrantYear)).toBeLessThan(h.indexOf(T.fiveDaysLabel))
+  expect(html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} onConfirmNewYear={() => {}} />)).not.toContain(T.newGrantYear)
 })

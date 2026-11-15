@@ -30,6 +30,7 @@ export const T = {
   unassigned: '未割り当て',
   short: '不足',
   usedUp: '使い切り',
+  newGrantYear: '新しい年になりました。付与日数と使える日数を確かめる',
   fiveDaysLabel: '年 5 日の取得まで',
   // §3.3
   longBreak: '長めの休暇',

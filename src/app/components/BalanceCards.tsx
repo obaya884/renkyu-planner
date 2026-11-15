@@ -1,4 +1,5 @@
 import { T, balanceDetail, fiveDaysText, formatAmount, remainingLabel, usablePeriod } from '@/app/texts'
+import type { IsoDate } from '@/domain/shared/date'
 import type { BalanceCard, SummaryView } from '@/domain/view/summary'
 
 function Card({ card, workMinutes }: { card: BalanceCard; workMinutes: number }) {
@@ -16,7 +17,15 @@ function Card({ card, workMinutes }: { card: BalanceCard; workMinutes: number })
 }
 
 /** §3.2。付与日が無ければ何も描かない（F-106）。不足は警告の色で出す */
-export function BalanceCards({ summary, workMinutes }: { summary: SummaryView; workMinutes: number }) {
+export function BalanceCards({
+  summary,
+  workMinutes,
+  onConfirmNewYear,
+}: {
+  summary: SummaryView
+  workMinutes: number
+  onConfirmNewYear: (grantYearStart: IsoDate) => void
+}) {
   if (summary.state === 'unset') return null
   const { fiveDays } = summary
   return (
@@ -28,6 +37,15 @@ export function BalanceCards({ summary, workMinutes }: { summary: SummaryView; w
           </div>
         ))}
       </div>
+      {summary.newGrantYearStart !== null && (
+        <button
+          type="button"
+          className="mt-1 min-h-11 text-left text-sm font-bold text-primary underline"
+          onClick={() => onConfirmNewYear(summary.newGrantYearStart as IsoDate)}
+        >
+          {T.newGrantYear}
+        </button>
+      )}
       {fiveDays !== null && (
         <p className={`mt-1 text-sm ${fiveDays.warn ? 'text-warn-ink' : 'text-sub'}`}>
           {fiveDaysText(fiveDays.remainingDays, fiveDays.doneDays, fiveDays.plannedDays)}
