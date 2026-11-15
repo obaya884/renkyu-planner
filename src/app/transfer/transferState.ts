@@ -40,9 +40,12 @@ export function afterClear(): TransferState {
   return { note: 'cleared', undo: null }
 }
 
-/** §6: 記録が置き換えたあとの中身から変わったら、戻すための記録を捨てる（あとで元の中身に戻っても出さない）。変わらなければ同じ状態を返す */
-export function withCurrentData(s: TransferState, data: StoredData): TransferState {
-  if (s.undo === null || serializeStored(data) === s.undo.after) return s
+/**
+ * §6: 記録が置き換えたあとの中身から変わったら、戻すための記録を捨てる（あとで元の中身に戻っても出さない）。変わらなければ同じ状態を返す。
+ * 記録を読めなかったとき（D-5）も捨てる。読めなかった記録は空の記録として持つので、中身だけを比べると、空の記録を読み込んだあとと同じに見える
+ */
+export function withCurrentData(s: TransferState, current: Readonly<{ data: StoredData; unreadable: boolean }>): TransferState {
+  if (s.undo === null || (!current.unreadable && serializeStored(current.data) === s.undo.after)) return s
   return { ...s, undo: null }
 }
 

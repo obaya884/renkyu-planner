@@ -6,8 +6,9 @@ import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 import { parseStored, serializeStored } from '@/domain/storage/stored'
 import { createPlannerStore } from './store/createPlannerStore'
+import { memoryStorage } from './store/memoryStorage'
 
-const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) } }
+const memory = () => memoryStorage()
 const today = '2026-11-15'
 const view = (s: ReturnType<typeof createPlannerStore>) => {
   const input = { holidays: data, today, ...s.getState().data }

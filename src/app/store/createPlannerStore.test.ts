@@ -5,16 +5,9 @@ import { balanceOf } from '@/domain/leave/balance'
 import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { SHEET } from '@/domain/view/fixture'
 import { createPlannerStore } from './createPlannerStore'
+import { memoryStorage } from './memoryStorage'
 
-const memory = (init: Record<string, string> = {}) => {
-  const m = new Map(Object.entries(init))
-  return {
-    getItem: (k: string) => m.get(k) ?? null,
-    setItem: (k: string, v: string) => void m.set(k, v),
-    removeItem: (k: string) => void m.delete(k),
-    dump: () => Object.fromEntries(m),
-  }
-}
+const memory = memoryStorage
 const ids = () => {
   let n = 0
   return () => `id-${++n}`

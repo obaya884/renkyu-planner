@@ -10,7 +10,7 @@ export type TransferStore = Readonly<{
 /**
  * §6 の記録の持ち出しの節の状態を、画面をまたいでメモリに持つ（設定画面を離れても「読み込む前に戻す」を残すため）。
  * 保存はしないので、ページを閉じる・読み直すと消える。
- * 記録のストアが知らせるたびに withCurrentData を通し、主な画面やほかのタブで記録が変わったら戻すための記録を捨てる
+ * 記録のストアが知らせるたびに withCurrentData を通し、主な画面やほかのタブで記録が変わったとき、記録を読めなかったときに、戻すための記録を捨てる
  */
 export function createTransferStore(planner: Pick<PlannerStore, 'getState' | 'subscribe'>): TransferStore {
   let state: TransferState = TRANSFER_IDLE
@@ -20,7 +20,7 @@ export function createTransferStore(planner: Pick<PlannerStore, 'getState' | 'su
     state = next
     for (const listener of [...listeners]) listener()
   }
-  planner.subscribe(() => set(withCurrentData(state, planner.getState().data)))
+  planner.subscribe(() => set(withCurrentData(state, planner.getState())))
   return {
     getState: () => state,
     subscribe(listener) {
