@@ -49,6 +49,11 @@ test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル',
   expect(add).toContain('value="2026-11-16"')
   expect(add).not.toContain(T.remove)
   expect(add).not.toContain('連休')
+  // §5.2・F-305: 「状態」の行は無い（取得済みか予定かは日付で決める）
+  for (const body of [h, add]) {
+    expect(body).not.toContain('状態')
+    expect(body).not.toContain('name="status"')
+  }
 })
 test('R-19: 日を足すモーダルの日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
   const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
@@ -59,7 +64,7 @@ test('R-19: 日を足すモーダルの日付は 4 つ目の四半期の末日�
   expect(far).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
 })
 test('R-17・Review Focus 3: 休みの日と重なった日程を開くと、理由を出し、保存できない', () => {
-  const y = { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+  const y = { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
   const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, y] }} entry={y} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('この日は休みの日です。休みの日には入れられません')
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
@@ -153,7 +158,7 @@ test('R-13・§5.1: 引く休暇の付与される日が 01-01 で、休む日�
   // 引く休暇の初期値は有休（無ければ先頭）。有休を置かず、付与される日が 01-01 の休暇の種類だけにして、その種類を引く休暇にする
   const free = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true }
   // 2026 年の付与年（2026-01-01〜12-31）に、その種類の予定の日程を 1 件入れておく
-  const planned = { id: 'p', date: '2026-06-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: false } as const
+  const planned = { id: 'p', date: '2026-06-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '' } as const
   const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [free] }, entries: [...SHEET.entries, planned] }
   const h = html(<AddSheetBody input={input} leaveDays={['2026-12-28', '2027-01-04']} onSubmit={noop} onClose={noop} />)
   // 今の付与年は 2026 年（今日は 2026-11-15）、次の付与年は 2027 年。12/28 は前者、1/4 は後者に入る
@@ -168,7 +173,7 @@ test('R-13・§5.1: 引く休暇の付与される日が 01-01 で、休む日�
   expect(h).not.toContain(`${T.unassigned} `)
 })
 test('F-104: 日程の種類が設定に無いときは、休暇の種類が有休だけでも理由を出す', () => {
-  const entry = { id: 'x', date: '2026-12-28', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: false } as const
+  const entry = { id: 'x', date: '2026-12-28', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
   const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, entry] }} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain(errorText('unknownLeaveType'))
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
@@ -242,7 +247,7 @@ test('§5.1: 未割り当ての行は 1 つの部品で描く。1 行なら「�
   expect(two).toContain('text-warn-ink')
 })
 
-const MANY = Array.from({ length: 5000 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+const MANY = Array.from({ length: 5000 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const)
 test('D-10: 名前の欄は 100 文字まで。日程が上限のときは理由を出して保存できない', () => {
   const h = html(<EntrySheetBody input={{ ...SHEET, entries: MANY }} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('maxLength="100"')

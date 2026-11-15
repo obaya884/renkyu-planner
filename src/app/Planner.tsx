@@ -94,10 +94,6 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
     setShift(shift - 1)
     setSelected(null)
   }
-  const markDone = (id: string) => {
-    const e = entries.find((x) => x.id === id)
-    if (e) plannerStore.updateEntry(id, { date: e.date, leaveTypeId: e.leaveTypeId, amount: e.amount, title: e.title, done: true })
-  }
   const input = { holidays, settings, entries, today }
   const closeSheet = () => setSheet(null)
   const openAddDay = (quarter: Quarter) => setSheet({ kind: 'entry', id: null, defaultDate: defaultDayFor(input, quarter) })
@@ -150,7 +146,6 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
               onAdd={(leaveDays) => setSheet({ kind: 'add', leaveDays, leaveTypeId: null })}
               onAddTogether={(leaveDays, leaveTypeId) => setSheet({ kind: 'add', leaveDays, leaveTypeId })}
               onOpen={(id) => setSheet({ kind: 'entry', id, defaultDate: today })}
-              onMarkDone={markDone}
               onAddDay={() => openAddDay(view.quarter)}
               onEnterGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
               belowSummary={summaryShown}

@@ -27,7 +27,7 @@ describe('候補（F-201・F-204・F-207・F-210、R-3・R-4・R-9）', () => {
     expect(cs).toContainEqual({ leaveDays: ['2026-12-28', '2026-12-29'], run: { start: '2026-12-26', end: '2027-01-03', days: 9 }, long: true, unconfirmed: false, core: '2026-12-30' })
   })
   test('F-207: 金曜を 1 日分の日程に入れると、月曜を休む候補が出る。日程のある日は休む日にしない', () => {
-    const entry = { id: 'a', date: '2026-10-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+    const entry = { id: 'a', date: '2026-10-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
     const cal = buildRestCalendar({ holidays: data.holidays, companyHolidays: [], entries: [entry] })
     const cs = findCandidates({ ...base, cal, entryDates: new Set(['2026-10-23']), start: '2026-10-19', end: '2026-10-31' })
     expect(leaveOf(cs)).toContain('2026-10-26')
@@ -53,13 +53,13 @@ describe('候補（F-201・F-204・F-207・F-210、R-3・R-4・R-9）', () => {
     expect(leaveOf(cs)).not.toContain('2026-11-02,2026-11-05')
   })
   test('R-5: 祝日・会社の休日の平日が並びに無いとき、核は leave でない最初の休みの日', () => {
-    const entry = { id: 'a', date: '2026-10-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+    const entry = { id: 'a', date: '2026-10-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
     const cal = buildRestCalendar({ holidays: data.holidays, companyHolidays: [], entries: [entry] })
     const cs = findCandidates({ ...base, cal, entryDates: new Set(['2026-10-23']), start: '2026-10-26', end: '2026-10-26' })
     expect(cs.find((c) => c.leaveDays[0] === '2026-10-26')?.core).toBe('2026-10-24')
   })
   test('R-5: 祝日に 1 日分の日程が重なっても核はその祝日', () => {
-    const entry = { id: 'a', date: '2026-11-03', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+    const entry = { id: 'a', date: '2026-11-03', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
     const cal = buildRestCalendar({ holidays: data.holidays, companyHolidays: [], entries: [entry] })
     const cs = findCandidates({ ...base, cal, entryDates: new Set(['2026-11-03']), start: '2026-11-02', end: '2026-11-02' })
     expect(cs.find((c) => c.leaveDays.join(',') === '2026-11-02')?.core).toBe('2026-11-03')

@@ -49,7 +49,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
   for (const type of settings.leaveTypes) {
     // §3.2・R-13: その種類の付与される日で区切った、今日が入る付与年で数える
     const year = grantYearOfType(settings, type.id, today)
-    const b = year === null ? null : balanceOf({ settings, entries, leaveTypeId: type.id, grantYearStart: year.start })
+    const b = year === null ? null : balanceOf({ settings, entries, leaveTypeId: type.id, grantYearStart: year.start, today })
     if (b === null) continue
     cards.push({
       leaveTypeId: type.id,

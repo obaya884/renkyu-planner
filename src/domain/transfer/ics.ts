@@ -9,9 +9,9 @@ const CRLF = '\r\n'
 /** RFC 5545 の 3.1。1 行は、行末の CRLF を除いて 75 オクテットまで */
 const MAX_LINE_OCTETS = 75
 
-/** E-1: これからの予定（取得済みでなく、日付が today 以降） */
+/** E-1: これからの予定（日付が today 以降）。今日の日程は取得済み（R-13）だが、これからの予定にも入る */
 export function isUpcoming(entry: Entry, today: IsoDate): boolean {
-  return !entry.done && entry.date >= today
+  return entry.date >= today
 }
 
 /** E-1: カレンダーに入れる日程。日付の早い順（同じ日付は元の並び） */

@@ -4,15 +4,14 @@ import type { EntryBlock, EntryRow } from '@/domain/view/quarterView'
 type RowProps = {
   workMinutes: number
   onOpen: (id: string) => void
-  onMarkDone: (id: string) => void
 }
 
 /** inBlock: 連休の見出しの下の行。連休は見出しに出すので、2 行目には添えない（§3.8） */
-function Row({ row, inBlock, workMinutes, onOpen, onMarkDone }: { row: EntryRow; inBlock: boolean } & RowProps) {
-  const { entry, overdue, overlap, run, leaveTypeName } = row
+function Row({ row, inBlock, workMinutes, onOpen }: { row: EntryRow; inBlock: boolean } & RowProps) {
+  const { entry, taken, overlap, run, leaveTypeName } = row
   const first = [formatDay(entry.date), amountText(entry.amount, workMinutes), entry.title].filter((s) => s !== '').join(' ')
-  const status = entry.done ? T.done : T.planned
-  const second = [status, overdue ? T.overdue : null, leaveTypeName, run === null || inBlock ? null : runHeading(run)].filter(
+  const status = taken ? T.done : T.planned
+  const second = [status, leaveTypeName, run === null || inBlock ? null : runHeading(run)].filter(
     (s) => s !== null,
   )
   return (
@@ -21,22 +20,13 @@ function Row({ row, inBlock, workMinutes, onOpen, onMarkDone }: { row: EntryRow;
         <span className="min-w-0">
           <span className="block">{first}</span>
           <span className="block text-sm text-sub">
-            <span className={overdue ? 'text-warn-ink' : ''}>{joinNotes(second)}</span>
+            <span>{joinNotes(second)}</span>
 
             {overlap && <span className="ml-2 text-warn-ink">{T.overlap}</span>}
           </span>
         </span>
-        {!overdue && <span aria-hidden className="ml-2 text-sub">›</span>}
+        <span aria-hidden className="ml-2 text-sub">›</span>
       </button>
-      {overdue && (
-        <button
-          type="button"
-          onClick={() => onMarkDone(entry.id)}
-          className="ml-2 min-h-11 shrink-0 rounded-lg bg-warn-bg px-3 text-sm text-warn-ink"
-        >
-          {T.markDone}
-        </button>
-      )}
     </li>
   )
 }

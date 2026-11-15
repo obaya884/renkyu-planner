@@ -30,7 +30,7 @@ function positionOf(grantYearStart: IsoDate, currentStart: IsoDate | undefined):
 /**
  * F-206・F-209: 休む日を 1 日分の予定として足したと仮定し、休む日が入る付与年ごとに未割り当てを足す前と後で求める。
  * 付与年はその休暇の種類の付与される日で区切る（R-13）。有休の付与日が未設定なら空。
- * `usage` は input の settings と entries から作った表（usageTableOf）。渡すと数え直さずに済む。値は同じ
+ * `usage` は input の settings と entries と today から作った表（usageTableOf）。渡すと数え直さずに済む。値は同じ
  */
 export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string, usage?: UsageTable): readonly GrantYearDelta[] {
   const starts = grantYearStartsOf(input, leaveTypeId, leaveDays)
@@ -42,14 +42,13 @@ export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], l
     leaveTypeId,
     amount: { unit: 'day' },
     title: '',
-    done: false,
   }))
   const after: PlannerInput = { ...input, entries: [...input.entries, ...added] }
-  const afterUsage = usage === undefined ? undefined : withAddedUsage(usage, input.settings, added)
+  const afterUsage = usage === undefined ? undefined : withAddedUsage(usage, input.settings, added, input.today)
 
   const currentStart = grantYearOfType(input.settings, leaveTypeId, input.today)?.start
   const unassignedOf = (target: PlannerInput, grantYearStart: IsoDate, table: UsageTable | undefined): number =>
-    balanceOf({ settings: target.settings, entries: target.entries, leaveTypeId, grantYearStart, usage: table })?.unassigned ?? 0
+    balanceOf({ settings: target.settings, entries: target.entries, leaveTypeId, grantYearStart, today: input.today, usage: table })?.unassigned ?? 0
   return starts.map((grantYearStart) => ({
     grantYearStart,
     before: unassignedOf(input, grantYearStart, usage),
@@ -65,5 +64,5 @@ export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], l
 export function remainingFor(input: PlannerInput, leaveTypeId: string, leaveDays: readonly IsoDate[]): number | null {
   const starts = grantYearStartsOf(input, leaveTypeId, leaveDays)
   if (starts === null || starts.length !== 1) return null
-  return balanceOf({ settings: input.settings, entries: input.entries, leaveTypeId, grantYearStart: starts[0] })?.remaining ?? null
+  return balanceOf({ settings: input.settings, entries: input.entries, leaveTypeId, grantYearStart: starts[0], today: input.today })?.remaining ?? null
 }

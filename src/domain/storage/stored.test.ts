@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/domain/types'
 import { EMPTY_STORED, isNewerVersion, parseStored, serializeStored } from './stored'
 
-const entry = { id: 'a', date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }
+const entry = { id: 'a', date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }
 const ok = { version: 1, settings: DEFAULT_SETTINGS, entries: [entry] }
 const parse = (o: unknown) => parseStored(JSON.stringify(o))
 
@@ -10,6 +10,18 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
   test('書き出して読むと元に戻る', () => {
     expect(parseStored(serializeStored(EMPTY_STORED))).toEqual({ ok: true, value: EMPTY_STORED })
     expect(parse(ok)).toEqual({ ok: true, value: ok })
+  })
+  test('D-4・R-13: 日程の done は読むときに無視する。古い記録（done あり）も新しい記録（done なし）も読め、書くときは done を書かない。版は 1 のまま', () => {
+    for (const done of [true, false, 'yes', null]) {
+      const r = parse({ ...ok, entries: [{ ...entry, done }] })
+      expect(r).toEqual({ ok: true, value: ok })
+      if (r.ok) expect(serializeStored(r.value)).not.toContain('done')
+    }
+    // 古い版のアプリが書いた形の文字列そのもの
+    const old = '{"version":1,"settings":' + JSON.stringify(DEFAULT_SETTINGS) + ',"entries":[{"id":"a","date":"2026-11-20","leaveTypeId":"paid","amount":{"unit":"day"},"title":"","done":true}]}'
+    const r0 = parseStored(old)
+    expect(r0).toEqual({ ok: true, value: ok })
+    if (r0.ok) expect(JSON.parse(serializeStored(r0.value)).version).toBe(1)
   })
   test('知らない項目は読み捨てる', () => {
     const r = parse({ ...ok, extra: 1, entries: [{ ...entry, memo: 'x' }] })
@@ -40,7 +52,6 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(bad({ amount: { unit: 'minutes', minutes: 0 } })).toBe(false)
     expect(bad({ amount: { unit: 'minutes', minutes: 1.5 } })).toBe(false)
     expect(bad({ amount: { unit: 'week' } })).toBe(false)
-    expect(bad({ done: 'yes' })).toBe(false)
     expect(parse({ ...ok, entries: [entry, entry] }).ok).toBe(false) // id の重複
   })
   test('D-4: 設定の決まり。R-15 に合わない会社の休日は読むときに落とす', () => {

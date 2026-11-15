@@ -53,7 +53,7 @@ test('R-13・F-209: 次の付与年に付与日数だけ入れたときは、繰
 })
 test('F-206・F-209・R-13: 組み立ての表（usageTableOf）を渡しても、値は渡さないときと同じ', () => {
   const next16 = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
-  const withHalf = { ...next16, entries: [...next16.entries, { id: 'h', date: '2027-03-01', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: false } as const] }
+  const withHalf = { ...next16, entries: [...next16.entries, { id: 'h', date: '2027-03-01', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '' } as const] }
   const cases = [
     [SHEET, ['2026-11-20'], 'paid'],
     [next16, ['2027-04-28', '2027-05-06'], 'paid'],
@@ -62,6 +62,6 @@ test('F-206・F-209・R-13: 組み立ての表（usageTableOf）を渡しても�
     [UNSET, ['2026-11-20'], 'paid'],
   ] as const
   for (const [input, days, type] of cases) {
-    expect(previewAdd(input, days, type, usageTableOf(input.settings, input.entries))).toEqual(previewAdd(input, days, type))
+    expect(previewAdd(input, days, type, usageTableOf(input.settings, input.entries, input.today))).toEqual(previewAdd(input, days, type))
   }
 })

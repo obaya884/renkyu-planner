@@ -5,6 +5,7 @@ import { groupCandidates } from '../candidates/groupCandidates'
 import { monthGaps } from '../candidates/monthGap'
 import { isShort } from '../leave/amount'
 import { type UsageTable, grantYearOfType, usageTableOf } from '../leave/balance'
+import { isTaken } from '../leave/taken'
 import type { Quarter } from '../quarters/quarters'
 import { type IsoDate, addDays, eachDay } from '../shared/date'
 import type { Entry } from '../types'
@@ -22,14 +23,14 @@ const SMALL_STRIP_DAYS = 10
 
 export type EntryMark = 'done' | 'planned'
 
-/** §3.6: 日付ごとの日程の印。その日に取得済みが 1 件でもあれば done、取得済みが無く日程があれば planned。日程の無い日は持たない */
-function entryMarksOf(entries: readonly Entry[]): ReadonlyMap<IsoDate, EntryMark> {
+/** §3.6・R-13: 日付ごとの日程の印。日程のある日が、今日以前なら done、今日より後なら planned。日程の無い日は持たない */
+function entryMarksOf(entries: readonly Entry[], today: IsoDate): ReadonlyMap<IsoDate, EntryMark> {
   const marks = new Map<IsoDate, EntryMark>()
-  for (const e of entries) if (e.done || !marks.has(e.date)) marks.set(e.date, e.done ? 'done' : 'planned')
+  for (const e of entries) marks.set(e.date, isTaken(e, today) ? 'done' : 'planned')
   return marks
 }
 
-/** §3.6: その日の日程の印。取得済みが 1 件でもあれば done、日程があれば planned、無ければ null。月カレンダーと日の並びで共通 */
+/** §3.6: その日の日程の印。取得済みなら done、予定なら planned、日程が無ければ null。月カレンダーと日の並びで共通 */
 export function entryMarkOf(ctx: Ctx, d: IsoDate): EntryMark | null {
   return ctx.entryMarks.get(d) ?? null
 }
@@ -107,7 +108,7 @@ export const isLongRun = (run: Run | null): boolean => run !== null && run.days 
 export type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; entryMarks: ReadonlyMap<IsoDate, EntryMark>; usage: UsageTable }>
 
 export function ctxOf(input: PlannerInput): Ctx {
-  return { input, cal: restCalendarOf(input), entryMarks: entryMarksOf(input.entries), usage: usageTableOf(input.settings, input.entries) }
+  return { input, cal: restCalendarOf(input), entryMarks: entryMarksOf(input.entries, input.today), usage: usageTableOf(input.settings, input.entries, input.today) }
 }
 
 /** leaveDays をその種類の 1 日分の予定として足したときの、不足している付与年の不足の合計。モーダル（previewAdd）と同じ数え方（§3.7） */

@@ -3,7 +3,7 @@ import { calendarEventTitle } from '@/app/texts'
 import { SHEET } from '@/domain/view/fixture'
 import { calendarEventOf, calendarEventsOf, calendarUrlOf } from './calendarEvents'
 
-const base = { id: 'x', date: '2026-12-28', leaveTypeId: 'paid', title: '', done: false } as const
+const base = { id: 'x', date: '2026-12-28', leaveTypeId: 'paid', title: '' } as const
 test('F-506・§6: 予定の題', () => {
   expect(calendarEventTitle({ ...base, title: '年末年始', amount: { unit: 'day' } }, '有休', 480)).toBe('年末年始')
   expect(calendarEventTitle({ ...base, title: '  ', amount: { unit: 'day' } }, '有休', 480)).toBe('有休')
@@ -33,7 +33,10 @@ test('F-506・§5.2: Google カレンダーのリンクは、これからの予�
   )
   expect(calendarUrlOf(e, SHEET.settings, '2026-12-28')).not.toBeNull()
   expect(calendarUrlOf(e, SHEET.settings, '2026-12-29')).toBeNull()        // 過ぎた日程
-  expect(calendarUrlOf({ ...e, done: true }, SHEET.settings, '2026-11-15')).toBeNull()  // 取得済み
+  // 今日の日程は取得済み（R-13）だが、これからの予定なのでリンクを出す（§5.2・E-1）
+  expect(calendarUrlOf(e, SHEET.settings, '2026-12-28')).toContain('dates=20261228/20261229')
+  const past = SHEET.entries.find((x) => x.date === '2026-11-02')!
+  expect(calendarUrlOf(past, SHEET.settings, '2026-11-15')).toBeNull()     // 過ぎた日の日程
   expect(calendarUrlOf(undefined, SHEET.settings, '2026-11-15')).toBeNull()             // 開いている日程が無い
 })
 test('F-506・§6: 名前が空、または除く文字だけなら、リンクの題は休暇の種類の名前', () => {

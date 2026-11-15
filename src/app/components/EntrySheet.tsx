@@ -85,14 +85,13 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
   const [mins, setMins] = useState(String(initialMinutes % 60))
   const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === PAID_LEAVE_TYPE_ID)?.id ?? leaveTypes[0].id)
   const [title, setTitle] = useState(entry?.title ?? '')
-  const [done, setDone] = useState(entry?.done ?? false)
   // F-307: 足すときだけ。空なら日付の 1 日だけを足す
   const [endDate, setEndDate] = useState('')
   const ranged = adding && endDate !== ''
 
   const amount: Amount =
     kind === 'minutes' ? { unit: 'minutes', minutes: Number(hours) * 60 + Number(mins) } : { unit: kind }
-  const draft: EntryDraft = { date, leaveTypeId, amount, title, done }
+  const draft: EntryDraft = { date, leaveTypeId, amount, title }
   const { errors, overOneDay } = checkEntryDraft(input, draft, entry?.id ?? null)
 
   const lastAddable = lastAddableDate(input.today)
@@ -182,11 +181,6 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         <Field label={T.entryTitleLabel}>
           <input type="text" maxLength={STORAGE_LIMITS.textLength} value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
-        <fieldset>
-          <legend className="text-sm text-sub">{T.statusLabel}</legend>
-          <Choice name="status" label={T.planned} checked={!done} onChange={() => setDone(false)} />
-          <Choice name="status" label={T.done} checked={done} onChange={() => setDone(true)} />
-        </fieldset>
         {calendarUrl !== null && (
           <Line label={T.calendarRowLabel}>
             <a href={calendarUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary underline">

@@ -12,7 +12,7 @@ const ids = () => {
   let n = 0
   return () => `id-${++n}`
 }
-const draft = (date: string) => ({ date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }) as const
+const draft = (date: string) => ({ date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const
 
 test('D-6: 何も無ければ空の記録で始まる', () => {
   const s = createPlannerStore(memory(), ids())
@@ -29,9 +29,9 @@ test('D-7: 日程を足す・直す・消すたびに全体を書く', () => {
     ['id-1', '2026-12-28'],
     ['id-2', '2026-12-29'],
   ])
-  s.updateEntry('id-1', { ...draft('2026-12-28'), done: true })
+  s.updateEntry('id-1', { ...draft('2026-12-28') })
   s.removeEntry('id-2')
-  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries).toEqual([{ id: 'id-1', ...draft('2026-12-28'), done: true }])
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries).toEqual([{ id: 'id-1', ...draft('2026-12-28') }])
 })
 test('D-3: 保存された記録を読む', () => {
   const m = memory()
@@ -166,12 +166,12 @@ test('§5.3・F-101: 付与日を 05-01 から 04-01 に直すと、設定は新
   const { settings, entries } = s.getState().data
   expect(Object.keys(settings.grantYears)).toEqual(['2026-04-01'])
   expect(entries).toHaveLength(12)
-  const b = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01' })
+  const b = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01', today: SHEET.today })
   // 2026-04-01〜2027-03-31 の SHEET の日程（所定労働時間 480 分、時間単位の日程は 120 分）
   // 取得済み: 1 日の 5/15・6/22・8/10・11/2 と、2 時間の 5/21・9/4・10/7 → 4 × 480 + 3 × 120 = 2280
   // 予定: 12/28・12/29・2027/2/12・2027/2/22 の 4 日 → 4 × 480 = 1920（2027/4/30 は次の付与年へ移る）
   expect(b).toMatchObject({ entitlement: 14 * 480, taken: 4 * 480 + 3 * 120, planned: 4 * 480 })
-  const next = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2027-04-01' })
+  const next = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2027-04-01', today: SHEET.today })
   expect(next?.planned).toBe(480) // 2027/4/30 の 1 日
 })
 test('§5.3: いまの付与年に 18 日の上書きがあり、付与日だけ変えて保存すると、新しい付与年の設定に同じ分の上書きが入る', () => {
@@ -184,7 +184,7 @@ test('§5.3: いまの付与年に 18 日の上書きがあり、付与日だけ
   s.setGrant({ grantDay: '04-01', grantDays: 14, entitlementMinutes }, '2026-04-01')
   const saved = s.getState().data
   expect(saved.settings.grantYears).toEqual({ '2026-04-01': { grantDays: 14, entitlementMinutes: 18 * 480 } })
-  expect(balanceOf({ settings: saved.settings, entries: saved.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01' })?.entitlement).toBe(18 * 480)
+  expect(balanceOf({ settings: saved.settings, entries: saved.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01', today: SHEET.today })?.entitlement).toBe(18 * 480)
 })
 test('存在しない id の更新と削除は何もしない', () => {
   const m = memory()
@@ -243,7 +243,7 @@ test('D-8: reload は、読み込む前には何もしない', () => {
 test('F-102・F-108: 所定労働時間と週の始まりを保存する。上書きと時間単位の日程は書き換えない', () => {
   const m = memory(); const s = createPlannerStore(m, ids()); s.load()
   s.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 8640 }, '2026-05-01')
-  s.addEntries([{ date: '2026-11-16', leaveTypeId: 'paid', amount: { unit: 'minutes', minutes: 480 }, title: '', done: false }])
+  s.addEntries([{ date: '2026-11-16', leaveTypeId: 'paid', amount: { unit: 'minutes', minutes: 480 }, title: '' }])
   s.setWorkMinutes(465)
   s.setWeekStart('sunday')
   const saved = JSON.parse(m.dump()[STORAGE_KEY])
@@ -275,7 +275,7 @@ test('F-104・§5.5: 休暇の種類を足す・直す。有休と、日程が�
   s.saveLeaveType(null, d())
   s.saveLeaveType('id-1', d({ days: 5, usable: null, grantDay: '01-01', together: true }))
   s.saveLeaveType('paid', d({ name: 'x' }))
-  s.addEntries([{ date: '2027-08-02', leaveTypeId: 'id-1', amount: { unit: 'day' }, title: '', done: false }])
+  s.addEntries([{ date: '2027-08-02', leaveTypeId: 'id-1', amount: { unit: 'day' }, title: '' }])
   s.removeLeaveType('paid')
   s.removeLeaveType('id-1')
   const saved = JSON.parse(m.dump()[STORAGE_KEY])
@@ -370,7 +370,7 @@ test('D-14: ふつうの操作は今までどおり通り、どの操作のあ�
   const m = memory(); const s = createPlannerStore(m, ids()); s.load()
   const readable = () => expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
   s.addEntries([draft('2026-11-20'), draft('2026-11-23')]); readable()
-  s.updateEntry('id-1', { ...draft('2026-11-20'), title: 'あ'.repeat(100), done: true }); readable()
+  s.updateEntry('id-1', { ...draft('2026-11-20'), title: 'あ'.repeat(100) }); readable()
   s.saveLeaveType(null, { name: '夏季', days: 3, usable: null, grantDay: null, together: false }); readable()
   s.saveCompanyHoliday(null, { kind: 'once', start: '2026-08-13', end: '2026-08-16', name: '盆' }); readable()
   s.setWorkMinutes(450); s.setWeekStart('sunday'); readable()

@@ -4,7 +4,7 @@ import { addDays } from '../shared/date'
 import { buildRestCalendar, restRuns, runContaining } from './restDays'
 
 const nenmatsu = { kind: 'yearly', start: '12-30', end: '01-03' } as const
-const day = (date: string) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }) as const
+const day = (date: string) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const
 
 describe('休みの日と連休（R-1・R-2・R-15）', () => {
   test('土日と祝日だけで 2026 年 9 月は 9/19〜9/23 の 5 連休になる', () => {

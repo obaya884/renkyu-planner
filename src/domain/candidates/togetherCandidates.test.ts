@@ -96,7 +96,7 @@ test('R-20: D は 1 つの付与年に入る。付与される日が有休と同
   ]])
 })
 test('R-20: 日程のある日（半日でも）を D に含めない', () => {
-  const half = { id: 'h', date: '2026-12-23', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: false } as const
+  const half = { id: 'h', date: '2026-12-23', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '' } as const
   const i = withFree({}, { ...SHEET, entries: [...SHEET.entries, half] })
   expect(brief(i)[0]).toEqual(['2026-10-01', [
     ['2026-11-16', '2026-11-20', '2026-11-14', '2026-11-23', 10],
@@ -107,7 +107,7 @@ test('R-20: 日程のある日（半日でも）を D に含めない', () => {
   ]])
 })
 test('R-20・F-212: その種類の日程がある付与年には出さない。次の付与年の分は出す', () => {
-  const used = { id: 'u', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'half' }, title: '', done: false } as const
+  const used = { id: 'u', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'half' }, title: '' } as const
   expect(brief(withFree({}, { ...SHEET, entries: [...SHEET.entries, used] }))).toEqual(SHEET_FREE.slice(1))
 })
 test('R-20: 使える期間があれば、D の全部がその期間に入る', () => {

@@ -35,7 +35,7 @@ test('F-208・R-13: 1 日しかない種類でも、休む日がその種類の�
 })
 test('F-208・R-13: 付与年をまたぐとき、片方の付与年にその種類の日程があって足りなければ有休', () => {
   // 2026-09-10 に取得済みの 1 日があるので、2026-09-01 の付与年の未割り当ては 480 − 480 = 0。8/31 を足すと 0 − 480 = −480 < 0
-  const used = { id: 'a1', date: '2026-09-10', leaveTypeId: 'autumn', amount: { unit: 'day' }, title: '', done: true } as const
+  const used = { id: 'a1', date: '2026-09-10', leaveTypeId: 'autumn', amount: { unit: 'day' }, title: '' } as const
   const input = { ...withTypes([autumn]), entries: [...SHEET.entries, used] }
   expect(defaultLeaveTypeId(input, crossing)).toBe('paid')
 })

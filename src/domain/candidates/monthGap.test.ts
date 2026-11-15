@@ -13,7 +13,7 @@ test('F-205・R-8: 平日に祝日のない月（2027 年 6 月）に、金曜�
   expect(gaps[0].unconfirmed).toBe(false)
 })
 test('R-8: その月に 1 日分の日程があれば出さない', () => {
-  const entry = { id: 'a', date: '2027-06-18', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+  const entry = { id: 'a', date: '2027-06-18', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
   expect(monthGaps({ ...base, entries: [entry], start: '2027-06-01', end: '2027-06-30' })).toEqual([])
 })
 test('R-9: 月の末日が確定期限より後なら未確定', () => {
@@ -30,7 +30,7 @@ test('R-8: 会社の休日が平日にある月には出さない', () => {
   expect(monthGaps({ ...base, cal: company, start: '2027-06-01', end: '2027-06-30' })).toEqual([])
 })
 test('F-205: 日程のある日は選択肢にしない（半日などの日程でも）', () => {
-  const entry = { id: 'a', date: '2027-06-04', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: false } as const
+  const entry = { id: 'a', date: '2027-06-04', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '' } as const
   const gaps = monthGaps({ ...base, entries: [entry], start: '2027-06-01', end: '2027-06-30' })
   expect(gaps[0].options).not.toContain('2027-06-04')
 })

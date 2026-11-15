@@ -86,11 +86,12 @@ test('E-5: 4 オクテットの文字（サロゲートペア）も途中で切�
   expect(text.replaceAll(`${CRLF} `, '')).toContain(`SUMMARY:${'😀'.repeat(40)}${CRLF}`)
   expect(lines.filter((l) => l.startsWith(' ')).length).toBeGreaterThanOrEqual(2)
 })
-test('E-1: 入れるのは、取得済みでない日程のうち今日以降のもの', () => {
+test('E-1: 入れるのは、日付が今日以降の日程。今日の日程は取得済み（R-13）だが入れる', () => {
   expect(calendarEntries(SHEET.entries, '2026-11-15').map((e) => e.date)).toEqual(['2026-12-28', '2026-12-29', '2027-02-12', '2027-02-22', '2027-04-30'])
   expect(calendarEntries(SHEET.entries, '2026-12-29').map((e) => e.date)).toEqual(['2026-12-29', '2027-02-12', '2027-02-22', '2027-04-30'])
   const e = SHEET.entries.find((x) => x.date === '2026-12-28')!
-  expect([isUpcoming(e, '2026-12-28'), isUpcoming(e, '2026-12-29'), isUpcoming({ ...e, done: true }, '2026-11-15')]).toEqual([true, false, false])
+  expect([isUpcoming(e, '2026-12-27'), isUpcoming(e, '2026-12-28'), isUpcoming(e, '2026-12-29')]).toEqual([true, true, false])
+  expect(calendarEntries(SHEET.entries, '2026-12-28').map((x) => x.date)).toEqual(['2026-12-28', '2026-12-29', '2027-02-12', '2027-02-22', '2027-04-30'])
 })
 test('E-1: 日付の早い順。同じ日付は元の並び', () => {
   const e = SHEET.entries.find((x) => x.date === '2026-12-28')!

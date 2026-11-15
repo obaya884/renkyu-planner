@@ -21,5 +21,5 @@ test('D-10: clipText は 100 文字で切る。ちょうどと短いものはそ
   expect(clipText('短い')).toBe('短い')
   const cut = clipText('a'.repeat(99) + '𠮷' + 'b') // 𠮷 は length 2。100 文字目の途中で切れる
   expect(cut).toBe('a'.repeat(99))
-  expect(parseStored(serializeStored({ ...EMPTY_STORED, entries: [{ id: 'x', date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: cut, done: false }] })).ok).toBe(true)
+  expect(parseStored(serializeStored({ ...EMPTY_STORED, entries: [{ id: 'x', date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: cut }] })).ok).toBe(true)
 })

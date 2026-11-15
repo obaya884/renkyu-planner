@@ -43,8 +43,8 @@ test('F-407: 今の付与年に設定が無く、前の年にあれば知らせ�
 
 const free = (grantDay: string | null) => ({ id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay, together: true })
 const freeEntries = [
-  { id: 'f1', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: true },
-  { id: 'f2', date: '2027-02-03', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: false },
+  { id: 'f1', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '' },
+  { id: 'f2', date: '2027-02-03', leaveTypeId: 'free', amount: { unit: 'day' }, title: '' },
 ] as const
 test('§3.2・R-13: 足した休暇のカードは、その種類の付与される日で区切った、今日が入る付与年で数える', () => {
   const s = buildSummary({
@@ -53,11 +53,12 @@ test('§3.2・R-13: 足した休暇のカードは、その種類の付与され
     entries: [...SHEET.entries, ...freeEntries],
   })
   expect(s.cards[0]).toEqual(buildSummary(SHEET).cards[0])
-  expect(s.cards[1]).toMatchObject({ leaveTypeId: 'free', remaining: 1920, planned: 0, unassigned: 1920 }) // 2026-01-01〜2026-12-31
+  // 2026-01-01〜2026-12-31。12/10 は今日（11/15）より後なので予定（R-13）
+  expect(s.cards[1]).toMatchObject({ leaveTypeId: 'free', remaining: 2400, planned: 480, unassigned: 1920 })
 })
 
 const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
-const summerDone = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+const summerDone = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
 const withSummer = (entries: typeof SHEET.entries) => ({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries })
 test('§3.2: 使える期間があり、残りが 0 なら使い切り', () => {
   expect(buildSummary(withSummer([...SHEET.entries, summerDone])).cards[1]).toMatchObject({ remaining: 0, usable: { start: '07-01', end: '09-30' }, usedUp: true })
@@ -70,19 +71,19 @@ test('§3.2・F-211: paid は有休の 1 件、extras は足した休暇。使�
   expect(s.paid?.leaveTypeId).toBe('paid')
   expect(s.extras).toEqual([])
   const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
-  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true }) as const
+  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' }) as const
   const over = buildSummary({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: [...SHEET.entries, e('a', '2026-07-15'), e('b', '2026-07-16')] })
   expect(over.extras[0]).toMatchObject({ leaveTypeId: 'summer', short: true, usedUp: false })
 })
 
 test('§3.2・I-2: 取得済みが持ち分を超えて残りが負なら、残りは 0。未割り当ては負のまま（不足で出す）', () => {
   // 夏季休暇 1 日（480 分）に取得済みの 1 日分が 2 件: 計算の残り 480 − 960 = −480 → 出す残りは 0。未割り当て −480 − 0 = −480
-  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true }) as const
+  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' }) as const
   const over = buildSummary(withSummer([...SHEET.entries, e('a', '2026-07-15'), e('b', '2026-07-16')]))
   expect(over.extras[0]).toMatchObject({ remaining: 0, unassigned: -480, short: true, usedUp: false })
   // 有休: 付与 5 日（2400 分）に、SHEET の取得済み 4 日と 6 時間（4 × 480 + 3 × 120 = 2280 分）と、取得済みの 1 日分 2 件（960 分）
   // 計算の残り 2400 − 3240 = −840 → 出す残りは 0
-  const p = (id: string, date: string) => ({ id, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const
+  const p = (id: string, date: string) => ({ id, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const
   const paid = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 5, entitlementMinutes: null } } }, entries: [...SHEET.entries, p('x', '2026-11-04'), p('y', '2026-11-05')] })
   expect(paid.paid).toMatchObject({ remaining: 0, short: true })
 })

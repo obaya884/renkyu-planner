@@ -7,13 +7,13 @@ export type CompanyHoliday = Readonly<
 
 export type Amount = Readonly<{ unit: 'day' } | { unit: 'half' } | { unit: 'minutes'; minutes: number }>
 
+/** 取得済みか予定かは持たず、日付と今日で決める（R-13。isTaken） */
 export type Entry = Readonly<{
   id: string
   date: IsoDate
   leaveTypeId: string
   amount: Amount
   title: string
-  done: boolean
 }>
 
 /** 有休の休暇の種類の `id` */

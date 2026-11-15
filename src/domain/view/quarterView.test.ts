@@ -37,7 +37,7 @@ test('F-203・R-7: 候補の組。休む日数がいちばん少ない候補を�
   expect(q4.monthGaps).toEqual([]) // 12 月は平日に会社の休日がある
 })
 test('F-203・§5.1: primary は休む日数がいちばん少ない候補の全部（効率の差を問わない）。連休の長い順', () => {
-  const plan = (date: string) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }) as const
+  const plan = (date: string) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const
   const input = { ...SHEET, entries: [...SHEET.entries, plan('2026-11-24'), plan('2026-11-25'), plan('2026-11-26')] }
   const [v] = buildQuarterViews(input, qs)
   const nov = v.groups.find((g) => g.core === '2026-11-23')
@@ -83,13 +83,21 @@ test('F-211: 足りない候補は shortMinutes を持つ', () => {
   const nov = t4.groups.find((g) => g.core === '2026-11-23')
   expect(nov?.primary[0].shortMinutes).toBe(360)
 })
-test('F-305・Review Focus 3: 過ぎた予定と、休みの日に重なった日程', () => {
-  const entries = [...SHEET.entries, { id: 'x', date: '2026-11-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院', done: false } as const, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const]
+test('F-305・R-13・Review Focus 3: 過ぎた日の日程は取得済みの行になる。休みの日に重なった日程', () => {
+  const entries = [...SHEET.entries, { id: 'x', date: '2026-11-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院' } as const, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const]
   const [v] = buildQuarterViews({ ...SHEET, entries }, qs)
   const rows = v.entries.flatMap((b) => b.rows)
-  expect(rows.find((r) => r.entry.id === 'x')).toMatchObject({ overdue: true, overlap: false })
-  expect(rows.find((r) => r.entry.id === 'y')).toMatchObject({ overdue: false, overlap: true })
+  expect(rows.find((r) => r.entry.id === 'x')).toEqual(expect.objectContaining({ taken: true, overlap: false }))
+  expect(rows.find((r) => r.entry.id === 'x')).not.toHaveProperty('overdue')
+  expect(rows.find((r) => r.entry.id === 'y')).toMatchObject({ taken: false, overlap: true })
+  expect(cell(v, '2026-11-13')?.mark).toBe('done')
   expect(cell(v, '2026-11-23')?.mark).toBe('planned')
+  // 今日（11/15）の日程は取得済み。日付が変わると、11/23 の日程も取得済みになる
+  const today = { id: 't', date: '2026-11-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
+  expect(buildQuarterViews({ ...SHEET, entries: [...entries, today] }, qs)[0].entries.flatMap((b) => b.rows).find((r) => r.entry.id === 't')?.taken).toBe(true)
+  const [later] = buildQuarterViews({ ...SHEET, today: '2026-11-23', entries }, qs)
+  expect(later.entries.flatMap((b) => b.rows).find((r) => r.entry.id === 'y')?.taken).toBe(true)
+  expect(cell(later, '2026-11-23')?.mark).toBe('done')
 })
 test('F-508: 過ぎた四半期は候補を出さない', () => {
   const [past] = buildQuarterViews(SHEET, planningQuarters('2026-11-15', -1))
@@ -104,7 +112,7 @@ test('F-304・R-14: 日程の塊と行に、長めかどうかと休暇の種類
   expect(q4.entries[2].rows[0].long).toBe(true)
   expect(q4.entries[0].rows[0].long).toBe(false) // 連休に入らない
   const types = [...SHEET.settings.leaveTypes, { id: 'sum', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }]
-  const entries = [...SHEET.entries, { id: 'z', date: '2026-11-30', leaveTypeId: 'sum', amount: { unit: 'half' }, title: '', done: false } as const]
+  const entries = [...SHEET.entries, { id: 'z', date: '2026-11-30', leaveTypeId: 'sum', amount: { unit: 'half' }, title: '' } as const]
   const [v] = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: types }, entries }, qs)
   expect(v.entries.flatMap((b) => b.rows).find((r) => r.entry.id === 'z')?.leaveTypeName).toBe('夏季休暇')
 })
@@ -135,7 +143,7 @@ test('§3.2・F-211: 0.5 分の端数で 1 分に満たない不足は、不足�
   const input = {
     ...UNSET,
     settings: { ...UNSET.settings, workMinutes: 465, grantDay: '05-01', grantYears: { '2026-05-01': { grantDays: 1, entitlementMinutes: 697 } } },
-    entries: [{ id: 'h', date: '2026-10-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: true } as const],
+    entries: [{ id: 'h', date: '2026-10-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '' } as const],
   }
   const [v] = buildQuarterViews(input, qs)
   const row = rowsOf(v).find((r) => r.leaveDays.join() === '2026-11-20')

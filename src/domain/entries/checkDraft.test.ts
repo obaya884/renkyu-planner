@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { SHEET } from '@/domain/view/fixture'
 import { checkEntryDraft, checkGrantDraft, lastAddableDate } from './checkDraft'
 
-const draft = (date: string, amount: object = { unit: 'day' }) => ({ date, leaveTypeId: 'paid', amount, title: '', done: false }) as never
+const draft = (date: string, amount: object = { unit: 'day' }) => ({ date, leaveTypeId: 'paid', amount, title: '' }) as never
 
 test('R-17: 休みの日には入れられない（土日・祝日・会社の休日）', () => {
   expect(checkEntryDraft(SHEET, draft('2026-11-14'), null).errors).toEqual(['restDay'])  // 土曜
@@ -12,7 +12,7 @@ test('R-17: 休みの日には入れられない（土日・祝日・会社の�
   expect(checkEntryDraft(SHEET, draft('2026-11-14', { unit: 'half' }), null).errors).toEqual(['restDay']) // 量を問わない
 })
 test('R-17: 休みの日と重なった日程は、同じ日付で保存し直せない。Review Focus 3', () => {
-  const overlapped = { ...SHEET, entries: [...SHEET.entries, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const] }
+  const overlapped = { ...SHEET, entries: [...SHEET.entries, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const] }
   expect(checkEntryDraft(overlapped, draft('2026-11-23'), 'y').errors).toEqual(['restDay'])
 })
 test('日付と量と休暇の種類の検証', () => {

@@ -1,5 +1,6 @@
 import { type Run, runContaining } from '../calendar/restDays'
 import { grantDaysOf } from '../leave/balance'
+import { isTaken } from '../leave/taken'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
@@ -20,7 +21,8 @@ export type MonthView = Readonly<{ month: IsoDate; weekStart: WeekStart; weeks: 
 
 export type EntryRow = Readonly<{
   entry: Entry
-  overdue: boolean
+  /** 取得済みか（日付が今日以前。R-13）。false なら予定 */
+  taken: boolean
   overlap: boolean
   run: Run | null
   /** run が長め（5 日以上）。run が null なら false */
@@ -114,7 +116,7 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
       const run = entry.amount.unit === 'day' ? runContaining(cal, entry.date) : null
       return {
         entry,
-        overdue: !entry.done && entry.date < input.today,
+        taken: isTaken(entry, input.today),
         overlap: kind !== null && kind !== 'leave',
         run,
         long: isLongRun(run),

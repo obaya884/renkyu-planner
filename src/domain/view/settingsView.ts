@@ -22,7 +22,7 @@ function rowOf(input: PlannerInput, grantDay: MonthDay, start: IsoDate): GrantYe
     end,
     entered: settings.grantYears[start] !== undefined,
     grantDays: grantDaysOf(settings, start),
-    entitlement: balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: start })?.entitlement ?? 0,
+    entitlement: balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: start, today: input.today })?.entitlement ?? 0,
   }
 }
 

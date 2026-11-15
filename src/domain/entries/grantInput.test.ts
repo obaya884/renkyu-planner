@@ -97,7 +97,7 @@ test('§5.3: 保存したあとの設定。付与日を変えると、ほかの�
 test('§5.3・R-13: 付与日を変えるとき、計算した持ち分は保存したあとの設定で数え、保存前の設定で数えた値とは違う', () => {
   // 前の付与年（2025-05-01〜2026-04-30）に 10 日の設定と、取得済みの 1 日（2026-02-10）がある。今日は 2026-11-15
   const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 10, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
-  const entries = [{ id: 'e1', date: '2026-02-10', leaveTypeId: PAID_LEAVE_TYPE_ID, amount: { unit: 'day' }, title: '', done: true }] as const
+  const entries = [{ id: 'e1', date: '2026-02-10', leaveTypeId: PAID_LEAVE_TYPE_ID, amount: { unit: 'day' }, title: '' }] as const
   const input = { ...SHEET, settings, entries }
   // 付与日を 06-01 に変えると、今日が入る新しい付与年は 2026-06-01〜
   const after = settingsAfterGrant(settings, { grantDay: '06-01', grantDays: 14, entitlementMinutes: null }, '2026-06-01')
@@ -121,7 +121,7 @@ test('§5.3: 付与日を変えて保存するときは、欄に出ている使�
   // いまの付与年（2026-05-01〜）に 18 日の上書きがある
   const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: 18 * 480 } } }
   // 欄に出る値は、いまの付与年の持ち分 = 上書きの 18 × 480
-  const shown = balanceOf({ settings, entries: SHEET.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-05-01' })?.entitlement
+  const shown = balanceOf({ settings, entries: SHEET.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-05-01', today: SHEET.today })?.entitlement
   expect(shown).toBe(18 * 480)
   // 保存後はほかの付与年の設定が無く繰り越しが 0 なので、計算した持ち分 = 14 × 480。新しい付与年 2026-04-01 にはまだ上書きが無い（null）
   const toSave = { mode: 'changeDay', settings, grantDay: '04-01', touched: false, enteredMinutes: 18 * 480, computedMinutes: 14 * 480, existing: null } as const

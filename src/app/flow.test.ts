@@ -24,7 +24,7 @@ test('成功基準 2: 何も入れずに候補が見え、候補を入れ、付�
   const nov = v.quarters[0].groups.find((g) => g.core === '2026-11-23')
   expect(nov?.primary[0].leaveDays).toEqual(['2026-11-20'])
 
-  s.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }])
+  s.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }])
   v = view(s)
   expect(v.quarters[0].entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2026-11-20'])
   // F-207: 入れた日を休む候補は消え、その日を休みとして計算し直した候補が出る
@@ -81,7 +81,7 @@ test('F-212: まとめて取る休暇を足すと組が出る。その付与年�
   // 12/30・12/31 の 2 日 + 1/1〜1/11 の 11 日（1/9・1/10 は土日、1/11 は成人の日）= 13 連休
   expect(v.quarters[1].together[0].primary.run).toEqual({ start: '2026-12-30', end: '2027-01-11', days: 13 })
 
-  s.addEntries(v.quarters[0].together[0].primary.leaveDays.map((date) => ({ date, leaveTypeId: id, amount: { unit: 'day' as const }, title: '', done: false })))
+  s.addEntries(v.quarters[0].together[0].primary.leaveDays.map((date) => ({ date, leaveTypeId: id, amount: { unit: 'day' as const }, title: '' })))
   v = view(s)
   expect(v.quarters[0].together).toEqual([]) // 2026 年の付与年はもう使った
   // 2027 年の分は残る。入れた 5 日を休みの日として数え直すと 12/23 から続くので、
@@ -104,7 +104,7 @@ test('F-307: 期間で足した日程が、日程の欄と持ち分に入る', (
   expect(errors).toEqual([])
   // 12/28〜1/4 のうち、12/28・12/29・1/4 の 3 日だけが足す日（12/30〜1/3 は会社の休日・祝日・土日）
   expect(days).toEqual(['2026-12-28', '2026-12-29', '2027-01-04'])
-  s.addEntries(days.map((date) => ({ date, leaveTypeId: 'paid', amount: { unit: 'day' as const }, title: '年末年始', done: false })))
+  s.addEntries(days.map((date) => ({ date, leaveTypeId: 'paid', amount: { unit: 'day' as const }, title: '年末年始' })))
   const v = view(s)
   expect(v.quarters[0].entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2026-12-28', '2026-12-29'])
   expect(v.quarters[1].entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2027-01-04'])
@@ -117,12 +117,12 @@ test('F-505: 書き出したファイルを別の端末で読み込むと、同�
   const a = createPlannerStore(memory(), () => `a-${++n}`); a.load()
   a.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: null }, '2026-05-01')
   a.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
-  a.addEntries([{ date: '2026-12-28', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '年末年始', done: false }])
+  a.addEntries([{ date: '2026-12-28', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '年末年始' }])
   // 手で数えた式: 予定は 12/28 の 1 日 = 480 分、未割り当て = 付与 14 日 - 1 日 = 13 日
   expect(view(a).summary.paid).toMatchObject({ planned: 480, unassigned: 13 * 480 })
   const r = parseStored(serializeStored(a.getState().data))
   const b = createPlannerStore(memory(), () => `b-${++n}`); b.load()
-  b.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }])
+  b.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }])
   const before = b.getState().data
   if (!r.ok) throw new Error('読めない')
   b.replaceAll(r.value)

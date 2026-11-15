@@ -23,7 +23,7 @@ function overLimit(input: PlannerInput, adding: number, editingId: string | null
 /**
  * §5.2・F-307: 日程のモーダルで保存する日程と、保存できるか。
  * `range` は終わりの日を入れたときの previewRange、空なら null。期間のときは、量を 1 日にし、
- * 引く休暇・予定の名前・状態は入力のまま、足す日ごとに 1 日ずつ検証する（R-17・F-104）
+ * 引く休暇・予定の名前は入力のまま、足す日ごとに 1 日ずつ検証する（R-17・F-104）
  */
 export function planEntrySave(input: PlannerInput, draft: EntryDraft, editingId: string | null, range: RangePreview | null): EntrySave {
   if (range === null) {
@@ -31,9 +31,9 @@ export function planEntrySave(input: PlannerInput, draft: EntryDraft, editingId:
     if (overLimit(input, 1, editingId)) errors.push('tooManyEntries')
     return { drafts: [{ ...draft, title: clipText(draft.title) }], errors, canSave: errors.length === 0 }
   }
-  const { leaveTypeId, done } = draft
+  const { leaveTypeId } = draft
   const title = clipText(draft.title)
-  const drafts: readonly EntryDraft[] = range.days.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title, done }))
+  const drafts: readonly EntryDraft[] = range.days.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title }))
   const errors: SaveError[] = [...new Set(drafts.flatMap((d) => checkEntryDraft(input, d, null).errors))]
   if (overLimit(input, drafts.length, null)) errors.push('tooManyEntries')
   return { drafts, errors, canSave: range.errors.length === 0 && errors.length === 0 }
@@ -50,7 +50,7 @@ export function planAddSave(
   title: string,
 ): Readonly<{ drafts: readonly EntryDraft[]; errors: readonly SaveError[]; overOneDay: boolean }> {
   const clipped = clipText(title)
-  const drafts: readonly EntryDraft[] = leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title: clipped, done: false }))
+  const drafts: readonly EntryDraft[] = leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title: clipped }))
   const checks = drafts.map((d) => checkEntryDraft(input, d, null))
   const errors: SaveError[] = [...new Set(checks.flatMap((c) => c.errors))]
   if (overLimit(input, drafts.length, null)) errors.push('tooManyEntries')

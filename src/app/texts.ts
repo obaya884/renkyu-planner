@@ -106,8 +106,6 @@ export const T = {
   long: '長め',
   unconfirmed: '祝日が未確定',
   nextGrantYear: '次の付与年から引く',
-  overdue: '日付を過ぎています',
-  markDone: '取得済みにする',
   overlap: '休みの日と重なっています',
   // §3.11、§5.3
   cannotSave: 'このブラウザでは記録を保存できません。閉じると、入れた内容は消えます。',
@@ -139,7 +137,6 @@ export const T = {
   amountMinutes: '時間で入れる',
   hoursUnit: '時間',
   minutesUnit: '分',
-  statusLabel: '状態',
   remove: 'この日程を消す',
   // §5.3
   grantTitle: '有休の付与日と日数',

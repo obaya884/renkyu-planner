@@ -70,7 +70,7 @@ test('F-407・§3.2: 知らせの 1 行は、年 5 日の取得の 1 行より�
 
 test('§3.2: 使える期間のある休暇のカードに期間を添え、残りが 0 なら使い切り', () => {
   const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
-  const done = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+  const done = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
   const input = (entries: typeof SHEET.entries) => ({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries })
   const used = html(<BalanceCards summary={buildSummary(input([...SHEET.entries, done]))} workMinutes={480} onConfirmNewYear={() => {}} />)
   expect(used).toContain('7〜9月')
@@ -127,7 +127,7 @@ test('§3.2・F-404・F-407: 年 5 日の行と新しい付与年の知らせは
 })
 
 test('§3.2・F-211: 足した休暇の未割り当てが負なら「不足」と警告の色', () => {
-  const plan = { id: 'p1', date: '2026-07-15', leaveTypeId: 'a', amount: { unit: 'day' }, title: '', done: false } as const
+  const plan = { id: 'p1', date: '2026-07-15', leaveTypeId: 'a', amount: { unit: 'day' }, title: '' } as const
   const plan2 = { ...plan, id: 'p2', date: '2026-07-16' } as const
   const h = cardsHtml(withTypes([extra('a', '休暇あ', 1)], [...SHEET.entries, plan, plan2]))
   const li = h.slice(h.indexOf('<li'), h.indexOf('</li>'))
@@ -137,7 +137,7 @@ test('§3.2・F-211: 足した休暇の未割り当てが負なら「不足」�
 })
 
 test('§3.2: 足した休暇に使える期間があれば行の終わりに添え、残りが 0 なら残りと未割り当ての代わりに使い切り', () => {
-  const done = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+  const done = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
   const summer = extra('summer', '夏季休暇', 1, { start: '07-01', end: '09-30' })
   const left = cardsHtml(withTypes([summer]))
   expect(left).toContain('夏季休暇　残り 1 日・未割り当て 1 日')
@@ -151,7 +151,7 @@ test('§3.2: 足した休暇に使える期間があれば行の終わりに添�
 })
 
 test('§3.2・F-211: 使い切りと不足が重なるときは、不足を優先して出す', () => {
-  const plan = { id: 'p1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+  const plan = { id: 'p1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
   const plan2 = { ...plan, id: 'p2', date: '2026-07-16' } as const
   const h = cardsHtml(withTypes([extra('summer', '夏季休暇', 1, { start: '07-01', end: '09-30' })], [...SHEET.entries, plan, plan2]))
   const li = h.slice(h.indexOf('<li'), h.indexOf('</li>'))
@@ -162,7 +162,7 @@ test('§3.2・F-211: 使い切りと不足が重なるときは、不足を優�
 
 test('§3.2・I-2: 残りが負のときは、足した休暇の 1 行も、有休のカードも、上に張り付く 1 行も「残り 0 日」と出す', () => {
   // 夏季休暇 1 日に取得済み 2 件: 計算の残り −1 日 → 「残り 0 日」。不足 1 日は未割り当ての側に出る
-  const done = (id: string, date: string, leaveTypeId: string) => ({ id, date, leaveTypeId, amount: { unit: 'day' }, title: '', done: true }) as const
+  const done = (id: string, date: string, leaveTypeId: string) => ({ id, date, leaveTypeId, amount: { unit: 'day' }, title: '' }) as const
   const h = cardsHtml(withTypes([extra('summer', '夏季休暇', 1)], [...SHEET.entries, done('a', '2026-07-15', 'summer'), done('b', '2026-07-16', 'summer')]))
   const li = h.slice(h.indexOf('<li'), h.indexOf('</li>'))
   expect(li).toContain(`夏季休暇　${T.remaining} 0 日・${T.short} 1 日`)

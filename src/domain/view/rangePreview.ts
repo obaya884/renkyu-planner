@@ -20,7 +20,7 @@ export function previewRange(input: PlannerInput, start: IsoDate, end: IsoDate, 
   if (days.length === 0) return { days, errors, overOneDay: false, deltas: [] }
 
   const overOneDay = days.some(
-    (date) => checkEntryDraft(input, { date, leaveTypeId, amount: { unit: 'day' }, title: '', done: false }, null).overOneDay,
+    (date) => checkEntryDraft(input, { date, leaveTypeId, amount: { unit: 'day' }, title: '' }, null).overOneDay,
   )
   return { days, errors, overOneDay, deltas: previewAdd(input, days, leaveTypeId) }
 }

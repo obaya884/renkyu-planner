@@ -139,7 +139,7 @@ function readEntry(v: unknown): Entry {
     leaveTypeId: nonEmptyStr(o.leaveTypeId, '日程の leaveTypeId'),
     amount: readAmount(o.amount),
     title: text(o.title, '日程の title'),
-    done: bool(o.done, '日程の done'),
+    // D-4: 古い記録やファイルにある done は読まない（取得済みかどうかは日付で決める。R-13）
   }
 }
 

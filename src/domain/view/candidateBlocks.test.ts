@@ -9,7 +9,7 @@ import { buildQuarterViews } from './quarterView'
 
 const qs = planningQuarters('2026-11-15')
 const kinds = (list: readonly (readonly [string, StripKind])[]) => list.map(([date, kind]) => ({ date, kind }))
-const day = (date: string, done: boolean): Entry => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done })
+const day = (date: string): Entry => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' })
 
 // ---- 日の並び（§3.7） ----
 
@@ -18,10 +18,10 @@ test('§3.7・§3.6: 日の並びは、休む日、土日・祝日を分ける',
   const strip = stripOf(ctxOf(SHEET), ['2026-11-20'], { start: '2026-11-20', end: '2026-11-23', days: 4 })
   expect(strip).toEqual({ size: 'normal', days: kinds([['2026-11-20', 'take'], ['2026-11-21', 'off'], ['2026-11-22', 'off'], ['2026-11-23', 'off']]) })
 })
-test('§3.7・§3.6: 会社の休日と、1 日分の日程の日（予定・取得済み）を分ける。取得済みが 1 件でもあれば取得済み', () => {
-  // SHEET の 12/28(月)・12/29(火) は取得済みでない 1 日分の日程。12/24(木) に取得済みの日程を足す。
+test('§3.7・§3.6・R-13: 会社の休日と、1 日分の日程の日（予定・取得済み）を分ける。取得済みか予定かは日付で決める', () => {
+  // 今日を 12/24(木) にして、12/24 に日程を足す（今日の日程は取得済み）。SHEET の 12/28(月)・12/29(火) は今日より後なので予定。
   // 12/30〜1/3 は会社の休日（1/1 の元日と 1/2・1/3 の土日も、R-1 で会社の休日）
-  const input = { ...SHEET, entries: [...SHEET.entries, day('2026-12-24', true)] }
+  const input = { ...SHEET, today: '2026-12-24', entries: [...SHEET.entries, day('2026-12-24')] }
   const strip = stripOf(ctxOf(input), ['2026-12-25'], { start: '2026-12-24', end: '2027-01-03', days: 11 })
   expect(strip.days).toEqual(
     kinds([
@@ -34,21 +34,20 @@ test('§3.7・§3.6: 会社の休日と、1 日分の日程の日（予定・取
       ...Array.from({ length: 5 }, (_, i) => [addDays('2026-12-30', i), 'company'] as const),
     ]),
   )
-  // 同じ日に予定と取得済みがあれば取得済み（§3.6 の月カレンダーと同じ）
-  const both = { ...SHEET, entries: [...SHEET.entries, { ...day('2026-12-28', true), id: 'done-28' }] }
-  expect(stripOf(ctxOf(both), [], { start: '2026-12-28', end: '2026-12-28', days: 1 }).days).toEqual(kinds([['2026-12-28', 'done']]))
+  // 日付が 12/28 になると、12/28 の日程は取得済み、12/29 は予定のまま
+  const later = { ...SHEET, today: '2026-12-28' }
+  expect(stripOf(ctxOf(later), [], { start: '2026-12-28', end: '2026-12-29', days: 2 }).days).toEqual(kinds([['2026-12-28', 'done'], ['2026-12-29', 'planned']]))
 })
-test('§3.6: 日程の印。同じ日に何件あっても、取得済みが 1 件でもあれば done、無ければ planned、日程の無い日は null', () => {
-  const at = (id: string, done: boolean): Entry => ({ ...day('2026-12-24', done), id })
-  const mark = (entries: readonly Entry[], d = '2026-12-24') => entryMarkOf(ctxOf({ ...SHEET, entries }), d)
-  expect(mark([at('a', false), at('b', true), at('c', false)])).toBe('done')
-  expect(mark([at('a', true), at('b', false)])).toBe('done')
-  expect(mark([at('a', false), at('b', true)])).toBe('done')
-  expect(mark([at('a', false), at('b', false)])).toBe('planned')
-  expect(mark([at('a', false)], '2026-12-25')).toBeNull()
-  expect(mark([])).toBeNull()
+test('§3.6・R-13: 日程の印。日付が今日以前なら done、今日より後なら planned、日程の無い日は null', () => {
+  const at = (id: string): Entry => ({ ...day('2026-12-24'), id })
+  const mark = (entries: readonly Entry[], today: string, d = '2026-12-24') => entryMarkOf(ctxOf({ ...SHEET, today, entries }), d)
+  expect(mark([at('a'), at('b')], '2026-12-23')).toBe('planned')
+  expect(mark([at('a'), at('b')], '2026-12-24')).toBe('done') // 今日の日程は取得済み
+  expect(mark([at('a')], '2026-12-25')).toBe('done')
+  expect(mark([at('a')], '2026-12-23', '2026-12-25')).toBeNull()
+  expect(mark([], '2026-12-23')).toBeNull()
   // 5,000 件が同じ日にあっても同じ
-  expect(mark([...Array.from({ length: 4999 }, (_, i) => at(`p${i}`, false)), at('d', true)])).toBe('done')
+  expect(mark(Array.from({ length: 5000 }, (_, i) => at(`p${i}`)), '2026-12-24')).toBe('done')
 })
 test('§3.7: 連休が 9 日以下は normal、10 日以上は small のマス', () => {
   const ctx = ctxOf(SHEET)
@@ -84,6 +83,6 @@ test('§5.1: 会社の休日が 2 件つながっていれば、期間はつな�
 test('§5.1: 祝日でも会社の休日でもない核は、種類も名前も持たない', () => {
   // 12/4(金) に 1 日分の日程。12/7(月) を休むと 12/4〜12/7 の 4 連休で、平日の祝日も会社の休日も無い。
   // 核は並びの中の leave でない最初の休みの日 12/5(土)（R-5）
-  const input = { ...UNSET, entries: [day('2026-12-04', false)] }
+  const input = { ...UNSET, entries: [day('2026-12-04')] }
   expect(headOf(input, '2026-12-05')).toEqual({ kind: 'other', date: '2026-12-05' })
 })

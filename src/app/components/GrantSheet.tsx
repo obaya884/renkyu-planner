@@ -45,7 +45,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
   // 始まった付与年と付与日を直すときの、この年に使える日数の初期値は、R-13 で計算した持ち分（上書きがあればその値）
   const startedEntitlement =
     (mode === 'started' || mode === 'changeDay') && grantYearStart !== null
-      ? (balanceOf({ settings, entries: input.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart })?.entitlement ?? 0)
+      ? (balanceOf({ settings, entries: input.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart, today: input.today })?.entitlement ?? 0)
       : 0
   const initialSplit = splitDaysHours(startedEntitlement, workMinutes)
   // 付与日を直すときの初期値は、いまの付与日
@@ -165,7 +165,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
           !errors.includes('invalidGrantDays') &&
           grantDays !== '' && (
             <Line label={T.entitlementLabel}>
-              {nextEntitlementText(grantDaysNumber, carryOverOf({ settings, entries: input.entries, grantYearStart: start }), workMinutes)}
+              {nextEntitlementText(grantDaysNumber, carryOverOf({ settings, entries: input.entries, grantYearStart: start, today: input.today }), workMinutes)}
             </Line>
           )
         ) : (

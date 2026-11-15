@@ -34,7 +34,7 @@ test('F-403・R-14: 四半期に始まる 5 連休以上のうち最も長いも
 })
 test('Review Focus 2: 12 月に始まり 1 月に終わる連休は 10〜12 月の側に入る', () => {
   const [q4, q1] = planningQuarters('2026-11-15')
-  const entries = ['2026-12-28', '2026-12-29'].map((date) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }) as const)
+  const entries = ['2026-12-28', '2026-12-29'].map((date) => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const)
   const cal = buildRestCalendar({ holidays: data.holidays, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03' }], entries })
   expect(longBreakOf(cal, q4)).toEqual({ start: '2026-12-26', end: '2027-01-03', days: 9 })
   expect(longBreakOf(cal, q1)).toBeNull()

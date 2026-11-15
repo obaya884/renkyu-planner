@@ -41,7 +41,7 @@ test('F-104・§6: 休暇の種類の行は設定の並びのまま。日程が 
   const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }
   const winter = { id: 'winter', name: '冬季休暇', days: 3, usable: null, grantDay: null, together: false }
   const settings = { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer, winter] }
-  const entries = [...SHEET.entries, { id: 's', date: '2030-01-01', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: false } as const]
+  const entries = [...SHEET.entries, { id: 's', date: '2030-01-01', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const]
   const rows = leaveTypeRows({ settings, entries })
   expect(rows.map((r) => [r.type.id, r.paid, r.hasEntries])).toEqual([
     ['paid', true, true],

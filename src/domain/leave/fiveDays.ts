@@ -3,6 +3,7 @@ import type { IsoDate } from '@/domain/shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type Settings } from '@/domain/types'
 import { grantDaysOf } from './balance'
 import { grantYearOf } from './grantYear'
+import { isTaken } from './taken'
 
 export type FiveDayStatus = Readonly<{ doneDays: number; plannedDays: number; remainingDays: number; warn: boolean }>
 
@@ -26,7 +27,7 @@ export function fiveDayStatus(input: Input): FiveDayStatus | null {
     if (entry.leaveTypeId !== PAID_LEAVE_TYPE_ID) continue
     if (entry.date < grantYearStart || entry.date > end) continue
     const days = entry.amount.unit === 'day' ? 1 : entry.amount.unit === 'half' ? 0.5 : 0
-    if (entry.done) doneDays += days
+    if (isTaken(entry, today)) doneDays += days
     else plannedDays += days
   }
   const remainingDays = Math.max(0, 5 - doneDays - plannedDays)

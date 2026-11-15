@@ -14,7 +14,6 @@ type Props = {
   onAdd: (leaveDays: readonly IsoDate[]) => void
   onAddTogether: (leaveDays: readonly IsoDate[], leaveTypeId: string) => void
   onOpen: (id: string) => void
-  onMarkDone: (id: string) => void
   onAddDay: () => void
   onEnterGrant: (grantYearStart: IsoDate) => void
   /** 持ち分の 1 行が画面の上に出ているか。出ているあいだ、PC の見出しはその下に張り付く（§4） */
@@ -31,7 +30,7 @@ const LEGEND: Readonly<Record<DayMark, string>> = {
 const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', 'candidate']
 
 /** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
-export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onMarkDone, onAddDay, onEnterGrant, belowSummary = false }: Props) {
+export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onAddDay, onEnterGrant, belowSummary = false }: Props) {
   const { quarter, past, longBreak, months, marks, grantNote, groups, monthGaps, together, noCandidates, entries } = view
   return (
     <section className="space-y-3">
@@ -82,7 +81,7 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
               )}
             </div>
           )}
-          <EntryList blocks={entries} workMinutes={workMinutes} onOpen={onOpen} onMarkDone={onMarkDone} onAddDay={onAddDay} />
+          <EntryList blocks={entries} workMinutes={workMinutes} onOpen={onOpen} onAddDay={onAddDay} />
         </div>
       </div>
     </section>

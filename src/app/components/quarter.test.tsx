@@ -108,23 +108,28 @@ test('F-209・F-211・§3.7: 補足は並びの下。次の付与年から引く
   expect(nov).toContain('有休が 6 時間足りません')
   expect(nov.indexOf('有休が 6 時間足りません')).toBeGreaterThan(nov.indexOf('data-strip'))
 })
-test('F-304・F-305・R-17: 日程の行。連休の見出し、過ぎた予定、重なり', () => {
-  const h = html(<EntryList blocks={q4.entries} workMinutes={480} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
+test('F-304・F-305・R-17: 日程の行。連休の見出し、取得済み・予定、重なり', () => {
+  const h = html(<EntryList blocks={q4.entries} workMinutes={480} onOpen={noop} onAddDay={noop} />)
   expect(h.split('12/26〜1/3 の 9連休')).toHaveLength(2) // §3.8: 見出しだけ。各行の 2 行目には出さない
   expect(h).toContain('12/26〜1/3 の 9連休')
   expect(h).toContain('12/28(月)')
   expect(h).toContain('年末年始')
   expect(h).toContain('10/31〜11/3 の 4連休')
-  expect(h).not.toContain(T.overdue)
-  const entries = [...SHEET.entries, { id: 'x', date: '2026-11-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院', done: false } as const, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const]
+  const entries = [...SHEET.entries, { id: 'x', date: '2026-11-13', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院' } as const, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const]
   const [v] = buildQuarterViews({ ...SHEET, entries }, qs)
-  const h2 = html(<EntryList blocks={v.entries} workMinutes={480} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
-  expect(h2).toContain(T.overdue)
-  expect(h2).toContain(T.markDone)
+  const h2 = html(<EntryList blocks={v.entries} workMinutes={480} onOpen={noop} onAddDay={noop} />)
+  // §3.8: 過ぎた日（11/13）の行は、警告もボタンも無い、ふつうの取得済みの行。11/23 は予定
+  const row = (day: string) => h2.slice(h2.indexOf(day), h2.indexOf('</li>', h2.indexOf(day)))
+  expect(row('11/13(金)')).toContain(T.done)
+  expect(row('11/13(金)')).not.toContain('text-warn-ink')
+  expect(row('11/13(金)')).toContain('›')
+  expect(row('11/23(月)')).toContain(T.planned)
+  expect(h2).not.toContain('日付を過ぎています')
+  expect(h2).not.toContain('取得済みにする')
   expect(h2).toContain(T.overlap)
 })
 test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は候補の欄を描かない', () => {
-  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={q4} {...props} />)
   expect(h).toContain('2026年 10〜12月')
   expect(h).toContain('12/26〜1/3（9連休）')
@@ -135,7 +140,7 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
   expect(html(<QuarterSection view={q2} {...props} />)).toContain('前の年と同じ 14日で計算中')
 })
 test('§3.6: 付与日の 1 行。入力済みなら有休の日数を出す', () => {
-  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q2} {...props} />)).toContain(T.enterGrant)
   const entered = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
   const [, , e2] = buildQuarterViews(entered, qs)
@@ -171,7 +176,7 @@ test('§3.4・§4・F-401: 持ち分の 1 行は PC でも隠さず、流れの�
   expect(line).not.toContain('lg:hidden')
   expect(line).toContain('fixed')
   expect(line).toContain('h-7')
-  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q4} {...props} belowSummary />)).toContain('lg:top-7')
   const top = html(<QuarterSection view={q4} {...props} belowSummary={false} />)
   expect(top).toContain('lg:top-0')
@@ -199,7 +204,7 @@ test('F-212・§3.7: まとめて取る休暇の組。見出しつきのカー�
   expect(text(jan)).toContain(T.nextGrantYear)
 })
 test('§3.7: まとめて取る休暇の組は、ふつうの候補と祝日のない月の候補の下。種類が無ければ出さない', () => {
-  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={f4} {...props} />)
   const heading = h.indexOf('フリーバカンス（5日）をまとめて取る')
   expect(heading).toBeGreaterThan(h.indexOf('>11/20(金) を休む<'))
@@ -208,7 +213,7 @@ test('§3.7: まとめて取る休暇の組は、ふつうの候補と祝日の�
   expect(html(<QuarterSection view={q4} {...props} />)).not.toContain('をまとめて取る')
 })
 test('§3.7: 候補の見出しのすぐ下に凡例。候補が無い四半期には出さない', () => {
-  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={q4} {...props} />)
   const legend = h.indexOf('data-legend="candidates"')
   expect(legend).toBeGreaterThan(h.indexOf(`>${T.candidates}</h3>`))

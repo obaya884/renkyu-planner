@@ -1,5 +1,6 @@
 import { grantYearOf, grantYearStartOf } from './grantYear'
 import { toMinutes } from './amount'
+import { isTaken } from './taken'
 import { type Entry, PAID_LEAVE_TYPE_ID, type Settings } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 
@@ -26,7 +27,9 @@ type Input = Readonly<{
   leaveTypeId: string
   /** その種類の付与年（grantYearOfType）の開始日 */
   grantYearStart: IsoDate
-  /** settings と entries から作った表（usageTableOf）。無ければ entries を数える。値は同じになる */
+  /** 今日。取得済みか予定かを決める（R-13） */
+  today: IsoDate
+  /** settings と entries と today から作った表（usageTableOf）。無ければ entries を数える。値は同じになる */
   usage?: UsageTable
 }>
 
@@ -69,18 +72,18 @@ export function grantDaysOf(settings: Settings, grantYearStart: IsoDate): number
  * R-13: 日程を 1 度だけなめて、休暇の種類ごと・付与年ごとの取得済みと予定を足した表。有休の付与日が未設定なら空。
  * 足す順は日程の並びのまま（withEntitlement が数える順と同じなので、同じ値になる）
  */
-export function usageTableOf(settings: Settings, entries: readonly Entry[]): UsageTable {
-  return addToTable(new Map(), settings, entries)
+export function usageTableOf(settings: Settings, entries: readonly Entry[], today: IsoDate): UsageTable {
+  return addToTable(new Map(), settings, entries, today)
 }
 
 /** table に entries を足した新しい表（table は変えない）。日程を足したと仮定するとき（previewAdd）に使う */
-export function withAddedUsage(table: UsageTable, settings: Settings, entries: readonly Entry[]): UsageTable {
+export function withAddedUsage(table: UsageTable, settings: Settings, entries: readonly Entry[], today: IsoDate): UsageTable {
   const copy = new Map<string, Map<IsoDate, Usage>>()
   for (const [id, years] of table) copy.set(id, new Map(years))
-  return addToTable(copy, settings, entries)
+  return addToTable(copy, settings, entries, today)
 }
 
-function addToTable(table: Map<string, Map<IsoDate, Usage>>, settings: Settings, entries: readonly Entry[]): UsageTable {
+function addToTable(table: Map<string, Map<IsoDate, Usage>>, settings: Settings, entries: readonly Entry[], today: IsoDate): UsageTable {
   const grantDays = new Map<string, MonthDay | null>()
   for (const entry of entries) {
     let grantDay = grantDays.get(entry.leaveTypeId)
@@ -94,14 +97,14 @@ function addToTable(table: Map<string, Map<IsoDate, Usage>>, settings: Settings,
     table.set(entry.leaveTypeId, years)
     const u = years.get(start) ?? { taken: 0, planned: 0 }
     const minutes = toMinutes(entry.amount, settings.workMinutes)
-    years.set(start, entry.done ? { taken: u.taken + minutes, planned: u.planned } : { taken: u.taken, planned: u.planned + minutes })
+    years.set(start, isTaken(entry, today) ? { taken: u.taken + minutes, planned: u.planned } : { taken: u.taken, planned: u.planned + minutes })
   }
   return table
 }
 
 /** 持ち分が決まっているときの、取得済み・予定・残り・未割り当て（R-13） */
 function withEntitlement(input: Input, grantDay: MonthDay, entitlement: number): Balance {
-  const { settings, entries, leaveTypeId, grantYearStart, usage } = input
+  const { settings, entries, leaveTypeId, grantYearStart, usage, today } = input
   let taken = 0
   let planned = 0
   // 開始日が付与日に合うなら、数える範囲は付与年そのものなので、表の値と同じになる
@@ -115,7 +118,7 @@ function withEntitlement(input: Input, grantDay: MonthDay, entitlement: number):
       if (entry.leaveTypeId !== leaveTypeId) continue
       if (entry.date < grantYearStart || entry.date > end) continue
       const minutes = toMinutes(entry.amount, settings.workMinutes)
-      if (entry.done) taken += minutes
+      if (isTaken(entry, today)) taken += minutes
       else planned += minutes
     }
   }
@@ -137,8 +140,8 @@ function paidEntitlement(settings: Settings, grantYearStart: IsoDate, grantDays:
  * 後の年は、直前の付与年の未割り当て（0 未満なら 0）と、直前の付与年の付与日数の分の、小さいほう。
  * いちばん古い付与年から順に計算する。付与日が未設定なら 0
  */
-export function carryOverOf(input: Readonly<{ settings: Settings; entries: readonly Entry[]; grantYearStart: IsoDate; usage?: UsageTable }>): number {
-  const { settings, entries, grantYearStart } = input
+export function carryOverOf(input: Readonly<{ settings: Settings; entries: readonly Entry[]; grantYearStart: IsoDate; today: IsoDate; usage?: UsageTable }>): number {
+  const { settings, entries, grantYearStart, today } = input
   const grantDay = settings.grantDay
   if (grantDay === null) return 0
   const keys = Object.keys(settings.grantYears).sort()
@@ -152,13 +155,13 @@ export function carryOverOf(input: Readonly<{ settings: Settings; entries: reado
   for (let s = grantYearStart; s > earliest; s = shiftYear(s, -1)) chain.unshift(s)
   const work = settings.workMinutes
   // 年ごとに日程の全件を数え直さないよう、表が渡されていなければ、ここで 1 度だけ作る
-  const usage = input.usage ?? usageTableOf(settings, entries)
+  const usage = input.usage ?? usageTableOf(settings, entries, today)
   let carryOver = 0 // chain[0] の直前の付与年（いちばん古い付与年以前）の繰り越し
   for (const start of chain) {
     const prevStart = shiftYear(start, -1)
     const grantDays = grantDaysFrom(settings, keys, prevStart)
     const prev = withEntitlement(
-      { settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: prevStart, usage },
+      { settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: prevStart, today, usage },
       grantDay,
       paidEntitlement(settings, prevStart, grantDays, carryOver),
     )
@@ -182,6 +185,6 @@ export function balanceOf(input: Input): Balance | null {
     return withEntitlement(input, grantDay, type ? type.days * work : 0)
   }
 
-  const carryOver = carryOverOf({ settings, entries: input.entries, grantYearStart, usage: input.usage })
+  const carryOver = carryOverOf({ settings, entries: input.entries, grantYearStart, today: input.today, usage: input.usage })
   return withEntitlement(input, grantDay, paidEntitlement(settings, grantYearStart, grantDaysOf(settings, grantYearStart), carryOver))
 }

@@ -8,7 +8,7 @@ import { createTransferStore } from './createTransferStore'
 import { TRANSFER_IDLE, afterImport, keptAcrossScreens, canRestore } from './transferState'
 
 const sheetData = { version: 1, settings: SHEET.settings, entries: SHEET.entries } as const
-const entry = { date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const
+const entry = { date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
 
 /** 読み込んだ直後の 2 つのストア（設定画面の「読み込む」と同じ順で動かす） */
 const imported = (data: StoredData = sheetData) => {

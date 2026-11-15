@@ -5,7 +5,7 @@ import { type IsoDate, type MonthDay, isValidIsoDate } from '../shared/date'
 import type { Amount } from '../types'
 import { restCalendarOf, type PlannerInput } from '../view/input'
 
-export type EntryDraft = Readonly<{ date: IsoDate; leaveTypeId: string; amount: Amount; title: string; done: boolean }>
+export type EntryDraft = Readonly<{ date: IsoDate; leaveTypeId: string; amount: Amount; title: string }>
 export type DraftError = 'invalidDate' | 'tooFar' | 'restDay' | 'invalidAmount' | 'unknownLeaveType'
 
 /** R-19: 日程を足せる最後の日。対象の期間（R-10）の末日 */

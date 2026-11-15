@@ -38,7 +38,7 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
     return remaining === null ? t.name : leaveTypeWithRemaining(t.name, remaining, workMinutes)
   }
   // 休む日を休みに足したときの連休。候補の行の連休と同じ（F-203）
-  const added = leaveDays.map((date, i) => ({ id: `add-${i}`, date, leaveTypeId, amount: { unit: 'day' } as const, title: '', done: false }))
+  const added = leaveDays.map((date, i) => ({ id: `add-${i}`, date, leaveTypeId, amount: { unit: 'day' } as const, title: '' }))
   const run = runContaining(restCalendarOf({ ...input, entries: [...input.entries, ...added] }), leaveDays[0])
 
   return (
