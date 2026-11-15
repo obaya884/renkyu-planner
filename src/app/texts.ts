@@ -266,9 +266,9 @@ export function leaveDaysUsed(days: number): string {
   return `${days}日使う`
 }
 
-/** F-211。例: 有休が 6 時間足りません */
-export function shortText(minutes: number, workMinutes: number): string {
-  return `有休が ${formatAmount(minutes, workMinutes)}足りません`
+/** F-211。名前は候補の行の引く休暇（F-208）。例: 有休が 6 時間足りません */
+export function shortText(leaveTypeName: string, minutes: number, workMinutes: number): string {
+  return `${leaveTypeName}が ${formatAmount(minutes, workMinutes)}足りません`
 }
 
 /** §3.8 の連休の見出し・添え書き。例: 12/26〜1/3 の 9連休 */

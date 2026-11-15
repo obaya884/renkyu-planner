@@ -1,14 +1,12 @@
-import { type RestCalendar, type RestKind, type Run, runContaining } from '../calendar/restDays'
-import { type Candidate, findCandidates } from '../candidates/findCandidates'
-import { groupCandidates } from '../candidates/groupCandidates'
-import { monthGaps } from '../candidates/monthGap'
-import { isShort } from '../leave/amount'
+import { type Run, runContaining } from '../calendar/restDays'
 import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
-import { previewAdd } from './addPreview'
-import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
+import { type CandidateBlock, type Ctx, candidateBlocks, isLongRun } from './candidateBlocks'
+import { type PlannerInput, restCalendarOf } from './input'
+
+export type { CandidateBlock, CandidateRow } from './candidateBlocks'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */
 export type DayMark = 'done' | 'planned' | 'candidate' | 'company' | 'off'
@@ -17,22 +15,6 @@ const MARK_ORDER: readonly DayMark[] = ['done', 'planned', 'candidate', 'company
 export type DayCell = Readonly<{ date: IsoDate; day: number; mark: DayMark | null; grantDay: boolean }>
 /** 週の始まりは設定に従う（F-108）。1 週は 7 つで、その月でない所は null */
 export type MonthView = Readonly<{ month: IsoDate; weekStart: WeekStart; weeks: readonly (readonly (DayCell | null)[])[] }>
-
-export type CandidateRow = Readonly<{
-  leaveDays: readonly IsoDate[]
-  run: Run
-  long: boolean
-  unconfirmed: boolean
-  /** 今日が入る付与年の次の付与年の日を 1 日でも含む */
-  nextGrantYear: boolean
-  /** 入れると未割り当てが負になる付与年の不足の合計（分）。不足が無いか、付与日が未設定なら null */
-  shortMinutes: number | null
-}>
-
-export type CandidateBlock = Readonly<
-  | { kind: 'group'; core: IsoDate; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }
-  | { kind: 'monthGap'; month: IsoDate; unconfirmed: boolean; runDays: number; rows: readonly CandidateRow[] }
->
 
 export type EntryRow = Readonly<{
   entry: Entry
@@ -59,86 +41,6 @@ export type QuarterView = Readonly<{
   candidates: readonly CandidateBlock[]
   entries: readonly EntryBlock[]
 }>
-
-const LONG_RUN_DAYS = 5
-
-/** 連休が長め（5 日以上）か。連休の長めはここで 1 つに決める */
-const isLongRun = (run: Run | null): boolean => run !== null && run.days >= LONG_RUN_DAYS
-
-type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; nextGrantYearStart: IsoDate | null }>
-
-// ---- 候補 ----
-
-/** leaveDays を 1 日分の有休の予定として足したときの、不足している付与年の不足の合計。モーダル（previewAdd）と同じ数え方（§3.7） */
-function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[]): number | null {
-  if (input.settings.grantDay === null) return null
-  let short = 0
-  for (const { after } of previewAdd(input, leaveDays, PAID_LEAVE_TYPE_ID)) if (isShort(after)) short += -after
-  return short > 0 ? short : null
-}
-
-function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean, unconfirmed: boolean): CandidateRow {
-  const next = ctx.nextGrantYearStart
-  return {
-    leaveDays,
-    run,
-    long,
-    unconfirmed,
-    nextGrantYear: next !== null && leaveDays.some((d) => d >= next),
-    shortMinutes: shortMinutesOf(ctx.input, leaveDays),
-  }
-}
-
-const candidateRow = (ctx: Ctx, c: Candidate) => rowOf(ctx, c.leaveDays, c.run, c.long, c.unconfirmed)
-
-/** d を休みの日に足したカレンダーで、d を含む連休 */
-function runWithLeave(cal: RestCalendar, d: IsoDate): Run | null {
-  const kindOf = (x: IsoDate): RestKind | null => (x === d ? 'leave' : cal.kindOf(x))
-  return runContaining({ kindOf, isRest: (x) => kindOf(x) !== null }, d)
-}
-
-type Placed = Readonly<{ quarterStart: IsoDate; block: CandidateBlock }>
-
-/** 過ぎていない四半期の最初の日から最後の日までを 1 回で列挙し、四半期ごとに置く塊（R-5〜R-10） */
-function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { placed: Placed[]; primaryDays: Set<IsoDate> } {
-  const placed: Placed[] = []
-  const primaryDays = new Set<IsoDate>()
-  if (active.length === 0) return { placed, primaryDays }
-  const { input, cal } = ctx
-  const range = {
-    cal,
-    today: input.today,
-    start: active[0].start,
-    end: active[active.length - 1].end,
-    confirmedUntil: input.holidays.confirmedUntil,
-  }
-  const cands = findCandidates({ ...range, entryDates: new Set(input.entries.map((e) => e.date)) })
-
-  for (const g of groupCandidates(cands)) {
-    // §5.1: 休む日数がいちばん少ないもの全部を開かずに見せる。順は groupCandidates の R-7 のまま
-    const fewest = Math.min(...g.candidates.map((c) => c.leaveDays.length))
-    const isPrimary = (c: Candidate) => c.leaveDays.length === fewest
-    const primary = g.candidates.filter(isPrimary).map((c) => candidateRow(ctx, c))
-    const rest = g.candidates.filter((c) => !isPrimary(c)).map((c) => candidateRow(ctx, c))
-    for (const r of primary) for (const d of r.leaveDays) primaryDays.add(d)
-    placed.push({
-      quarterStart: g.quarterStart,
-      block: { kind: 'group', core: g.core, primary, rest, restHasLong: rest.some((r) => r.long) },
-    })
-  }
-
-  for (const gap of monthGaps({ ...range, entries: input.entries })) {
-    // 金曜か月曜を休めば土日と続くので、連休は必ずある
-    const rows = gap.options.map((d) => {
-      const run = runWithLeave(cal, d) as Run
-      return rowOf(ctx, [d], run, isLongRun(run), gap.unconfirmed)
-    })
-    const runDays = Math.min(...rows.map((r) => r.run.days))
-    const quarter = active.find((q) => q.start <= gap.month && gap.month <= q.end)
-    if (quarter) placed.push({ quarterStart: quarter.start, block: { kind: 'monthGap', month: gap.month, unconfirmed: gap.unconfirmed, runDays, rows } })
-  }
-  return { placed, primaryDays }
-}
 
 // ---- 月カレンダー ----
 
@@ -238,8 +140,7 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
 
 /** 主な画面の四半期ごとの節（月カレンダー・候補・日程）の組み立て */
 export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarter[]): QuarterView[] {
-  const current = currentGrantYear(input)
-  const ctx: Ctx = { input, cal: restCalendarOf(input), nextGrantYearStart: current === null ? null : addDays(current.end, 1) }
+  const ctx: Ctx = { input, cal: restCalendarOf(input) }
   const active = quarters.filter((q) => q.end >= input.today)
   const { placed, primaryDays } = candidateBlocks(ctx, active)
   const none = new Set<IsoDate>()

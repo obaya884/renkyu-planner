@@ -14,6 +14,8 @@ export type BalanceCard = Readonly<{
   unassigned: number
   short: boolean
   usable: { start: MonthDay; end: MonthDay } | null
+  /** §3.2: 使える期間があり、残りが 0 以下（使い切り） */
+  usedUp: boolean
 }>
 
 export type LongBreakChip = Readonly<{ quarter: Quarter; has: boolean }>
@@ -52,6 +54,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
       unassigned: b.unassigned,
       short: isShort(b.unassigned),
       usable: type.usable,
+      usedUp: type.usable !== null && b.remaining <= 0,
     })
   }
   const five = fiveDayStatus({ settings, entries, grantYearStart: grantYear.start, today })

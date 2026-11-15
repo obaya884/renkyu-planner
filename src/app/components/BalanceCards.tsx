@@ -10,7 +10,7 @@ function Card({ card, workMinutes }: { card: BalanceCard; workMinutes: number })
       <div className={`text-sm ${card.short ? 'font-bold text-warn-ink' : 'text-sub'}`}>
         {balanceDetail(card.planned, card.unassigned, card.short, workMinutes)}
         {card.usable !== null && <span className="ml-2">{usablePeriod(card.usable.start, card.usable.end)}</span>}
-        {card.usable !== null && card.remaining <= 0 && <span className="ml-2">{T.usedUp}</span>}
+        {card.usedUp && <span className="ml-2">{T.usedUp}</span>}
       </div>
     </div>
   )

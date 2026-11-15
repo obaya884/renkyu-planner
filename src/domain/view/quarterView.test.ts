@@ -162,3 +162,25 @@ test('R-17: 会社の休日を足して日程と重なっても、日程は残�
   expect(dec.map((r) => [r.entry.date, r.overlap])).toEqual([['2026-12-28', true], ['2026-12-29', true]])
   expect(buildSummary(input).cards[0].planned).toBe(5 * 480)
 })
+
+const summerType = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+test('F-208・F-211: 候補の行の種類と不足は、引く休暇の初期値の種類で数える', () => {
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summerType] } }
+  const q3 = buildQuarterViews(input, qs)[3]
+  const rows = q3.candidates.flatMap((b) => (b.kind === 'group' ? [...b.primary, ...b.rest] : b.rows))
+  const row = (days: string[]) => rows.find((r) => r.leaveDays.join() === days.join())
+  expect(row(['2027-09-24'])).toMatchObject({ leaveTypeId: 'summer', leaveTypeName: '夏季休暇', shortMinutes: null }) // 秋分の日の翌日。4 連休
+  expect(row(['2027-09-21', '2027-09-22'])).toMatchObject({ leaveTypeId: 'paid', leaveTypeName: '有休', shortMinutes: null }) // 夏季休暇が足りないので有休。有休は足りる
+})
+test('F-208・F-209: 「次の付与年から引く」は、初期値の種類の付与年で見る', () => {
+  // 冬季休暇は付与される日が 01-01。今日（2026-11-15）が入る付与年は 2026-01-01〜2026-12-31 なので、次の付与年は 2027-01-01 から。
+  // 2027-01-08（金）を休むと 1/9〜1/11（成人の日）と続く 4 連休。冬季休暇の 2027-01-01 の付与年の未割り当ては 1 日 × 480 = 480 分で、
+  // 1 日分（480 分）以上あるので初期値は冬季休暇。休む日は 2027-01-01 以降なので true
+  const winter = { id: 'winter', name: '冬季休暇', days: 1, usable: { start: '01-01', end: '03-31' }, grantDay: '01-01', together: false } as const
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, winter] } }
+  const jan = rowsOf(buildQuarterViews(input, qs)[1]).find((r) => r.leaveDays.join() === '2027-01-08')
+  expect(jan).toMatchObject({ leaveTypeId: 'winter', run: { start: '2027-01-08', end: '2027-01-11', days: 4 }, nextGrantYear: true })
+  // 有休が初期値の同じ候補。有休の今の付与年は 2026-05-01〜2027-04-30 なので、2027-01-08 は今の付与年に入る
+  const paid = rowsOf(buildQuarterViews(SHEET, qs)[1]).find((r) => r.leaveDays.join() === '2027-01-08')
+  expect(paid).toMatchObject({ leaveTypeId: 'paid', nextGrantYear: false })
+})

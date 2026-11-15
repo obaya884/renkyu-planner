@@ -155,3 +155,14 @@ test('F-104: 日程の種類が設定に無いときは、休暇の種類が有�
   expect(h).toContain(errorText('unknownLeaveType'))
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
 })
+
+test('F-208・§5.1: 引く休暇の初期値は、使える期間に入り、休む量ぶんの未割り当てがある休暇。無ければ有休', () => {
+  const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] } }
+  const h = html(<AddSheetBody input={input} leaveDays={['2027-09-24']} onSubmit={noop} onClose={noop} />)
+  expect(h).toMatch(/<option value="summer" selected="">/)
+  expect(h).toContain('夏季休暇（残り 1 日）')
+  expect(h).toContain('未割り当て 1 日 → 0 日')
+  const two = html(<AddSheetBody input={input} leaveDays={['2027-09-21', '2027-09-22']} onSubmit={noop} onClose={noop} />)
+  expect(two).toMatch(/<option value="paid" selected="">/)
+})

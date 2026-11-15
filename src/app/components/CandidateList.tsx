@@ -21,7 +21,7 @@ function Row({ row, workMinutes, onAdd }: { row: CandidateRow } & Props) {
         <div className="text-sm text-sub">
           {joinNotes(second)}
           {row.shortMinutes !== null && (
-            <span className="ml-2 font-bold text-warn-ink">{shortText(row.shortMinutes, workMinutes)}</span>
+            <span className="ml-2 font-bold text-warn-ink">{shortText(row.leaveTypeName, row.shortMinutes, workMinutes)}</span>
           )}
         </div>
       </div>

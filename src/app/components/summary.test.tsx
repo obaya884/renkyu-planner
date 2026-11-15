@@ -59,3 +59,15 @@ test('F-407・§3.2: 知らせの 1 行は、年 5 日の取得の 1 行より�
   expect(h.indexOf(T.newGrantYear)).toBeLessThan(h.indexOf(T.fiveDaysLabel))
   expect(html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} onConfirmNewYear={() => {}} />)).not.toContain(T.newGrantYear)
 })
+
+test('§3.2: 使える期間のある休暇のカードに期間を添え、残りが 0 なら使い切り', () => {
+  const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+  const done = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+  const input = (entries: typeof SHEET.entries) => ({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries })
+  const used = html(<BalanceCards summary={buildSummary(input([...SHEET.entries, done]))} workMinutes={480} onConfirmNewYear={() => {}} />)
+  expect(used).toContain('7〜9月')
+  expect(used).toContain(T.usedUp)
+  const left = html(<BalanceCards summary={buildSummary(input(SHEET.entries))} workMinutes={480} onConfirmNewYear={() => {}} />)
+  expect(left).toContain('7〜9月')
+  expect(left).not.toContain(T.usedUp)
+})

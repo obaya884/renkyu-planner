@@ -5,7 +5,7 @@ import { buildSummary } from './summary'
 test('F-401: 有休のカード。残り 9 日と 2 時間、予定 5 日、未割り当て 4 日と 2 時間', () => {
   const s = buildSummary(SHEET)
   expect(s.state).toBe('set')
-  expect(s.cards).toEqual([{ leaveTypeId: 'paid', name: '有休', remaining: 9 * 480 + 120, planned: 5 * 480, unassigned: 4 * 480 + 120, short: false, usable: null }])
+  expect(s.cards).toEqual([{ leaveTypeId: 'paid', name: '有休', remaining: 9 * 480 + 120, planned: 5 * 480, unassigned: 4 * 480 + 120, short: false, usable: null, usedUp: false }])
 })
 test('F-404・R-18: シートの記録は取得済み 4 日・予定 5 日で届いているので出さない', () => {
   expect(buildSummary(SHEET).fiveDays).toBeNull()
@@ -54,4 +54,13 @@ test('§3.2・R-13: 足した休暇のカードは、その種類の付与され
   })
   expect(s.cards[0]).toEqual(buildSummary(SHEET).cards[0])
   expect(s.cards[1]).toMatchObject({ leaveTypeId: 'free', remaining: 1920, planned: 0, unassigned: 1920 }) // 2026-01-01〜2026-12-31
+})
+
+const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+const summerDone = { id: 's1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+const withSummer = (entries: typeof SHEET.entries) => ({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries })
+test('§3.2: 使える期間があり、残りが 0 なら使い切り', () => {
+  expect(buildSummary(withSummer([...SHEET.entries, summerDone])).cards[1]).toMatchObject({ remaining: 0, usable: { start: '07-01', end: '09-30' }, usedUp: true })
+  expect(buildSummary(withSummer(SHEET.entries)).cards[1]).toMatchObject({ remaining: 480, usedUp: false })
+  expect(buildSummary(SHEET).cards[0].usedUp).toBe(false) // 使える期間が無い
 })
