@@ -130,6 +130,7 @@ export const T = {
   // §5.2
   addDayTitle: '日を足す',
   dateLabel: '日付',
+  rangeToggleLabel: '期間で足す',
   endDateLabel: '終わりの日',
   amountLabel: '量',
   amountDay: '1日',

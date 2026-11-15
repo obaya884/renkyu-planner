@@ -13,6 +13,7 @@ import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import type { PlannerInput } from '@/domain/view/input'
 import { type SaveError, planEntrySave } from '@/domain/view/entrySave'
 import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
+import { endDateAfterDateChange, endDateOnToggle } from '@/domain/view/rangeInput'
 
 type Props = {
   input: PlannerInput
@@ -85,9 +86,10 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
   const [mins, setMins] = useState(String(initialMinutes % 60))
   const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === PAID_LEAVE_TYPE_ID)?.id ?? leaveTypes[0].id)
   const [title, setTitle] = useState(entry?.title ?? '')
-  // F-307: 足すときだけ。空なら日付の 1 日だけを足す
+  // F-307: 足すときだけ。入れているあいだ、日付から終わりの日までを足す
+  const [rangeOn, setRangeOn] = useState(false)
   const [endDate, setEndDate] = useState('')
-  const ranged = adding && endDate !== ''
+  const ranged = adding && rangeOn
 
   const amount: Amount =
     kind === 'minutes' ? { unit: 'minutes', minutes: Number(hours) * 60 + Number(mins) } : { unit: kind }
@@ -114,14 +116,35 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         {adding && (
           <div>
             <Field label={T.dateLabel}>
-              <DateField max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} />
+              <DateField
+                max={lastAddable}
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value)
+                  setEndDate(endDateAfterDateChange(e.target.value, endDate))
+                }}
+              />
             </Field>
             {!ranged && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
-            <div className="mt-3">
-              <Field label={T.endDateLabel}>
-                <DateField max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </Field>
-            </div>
+            <label className="flex min-h-11 items-center gap-2">
+              <input
+                type="checkbox"
+                checked={rangeOn}
+                onChange={(e) => {
+                  setRangeOn(e.target.checked)
+                  if (e.target.checked) setEndDate(endDateOnToggle(date))
+                }}
+                className="h-5 w-5 accent-primary"
+              />
+              {T.rangeToggleLabel}
+            </label>
+            {ranged && (
+              <div className="mt-1">
+                <Field label={T.endDateLabel}>
+                  <DateField max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </Field>
+              </div>
+            )}
             {range !== null && <EntryRangeLines preview={range} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}
           </div>
         )}

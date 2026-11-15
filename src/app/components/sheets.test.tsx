@@ -201,12 +201,19 @@ test('F-212・§3.7・§5.1: まとめて取る休暇の候補から開くと、
   const plain = html(<AddSheetBody input={input} leaveDays={days} onSubmit={noop} onClose={noop} />)
   expect(plain).toContain('<option value="paid" selected="">有休（残り 9 日と 2 時間）</option>') // 4440 分
 })
-test('F-307・§5.2: 日を足すモーダルの終わりの日。直すときは出さない', () => {
+test('F-307・§5.2: 日を足すモーダルの「期間で足す」。初めは外れていて終わりの日が無い。直すときはチェックも無い', () => {
   const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
-  expect(add).toContain(T.endDateLabel)
-  expect(add.match(/type="date"/g)).toHaveLength(2)
+  expect(add).toContain(T.rangeToggleLabel)
+  expect(add).toMatch(/<label[^>]*min-h-11[^>]*><input type="checkbox"[^>]*h-5 w-5 accent-primary[^>]*\/>期間で足す<\/label>/)
+  expect(add).not.toMatch(/type="checkbox"[^>]*checked=""/)
+  expect(add).not.toContain(T.endDateLabel)
+  expect(add.match(/type="date"/g)).toHaveLength(1)
+  expect(add).toContain(T.amountLabel) // 外れているあいだは量の欄がある
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
-  expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.endDateLabel)
+  const edit = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(edit).not.toContain(T.rangeToggleLabel)
+  expect(edit).not.toContain('type="checkbox"')
+  expect(edit).not.toContain(T.endDateLabel)
 })
 test('F-307・F-306・§5.2: 期間で足すときの行。足す日、知らせ、未割り当て。連休は出さない', () => {
   const h = html(<EntryRangeLines preview={previewRange(SHEET, '2026-12-28', '2027-01-04', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
@@ -288,7 +295,7 @@ test('画面定義書 §5: ボタンの並びは、中身が収まらないと�
 test('画面定義書 §5・§7: 日付の欄は幅に収まり（min-w-0・appearance-none）、高さ 44px 以上。選択の欄は高さを 44px に決める', () => {
   const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const dates = tagsOf(h, /<input type="date"[^>]*>/g)
-  expect(dates).toHaveLength(2)
+  expect(dates).toHaveLength(1) // 終わりの日は「期間で足す」を入れるまで出ない
   for (const d of dates) for (const c of ['appearance-none', 'min-w-0', 'min-h-11']) expect(classesOf(d)).toContain(c)
   const g = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
   const selects = tagsOf(g, /<select[^>]*>/g)
@@ -327,7 +334,7 @@ test('画面定義書 §5: 付与日の月・日の選択は w-20 で出し、w-
 test('画面定義書 §5: 日付の欄は右端にカレンダーの印を重ねる。印は読み上げない（aria-hidden）', () => {
   const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const fields = h.match(/<span class="[^"]*date-field[^"]*"><input type="date"[^>]*>(<svg[^>]*>)/g) ?? []
-  expect(fields).toHaveLength(2)
+  expect(fields).toHaveLength(1)
   for (const f of fields) {
     const svg = f.match(/<svg[^>]*>/)![0]
     expect(svg).toContain('aria-hidden="true"')
