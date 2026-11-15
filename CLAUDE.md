@@ -49,7 +49,11 @@ npm run holidays:fetch  # 内閣府の CSV から src/data/holidays.json を更�
 
 ```
 src/domain/   計算の純関数。I/O・引数なしの new Date()・Date.now()・クラスを書かない。型は Readonly。React と Next.js を知らない
-  view/       表示用の組み立て（持ち分、四半期の節など）。文言を含まないデータ。画面は計算せず、ここの結果を描く
+  calendar/   休みの日の判定（土日・祝日・会社の休日）
+  candidates/ 候補（どこを休むと何連休になるか）の探索とまとめ方
+  leave/      休暇の量、付与年、持ち分の計算
+  quarters/   計画の対象にする四半期
+  view/       表示用の組み立て（持ち分、四半期の節、設定画面など）。文言を含まないデータ。画面は計算せず、ここの結果を描く
   storage/    保存するデータの検証
   entries/    入力の検証
 src/data/     同梱する祝日データ（holidays.json）

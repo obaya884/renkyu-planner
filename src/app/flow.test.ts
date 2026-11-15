@@ -38,3 +38,21 @@ test('成功基準 2: 何も入れずに候補が見え、候補を入れ、付�
   const again = createPlannerStore(m, () => 'x'); again.load()
   expect(view(again)).toEqual(v)
 })
+
+test('F-107: 設定画面で変えた内容が、主な画面の計算に入る', () => {
+  const m = memory(); let n = 0
+  const s = createPlannerStore(m, () => `id-${++n}`); s.load()
+  s.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: null }, '2026-05-01')
+  let v = view(s)
+  expect(v.summary.longBreaks.map((c) => c.has)).toEqual([false, false, true, false])
+  s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
+  v = view(s)
+  expect(v.summary.longBreaks.map((c) => c.has)).toEqual([true, false, true, false]) // 12/30(水)〜1/3(日) の 5 連休
+  s.setWorkMinutes(465)
+  v = view(s)
+  // 残り = 付与日数 14 日 × 所定労働時間 465 分（予定は入れていないので引くものが無い）
+  expect(v.summary.cards[0].remaining).toBe(14 * 465)
+  // 開き直しても同じ
+  const again = createPlannerStore(m, () => 'x'); again.load()
+  expect(view(again)).toEqual(v)
+})
