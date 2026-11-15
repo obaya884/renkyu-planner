@@ -28,7 +28,7 @@ test('§5.3・R-13: 触らなかったか、計算した値と同じなら、上
   expect(entitlementToSave(true, 14 * 480, 14 * 480, 18 * 480)).toBeNull()
   expect(entitlementToSave(true, 16 * 480, 14 * 480, 18 * 480)).toBe(16 * 480)
 })
-test('§5.3・R-13: 計算した持ち分は、その面の付与日数 × 所定労働時間 + 繰り越し', () => {
+test('§5.3・R-13: 計算した持ち分は、そのモーダルの付与日数 × 所定労働時間 + 繰り越し', () => {
   expect(computedEntitlement(SHEET, '2027-05-01', 16)).toBe(16 * 480 + 2040)
   expect(computedEntitlement(SHEET, '2026-05-01', 15)).toBe(15 * 480)
   expect(computedEntitlement(UNSET, '2026-04-01', 10)).toBe(10 * 480)

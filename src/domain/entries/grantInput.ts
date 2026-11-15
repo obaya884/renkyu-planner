@@ -40,7 +40,7 @@ export function splitDaysHours(minutes: number, workMinutes: number): { days: nu
   return { days, hours: Math.floor((minutes - days * workMinutes) / 60) }
 }
 
-/** §5.3・R-13: その面の付与日数で計算し直した持ち分（付与日数 × 所定労働時間 + 繰り越し） */
+/** §5.3・R-13: そのモーダルの付与日数で計算し直した持ち分（付与日数 × 所定労働時間 + 繰り越し） */
 export function computedEntitlement(input: PlannerInput, grantYearStart: IsoDate, grantDays: number): number {
   const { settings, entries } = input
   return grantDays * settings.workMinutes + carryOverOf({ settings, entries, grantYearStart })

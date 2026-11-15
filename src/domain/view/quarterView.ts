@@ -69,7 +69,7 @@ type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; nextGrantYearStart
 
 // ---- 候補 ----
 
-/** leaveDays を 1 日分の有休の予定として足したときの、不足している付与年の不足の合計。面（previewAdd）と同じ数え方（§3.7） */
+/** leaveDays を 1 日分の有休の予定として足したときの、不足している付与年の不足の合計。モーダル（previewAdd）と同じ数え方（§3.7） */
 function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[]): number | null {
   if (input.settings.grantDay === null) return null
   let short = 0

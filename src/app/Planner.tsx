@@ -23,7 +23,7 @@ import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
 
-/** 開いている面（1 つだけ）。entry の id が null なら「日を足す」で、その初期の日付を持つ */
+/** 開いているモーダル（1 つだけ）。entry の id が null なら「日を足す」で、その初期の日付を持つ */
 type OpenSheet =
   | { kind: 'add'; leaveDays: readonly IsoDate[] }
   | { kind: 'entry'; id: string | null; defaultDate: IsoDate }

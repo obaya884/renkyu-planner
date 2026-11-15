@@ -10,7 +10,7 @@ import { SHEET_TITLE_ATTR } from './Sheet'
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 
-test('F-206: 日程に入れる面。休む日・連休・引く休暇・未割り当ての前後', () => {
+test('F-206: 日程に入れるモーダル。休む日・連休・引く休暇・未割り当ての前後', () => {
   const h = html(<AddSheetBody input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)
   expect(h).toContain('11/20(金)')
   expect(h).toContain('11/20〜11/23 の 4連休')
@@ -33,7 +33,7 @@ test('F-211・F-106: 足りないときは不足と出す。付与日が未設�
   expect(h).toContain(T.enterGrantToSee)
   expect(h).not.toContain(T.unassigned)
 })
-test('F-301〜F-303: 日程を直す面と、日を足す面', () => {
+test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('12/28(月) の日程')
@@ -47,7 +47,7 @@ test('F-301〜F-303: 日程を直す面と、日を足す面', () => {
   expect(add).toContain('value="2026-11-16"')
   expect(add).not.toContain(T.remove)
 })
-test('R-19: 日を足す面の日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
+test('R-19: 日を足すモーダルの日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
   const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(add).toContain('max="2027-09-30"')
   expect(add).not.toContain('まだ入れられません')
@@ -62,7 +62,7 @@ test('R-17・Review Focus 3: 休みの日と重なった日程を開くと、理
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
   expect(h).toContain(T.remove)
 })
-test('F-101・F-405・§5.3: 付与日と日数の面。初めては、この年に使える日数の欄と説明。次の付与年は、使える日数を文で出す', () => {
+test('F-101・F-405・§5.3: 付与日と日数のモーダル。初めては、この年に使える日数の欄と説明。次の付与年は、使える日数を文で出す', () => {
   const first = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
   expect(first).toContain(T.localOnly)
   expect(first).toContain(T.submitGrantFirst)
@@ -82,7 +82,7 @@ test('F-101・F-405・§5.3: 付与日と日数の面。初めては、この年
   expect(next).toContain(T.save)
   expect(next).not.toContain('過ぎた四半期を開いて足せます')
 })
-test('§5.3: 始まった付与年の面は、付与日数と、計算した持ち分を初期値にした使える日数の欄', () => {
+test('§5.3: 始まった付与年のモーダルは、付与日数と、計算した持ち分を初期値にした使える日数の欄', () => {
   const started = html(<GrantSheetBody input={SHEET} grantYearStart="2026-05-01" onSubmit={noop} onClose={noop} />)
   expect(started).toContain('2026/5/1〜2027/4/30 の分')
   expect(started.match(/type="number"/g)).toHaveLength(3)
@@ -90,7 +90,7 @@ test('§5.3: 始まった付与年の面は、付与日数と、計算した持�
   expect(started).not.toContain(T.entitlementHint)
 })
 
-test('R-17・F-306: 休む日が会社の休日と重なったら、理由を出して入れられない（日程に入れる面）', () => {
+test('R-17・F-306: 休む日が会社の休日と重なったら、理由を出して入れられない（日程に入れるモーダル）', () => {
   const input = { ...SHEET, settings: { ...SHEET.settings, companyHolidays: [...SHEET.settings.companyHolidays, { kind: 'once', start: '2026-11-20', end: '2026-11-20' } as const] } }
   const h = html(<AddSheetBody input={input} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)
   expect(h).toContain('この日は休みの日です。休みの日には入れられません')
@@ -109,7 +109,7 @@ test('§5.3: 初めての入力でも、題の下に付与年の期間を出す'
   expect(h).toContain('2026/4/1〜2027/3/31 の分')
 })
 
-test('§5・P-1: 3 つの面の題は、開いたときに焦点を受ける（入力欄に焦点を入れない）', () => {
+test('§5・P-1: 3 つのモーダルの題は、開いたときに焦点を受ける（入力欄に焦点を入れない）', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   const bodies = [
     <AddSheetBody key="add" input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />,

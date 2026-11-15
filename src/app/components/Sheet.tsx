@@ -2,18 +2,18 @@
 
 import { useEffect, useRef } from 'react'
 
-/** 面の題に付ける印（SheetTitle の data-sheet-title）。Sheet は開いたあと、この印の要素に焦点を移す */
+/** モーダルの題に付ける印（SheetTitle の data-sheet-title）。Sheet は開いたあと、この印の要素に焦点を移す */
 export const SHEET_TITLE_ATTR = 'data-sheet-title'
 
 /**
- * 面の共通の枠（画面定義書 §5）。標準の <dialog> を、マウントしたときに showModal() で開く。
- * 閉じ方は、Esc（<dialog> の標準の動き。close イベント）、面の外（::backdrop）を押す、中身の「やめる」。
+ * モーダルの共通の枠（画面定義書 §5）。標準の <dialog> を、マウントしたときに showModal() で開く。
+ * 閉じ方は、Esc（<dialog> の標準の動き。close イベント）、モーダルの外（::backdrop）を押す、中身の「やめる」。
  * 下の画面のスクロールは globals.css の body:has(dialog[open]) で止める。
  * title は読み上げの名前に使う。見える題は、中身の部品が SheetTitle で出す。
  */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
-  // 押した所と離した所が、どちらも面の外（dialog 自身）だったか（§5）。中で押して外で離したとき（文字をドラッグで
+  // 押した所と離した所が、どちらもモーダルの外（dialog 自身）だったか（§5）。中で押して外で離したとき（文字をドラッグで
   // 選んだときなど）と、外で押して中で離したときは閉じない
   const pressedOutside = useRef(false)
   const releasedOutside = useRef(false)
@@ -22,7 +22,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
     // StrictMode の開発時は effect が 2 回走る。開いているのに showModal() すると例外になる
     if (dialog === null || dialog.open) return
     dialog.showModal()
-    // showModal() は中の最初の入力欄に焦点を移し、スマホではキーボードが出て面を隠す。題に焦点を移し直す。
+    // showModal() は中の最初の入力欄に焦点を移し、スマホではキーボードが出てモーダルを隠す。題に焦点を移し直す。
     // React の autoFocus は入力欄とボタンにしか効かず、showModal() より前に走るので使わない
     dialog.querySelector<HTMLElement>(`[${SHEET_TITLE_ATTR}]`)?.focus()
   }, [])
@@ -53,7 +53,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   )
 }
 
-/** 面の題。開いたときに焦点を受ける（tabIndex -1 で、Tab の順には入らない）。焦点の枠は題にだけ出さない */
+/** モーダルの題。開いたときに焦点を受ける（tabIndex -1 で、Tab の順には入らない）。焦点の枠は題にだけ出さない */
 export function SheetTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2 tabIndex={-1} data-sheet-title="" className="text-lg font-bold outline-none">
@@ -62,7 +62,7 @@ export function SheetTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** 面の中のボタンの並び。確定を右、やめるをその左に置く（§4）。left は消す操作などで、左下に離して置く */
+/** モーダルの中のボタンの並び。確定を右、やめるをその左に置く（§4）。left は消す操作などで、左下に離して置く */
 export function SheetButtons({ left, children }: { left?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">

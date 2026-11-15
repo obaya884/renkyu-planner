@@ -104,10 +104,10 @@ test('R-8: 祝日のない月の塊は、できる連休の日数を持つ', () 
   expect(u4.candidates.at(-1)).toMatchObject({ kind: 'monthGap', runDays: 3 })
 })
 const rowsOf = (v: typeof q4) => v.candidates.flatMap((b) => (b.kind === 'group' ? [...b.primary, ...b.rest] : b.rows))
-/** 面と同じ数え方の不足の合計（§3.7・§5.1） */
+/** モーダルと同じ数え方の不足の合計（§3.7・§5.1） */
 const shortOfPreview = (input: typeof SHEET, leaveDays: readonly string[]) =>
   previewAdd(input, leaveDays, 'paid').reduce((sum, d) => sum + (d.after <= -1 ? -d.after : 0), 0)
-test('F-209・F-211・R-13: 付与日をまたぐ候補の不足は、面（previewAdd）と同じ。今の付与年に入れた分だけ次の付与年の繰り越しが減る', () => {
+test('F-209・F-211・R-13: 付与日をまたぐ候補の不足は、モーダル（previewAdd）と同じ。今の付与年に入れた分だけ次の付与年の繰り越しが減る', () => {
   // 今の付与年の未割り当てが 1 日（付与 1 日、持ち分の上書きは日程の合計 + 1 日）。次の付与年は付与 0 日で、持ち分は繰り越しだけ（付与日数の 1 日まで）
   const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 1, entitlementMinutes: 9 * 480 + 360 + 480 }, '2027-05-01': { grantDays: 0, entitlementMinutes: null } } }
   const input = { ...SHEET, settings }

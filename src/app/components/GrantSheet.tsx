@@ -64,7 +64,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
       : null
     : { days: entDays, hours: entHours }
   const entered = followed ? computed : enteredEntitlement(entDays, entHours, workMinutes)
-  // 次の付与年の面には欄が無く、触ることがないので、すでにある上書きがそのまま残る
+  // 次の付与年のモーダルには欄が無く、触ることがないので、すでにある上書きがそのまま残る
   const existing = grantYearStart === null ? null : (settings.grantYears[grantYearStart]?.entitlementMinutes ?? null)
   const entitlementMinutes = entitlementToSave(touched, entered, computed, existing)
 
