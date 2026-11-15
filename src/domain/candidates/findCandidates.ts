@@ -15,7 +15,7 @@ const MIN_GAIN = 3
 const LONG_RUN_DAYS = 5
 
 /** leaveDays も休みの日として見るカレンダー */
-function withLeaveDays(cal: RestCalendar, leaveDays: readonly IsoDate[]): RestCalendar {
+export function withLeaveDays(cal: RestCalendar, leaveDays: readonly IsoDate[]): RestCalendar {
   const set = new Set(leaveDays)
   const kindOf = (d: IsoDate): RestKind | null => (set.has(d) ? 'leave' : cal.kindOf(d))
   return { kindOf, isRest: (d) => kindOf(d) !== null }
