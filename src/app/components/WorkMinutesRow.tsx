@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS } from '@/app/components/Sheet'
+import { SHORT_FIELD_CLASS } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
 import { isValidWorkMinutes, workMinutesFrom } from '@/domain/entries/settingsInput'
 
@@ -30,18 +30,18 @@ export function WorkMinutesRow({ workMinutes, onChange }: { workMinutes: number;
           aria-label={T.hoursUnit}
           value={hours}
           onChange={(e) => edit(e.target.value, minutes)}
-          className={`${FIELD_CLASS} w-20`}
+          className={`${SHORT_FIELD_CLASS} w-20`}
         />
-        <span>{T.hoursUnit}</span>
+        <span className="whitespace-nowrap">{T.hoursUnit}</span>
         <input
           type="text"
           inputMode="numeric"
           aria-label={T.minutesUnit}
           value={minutes}
           onChange={(e) => edit(hours, e.target.value)}
-          className={`${FIELD_CLASS} w-20`}
+          className={`${SHORT_FIELD_CLASS} w-20`}
         />
-        <span>{T.minutesUnit}</span>
+        <span className="whitespace-nowrap">{T.minutesUnit}</span>
       </div>
       {invalid && <p className="mt-1 text-sm text-warn-ink">{errorText('invalidWorkMinutes')}</p>}
     </div>

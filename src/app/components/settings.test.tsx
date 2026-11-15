@@ -10,6 +10,7 @@ import { Header } from './Header'
 import { HolidayAbout } from './HolidayAbout'
 import { LeaveTypeSection } from './LeaveTypeSection'
 import { LeaveTypeSheetBody } from './LeaveTypeSheet'
+import { SettingsSections } from './SettingsSections'
 import { HolidayNote } from './StaticCandidates'
 import { WeekStartRow } from './WeekStartRow'
 import { WorkMinutesRow } from './WorkMinutesRow'
@@ -31,16 +32,44 @@ test('F-605・§6: 「祝日について」の節。最終更新は updatedAt', 
   expect(h).toContain('祝日は内閣府の公表データです。2027年12月31日まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: 2026年11月15日')
 })
 
+test('§6: 設定画面の節は、有休、1 日の所定労働時間、カレンダー、会社の休日、休暇の種類の順', () => {
+  const noop = () => {}
+  const h = html(
+    <SettingsSections
+      grantView={buildGrantSection(SHEET)}
+      workMinutes={480}
+      weekStart="monday"
+      companyHolidayRows={companyHolidayRows(SHEET.settings)}
+      leaveTypeRows={leaveTypeRows(SHEET)}
+      onOpenGrant={noop}
+      onFirstGrant={noop}
+      onChangeGrantDay={noop}
+      onChangeWorkMinutes={noop}
+      onChangeWeekStart={noop}
+      onOpenCompanyHoliday={noop}
+      onAddCompanyHoliday={noop}
+      onOpenLeaveType={noop}
+      onAddLeaveType={noop}
+    />,
+  )
+  const headings = [...h.matchAll(/<h2[^>]*>([^<]*)<\/h2>/g)].map((m) => m[1])
+  expect(headings).toEqual([T.paidSection, T.workMinutesLabel, T.calendarLabel, T.companyHolidaySection, T.leaveTypeSection])
+})
 test('F-102: 所定労働時間の行は時間と分の欄', () => {
   const h = html(<WorkMinutesRow workMinutes={465} onChange={() => {}} />)
   expect(h).toContain('value="7"')
   expect(h).toContain('value="45"')
+  // 欄は数字 2〜3 桁の幅で、単位は折り返さない（PC の幅で「時間」が 2 行にならない）
+  expect(h).not.toContain('w-full')
+  expect(h.match(/whitespace-nowrap/g)).toHaveLength(2)
 })
 test('F-108: 週の始まりの行。選んでいる方に印', () => {
   const h = html(<WeekStartRow weekStart="sunday" onChange={() => {}} />)
   const input = (v: string) => h.match(new RegExp(`<input[^>]*value="${v}"[^>]*>`))?.[0] ?? ''
   expect(input('sunday')).toContain('checked')
   expect(input('monday')).not.toContain('checked')
+  // ラジオは「週の始まり」の <legend> を持つ <fieldset> に入る
+  expect(h).toMatch(/<fieldset[^>]*><legend[^>]*>週の始まり<\/legend>.*<input[^>]*type="radio".*<\/fieldset>/)
 })
 
 test('§6: 付与年の行の文', () => {
@@ -83,6 +112,14 @@ test('§6・§5.4: 会社の休日の行とモーダル', () => {
 })
 
 const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+test('§5.5: 付与される日は、項目名、2 つ目のラジオ、月日の選択で、別の文を使う', () => {
+  const h = html(<LeaveTypeSheetBody type={{ ...summer, grantDay: '04-01' }} hasEntries={false} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(h.split(`>${T.leaveGrantDayLabel}<`)).toHaveLength(2) // 項目名（<legend>）の 1 回だけ
+  expect(h).toMatch(new RegExp(`<input[^>]*type="radio"[^>]*checked=""[^>]*/>${T.leaveOwnGrantDay}</label>`))
+  expect(T.leaveOwnGrantDay).toBe('月と日で決める')
+  expect(h).toContain(`aria-label="${T.leaveGrantDayPickerLabel} ${T.monthUnit}"`)
+  expect(new Set([T.leaveGrantDayLabel, T.leaveOwnGrantDay, T.leaveGrantDayPickerLabel]).size).toBe(3)
+})
 test('§6・§5.5: 休暇の種類の行とモーダル', () => {
   const input = { settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: SHEET.entries }
   const h = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)

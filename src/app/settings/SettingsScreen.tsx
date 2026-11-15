@@ -1,17 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CompanyHolidaySection } from '@/app/components/CompanyHolidaySection'
 import { CompanyHolidaySheet } from '@/app/components/CompanyHolidaySheet'
-import { GrantSection } from '@/app/components/GrantSection'
 import { GrantSheet } from '@/app/components/GrantSheet'
-import { LeaveTypeSection } from '@/app/components/LeaveTypeSection'
 import { LeaveTypeSheet } from '@/app/components/LeaveTypeSheet'
 import { Notices } from '@/app/components/Notices'
-import { WeekStartRow } from '@/app/components/WeekStartRow'
-import { WorkMinutesRow } from '@/app/components/WorkMinutesRow'
+import { SettingsSections } from '@/app/components/SettingsSections'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
-import { T } from '@/app/texts'
 import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
@@ -45,41 +40,22 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   return (
     <div className="space-y-6">
       <Notices canSave={canSave} unreadable={unreadable} />
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-sub">{T.paidSection}</h2>
-        <GrantSection
-          view={grantView}
-          workMinutes={data.settings.workMinutes}
-          onOpen={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
-          onFirst={() => setSheet({ kind: 'grant', grantYearStart: null })}
-          onChangeDay={() => setSheet({ kind: 'grantDay' })}
-        />
-      </section>
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-sub">{T.companyHolidaySection}</h2>
-        <CompanyHolidaySection
-          rows={companyHolidayRows(data.settings)}
-          onOpen={(index) => setSheet({ kind: 'companyHoliday', index })}
-          onAdd={() => setSheet({ kind: 'companyHoliday', index: null })}
-        />
-      </section>
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-sub">{T.leaveTypeSection}</h2>
-        <LeaveTypeSection
-          rows={leaveRows}
-          onOpen={(id) => setSheet({ kind: 'leaveType', id })}
-          onAdd={() => setSheet({ kind: 'leaveType', id: null })}
-        />
-      </section>
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-sub">{T.workMinutesLabel}</h2>
-        <WorkMinutesRow workMinutes={data.settings.workMinutes} onChange={plannerStore.setWorkMinutes} />
-      </section>
-      <section className="space-y-2">
-        <h2 className="text-sm font-bold text-sub">{T.calendarLabel}</h2>
-        <div className="text-sm text-sub">{T.weekStartLabel}</div>
-        <WeekStartRow weekStart={data.settings.weekStart} onChange={plannerStore.setWeekStart} />
-      </section>
+      <SettingsSections
+        grantView={grantView}
+        workMinutes={data.settings.workMinutes}
+        weekStart={data.settings.weekStart}
+        companyHolidayRows={companyHolidayRows(data.settings)}
+        leaveTypeRows={leaveRows}
+        onOpenGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
+        onFirstGrant={() => setSheet({ kind: 'grant', grantYearStart: null })}
+        onChangeGrantDay={() => setSheet({ kind: 'grantDay' })}
+        onChangeWorkMinutes={plannerStore.setWorkMinutes}
+        onChangeWeekStart={plannerStore.setWeekStart}
+        onOpenCompanyHoliday={(index) => setSheet({ kind: 'companyHoliday', index })}
+        onAddCompanyHoliday={() => setSheet({ kind: 'companyHoliday', index: null })}
+        onOpenLeaveType={(id) => setSheet({ kind: 'leaveType', id })}
+        onAddLeaveType={() => setSheet({ kind: 'leaveType', id: null })}
+      />
       {sheet?.kind === 'companyHoliday' && (
         <CompanyHolidaySheet
           key={sheet.index ?? 'new'}

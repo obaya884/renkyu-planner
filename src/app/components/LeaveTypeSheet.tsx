@@ -85,9 +85,9 @@ export function LeaveTypeSheetBody({ type, hasEntries, today, onSubmit, onRemove
           </label>
           <label className="flex min-h-11 items-center gap-2">
             <input type="radio" name="leaveGrantDay" checked={ownGrantDay} onChange={() => setOwnGrantDay(true)} className="h-5 w-5 accent-primary" />
-            {T.leaveGrantDayLabel}
+            {T.leaveOwnGrantDay}
           </label>
-          {ownGrantDay && <MonthDayPicker label={T.leaveGrantDayLabel} value={grantDay} onChange={setGrantDay} dayChoices={grantDayChoices} />}
+          {ownGrantDay && <MonthDayPicker label={T.leaveGrantDayPickerLabel} value={grantDay} onChange={setGrantDay} dayChoices={grantDayChoices} />}
         </fieldset>
         <div>
           <label className="flex min-h-11 items-center gap-2">

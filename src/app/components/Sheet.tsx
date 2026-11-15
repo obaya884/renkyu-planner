@@ -73,6 +73,8 @@ export function SheetButtons({ left, children }: { left?: React.ReactNode; child
 }
 
 export const FIELD_CLASS = 'min-h-11 w-full rounded-md border border-line bg-white px-2'
+/** 幅を w-20 などで決める短い欄。FIELD_CLASS の w-full は w-20 より後に出力されて勝つので、幅を含めない */
+export const SHORT_FIELD_CLASS = 'min-h-11 shrink-0 rounded-md border border-line bg-white px-2'
 export const PRIMARY_BUTTON_CLASS = 'min-h-11 rounded-md bg-primary px-4 text-sm font-bold text-white disabled:opacity-40'
 export const SECONDARY_BUTTON_CLASS = 'min-h-11 rounded-md border border-line px-4 text-sm'
 

@@ -40,6 +40,10 @@ export const T = {
   usableLabel: '使える期間',
   setUsable: '使える期間を決める',
   leaveGrantDayLabel: '付与される日',
+  /** M-5 の付与される日の 2 つ目のラジオ */
+  leaveOwnGrantDay: '月と日で決める',
+  /** M-5 の付与される日を月と日で決めるときの、月日の選択の見出し */
+  leaveGrantDayPickerLabel: '付与される月日',
   sameAsPaid: '有休と同じ',
   togetherLabel: 'まとめて取る休暇',
   togetherHint: '営業日で連続して、全部の日数を 1 回で取る休暇',
