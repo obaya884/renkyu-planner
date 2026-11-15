@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
-import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassignedChange } from '@/app/texts'
+import { UnassignedLines } from '@/app/components/UnassignedLines'
+import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
-import { isShort } from '@/domain/leave/amount'
 import type { IsoDate } from '@/domain/shared/date'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
 import { previewAdd, remainingFor } from '@/domain/view/addPreview'
@@ -64,16 +64,7 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
         {deltas.length === 0 ? (
           <p className="text-sm text-sub">{T.enterGrantToSee}</p>
         ) : (
-          deltas.map((d) => (
-            <p key={d.grantYearStart} className={isShort(d.after) ? 'font-bold text-warn-ink' : ''}>
-              {unassignedChange(
-                deltas.length === 1 ? T.unassigned : d.current ? T.thisGrantYear : T.nextGrantYearLabel,
-                d.before,
-                d.after,
-                workMinutes,
-              )}
-            </p>
-          ))
+          <UnassignedLines deltas={deltas} workMinutes={workMinutes} />
         )}
         <Field label={T.entryTitleLabel}>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />

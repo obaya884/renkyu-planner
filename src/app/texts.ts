@@ -6,6 +6,7 @@ import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/setti
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import type { GrantYearPosition } from '@/domain/view/addPreview'
 import type { TogetherRow } from '@/domain/view/quarterView'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
@@ -116,6 +117,7 @@ export const T = {
   entryTitleLabel: '予定の名前',
   thisGrantYear: '今の付与年',
   nextGrantYearLabel: '次の付与年',
+  previousGrantYearLabel: '前の付与年',
   enterGrantToSee: '付与日と日数を入れると、残りが出ます',
   // §5.2
   addDayTitle: '日を足す',
@@ -322,6 +324,17 @@ export function summaryLine(name: string, remaining: number, unassigned: number,
 /** §5.1 の未割り当ての 1 行の片側。不足（isShort）なら「不足 ◯」。例: 3 日と 2 時間、不足 1 日 */
 export function unassignedText(minutes: number, workMinutes: number): string {
   return isShort(minutes) ? `${T.short} ${formatAmount(minutes, workMinutes)}` : formatAmount(Math.max(0, minutes), workMinutes)
+}
+
+const GRANT_YEAR_LABELS: Readonly<Record<GrantYearPosition, string>> = {
+  previous: T.previousGrantYearLabel,
+  current: T.thisGrantYear,
+  next: T.nextGrantYearLabel,
+}
+
+/** §5.1 の未割り当ての行の見出し。1 行だけなら未割り当て、2 行以上なら、今日が入る付与年と比べた位置 */
+export function unassignedLabel(position: GrantYearPosition, rows: number): string {
+  return rows === 1 ? T.unassigned : GRANT_YEAR_LABELS[position]
 }
 
 /** §5.1 の未割り当ての 1 行。例: 未割り当て 4 日と 2 時間 → 3 日と 2 時間。ラベルは 1 行のときは未割り当て、2 行のときは付与年 */

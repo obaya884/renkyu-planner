@@ -3,8 +3,12 @@ import type { IsoDate } from '../shared/date'
 import type { Entry } from '../types'
 import type { PlannerInput } from './input'
 
-/** `current` は、その休暇の種類の、今日が入る付与年か */
-export type GrantYearDelta = Readonly<{ grantYearStart: IsoDate; before: number; after: number; current: boolean }>
+/**
+ * `position` は、その休暇の種類の今日が入る付与年と比べた位置。前（previous）・今（current）・後（next）。
+ * 期間で足すとき（F-307）は過ぎた日も入れられるので、前の付与年がある
+ */
+export type GrantYearPosition = 'previous' | 'current' | 'next'
+export type GrantYearDelta = Readonly<{ grantYearStart: IsoDate; before: number; after: number; position: GrantYearPosition }>
 
 /** 休む日が入る、その休暇の種類の付与年の開始日（古い順）。有休の付与日が未設定なら null */
 function grantYearStartsOf(input: PlannerInput, leaveTypeId: string, leaveDays: readonly IsoDate[]): readonly IsoDate[] | null {
@@ -15,6 +19,12 @@ function grantYearStartsOf(input: PlannerInput, leaveTypeId: string, leaveDays: 
     starts.push(year.start)
   }
   return [...new Set(starts)].sort()
+}
+
+/** 付与年の開始日は IsoDate なので、文字列の大小が日付の前後になる。今日の付与年が求まらないとき（起きない）は後として扱う */
+function positionOf(grantYearStart: IsoDate, currentStart: IsoDate | undefined): GrantYearPosition {
+  if (currentStart === undefined || grantYearStart > currentStart) return 'next'
+  return grantYearStart === currentStart ? 'current' : 'previous'
 }
 
 /**
@@ -42,7 +52,7 @@ export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], l
     grantYearStart,
     before: unassignedOf(input, grantYearStart),
     after: unassignedOf(after, grantYearStart),
-    current: grantYearStart === currentStart,
+    position: positionOf(grantYearStart, currentStart),
   }))
 }
 

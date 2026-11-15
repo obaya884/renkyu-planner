@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
-import { T, entrySheetTitle, errorText, rangeDaysText, runHeading, unassignedChange } from '@/app/texts'
+import { UnassignedLines } from '@/app/components/UnassignedLines'
+import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
-import { isShort } from '@/domain/leave/amount'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
 import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
@@ -65,11 +65,7 @@ export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview
         <p className="text-sm">{rangeDaysText(days)}</p>
       )}
       {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
-      {deltas.map((d) => (
-        <p key={d.grantYearStart} className={isShort(d.after) ? 'font-bold text-warn-ink' : ''}>
-          {unassignedChange(deltas.length === 1 ? T.unassigned : d.current ? T.thisGrantYear : T.nextGrantYearLabel, d.before, d.after, workMinutes)}
-        </p>
-      ))}
+      <UnassignedLines deltas={deltas} workMinutes={workMinutes} />
       {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
     </>
   )

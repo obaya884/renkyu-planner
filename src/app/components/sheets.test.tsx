@@ -7,6 +7,7 @@ import { AddSheetBody } from './AddSheet'
 import { EntryRangeLines, EntrySheetBody } from './EntrySheet'
 import { GrantSheetBody } from './GrantSheet'
 import { SHEET_TITLE_ATTR } from './Sheet'
+import { UnassignedLines } from './UnassignedLines'
 
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
@@ -214,4 +215,29 @@ test('F-307・F-306・§5.2: 期間で足すときの行。足す日、知らせ
   expect(far).toContain('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
   expect(far).not.toContain('ぶんを足します')
   expect(html(<EntryRangeLines preview={previewRange(SHEET, '2026-11-24', '2026-11-19', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)).toContain(errorText('endBeforeStart'))
+})
+
+test('F-307・§5.1: 期間が過ぎた付与年にかかると、その行は「前の付与年」、今日が入る付与年の行は「今の付与年」', () => {
+  // 今日 2026-11-15、付与日 05-01。2026-04-27〜2026-05-08 の営業日 6 日のうち、4/27・4/28・4/30 が 2025-05-01 の付与年、
+  // 5/1・5/7・5/8 が 2026-05-01 の付与年。前: 0 → 0 − 3 日 = 不足 3 日。今: 2040 分（4 日と 2 時間）→ 2040 − 1440 = 600 分（1 日と 2 時間）
+  const h = html(<EntryRangeLines preview={previewRange(SHEET, '2026-04-27', '2026-05-08', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
+  expect(h).toContain(`${T.previousGrantYearLabel} 0 日 → ${T.short} 3 日`)
+  expect(h).toContain(`${T.thisGrantYear} 4 日と 2 時間 → 1 日と 2 時間`)
+  expect(h).not.toContain(T.nextGrantYearLabel)
+})
+test('§5.1: 未割り当ての行は 1 つの部品で描く。1 行なら「未割り当て」、2 行なら付与年の見出し', () => {
+  const one = html(<UnassignedLines deltas={[{ grantYearStart: '2026-05-01', before: 2040, after: 1560, position: 'current' }]} workMinutes={480} />)
+  expect(one).toContain(`${T.unassigned} 4 日と 2 時間 → 3 日と 2 時間`)
+  const two = html(
+    <UnassignedLines
+      deltas={[
+        { grantYearStart: '2026-05-01', before: 2040, after: 1560, position: 'current' },
+        { grantYearStart: '2027-05-01', before: 480, after: -480, position: 'next' },
+      ]}
+      workMinutes={480}
+    />,
+  )
+  expect(two).toContain(`${T.thisGrantYear} 4 日と 2 時間 → 3 日と 2 時間`)
+  expect(two).toContain(`${T.nextGrantYearLabel} 1 日 → ${T.short} 1 日`)
+  expect(two).toContain('text-warn-ink')
 })
