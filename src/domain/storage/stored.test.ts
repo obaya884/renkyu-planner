@@ -99,3 +99,71 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(withH({ kind: 'yearly', start: '12-30', end: '01-03', name: 5 }).ok).toBe(false)
   })
 })
+
+const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }
+const withTypes = (...types: object[]) => ({ ...ok, settings: { ...DEFAULT_SETTINGS, leaveTypes: [...DEFAULT_SETTINGS.leaveTypes, ...types] } })
+
+test('D-3: 小数の版は「新しい版」としない', () => {
+  expect(isNewerVersion('{"version":1.5}')).toBe(false)
+  expect(isNewerVersion('{"version":2.5}')).toBe(false)
+  expect(isNewerVersion('{"version":2}')).toBe(true)
+  expect(parse({ ...ok, version: 1.5 }).ok).toBe(false)
+})
+test('D-10: 件数の上限。上限ちょうどは読め、1 つ超えると読めない', () => {
+  const entries = (n: number) => Array.from({ length: n }, (_, i) => ({ ...entry, id: `e${i}` }))
+  expect(parse({ ...ok, entries: entries(5000) }).ok).toBe(true)
+  expect(parse({ ...ok, entries: entries(5001) }).ok).toBe(false)
+  const holidays = (n: number) => ({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: Array.from({ length: n }, () => ({ kind: 'yearly', start: '12-30', end: '01-03' })) } })
+  expect(parse(holidays(100)).ok).toBe(true)
+  expect(parse(holidays(101)).ok).toBe(false)
+  // R-15 に合わない休日も、落とす前の数で数える
+  expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: Array.from({ length: 101 }, () => ({ kind: 'yearly', start: '01-01', end: '12-31' })) } }).ok).toBe(false)
+  const types = (n: number) => withTypes(...Array.from({ length: n }, (_, i) => ({ ...summer, id: `t${i}` })))
+  expect(parse(types(99)).ok).toBe(true)  // 有休を含めて 100
+  expect(parse(types(100)).ok).toBe(false)
+  const years = (n: number) => ({ ...ok, settings: { ...DEFAULT_SETTINGS, grantDay: '05-01', grantYears: Object.fromEntries(Array.from({ length: n }, (_, i) => [`${1826 + i}-05-01`, { grantDays: 10, entitlementMinutes: null }])) } })
+  expect(parse(years(200)).ok).toBe(true)
+  expect(parse(years(201)).ok).toBe(false)
+})
+test('D-10: 名前は 100 文字まで', () => {
+  expect(parse({ ...ok, entries: [{ ...entry, title: 'あ'.repeat(100) }] }).ok).toBe(true)
+  expect(parse({ ...ok, entries: [{ ...entry, title: 'あ'.repeat(101) }] }).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, name: 'あ'.repeat(100) })).ok).toBe(true)
+  expect(parse(withTypes({ ...summer, name: 'あ'.repeat(101) })).ok).toBe(false)
+  const holiday = (name: string) => ({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03', name }] } })
+  expect(parse(holiday('あ'.repeat(100))).ok).toBe(true)
+  expect(parse(holiday('あ'.repeat(101))).ok).toBe(false)
+})
+test('D-10: 日程と休暇の種類の id の文字', () => {
+  expect(parse({ ...ok, entries: [{ ...entry, id: '0f8fad5b-d9cb-469f-a165-70867728950e' }, { ...entry, id: 'a'.repeat(64) }, { ...entry, id: 'x_y' }] }).ok).toBe(true)
+  expect(parse({ ...ok, entries: [{ ...entry, id: 'a'.repeat(65) }] }).ok).toBe(false)
+  expect(parse({ ...ok, entries: [{ ...entry, id: 'a\r\nEND:VEVENT' }] }).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, id: 'sum mer' })).ok).toBe(false)
+})
+test('D-4: 日程の leaveTypeId は、設定にある休暇の種類', () => {
+  expect(parse({ ...ok, entries: [{ ...entry, leaveTypeId: 'nowhere' }] }).ok).toBe(false)
+  expect(parse({ ...withTypes(summer), entries: [{ ...entry, leaveTypeId: 'summer' }] }).ok).toBe(true)
+})
+test('D-4・G-4: 有休でない休暇の種類は M-5 と同じ決まり。有休はいまのまま読む', () => {
+  expect(parse(withTypes({ ...summer, usable: { start: '09-30', end: '07-01' } })).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, name: '  ' })).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, days: 0.25 })).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, days: 366.5 })).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, days: 366 })).ok).toBe(true)
+  expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, leaveTypes: [{ ...DEFAULT_SETTINGS.leaveTypes[0], days: 5 }] } }).ok).toBe(true)
+})
+test('D-3・D-4: 検証の境目（計画 2 から送られた点）', () => {
+  expect(parse(withTypes({ ...summer, days: -1 })).ok).toBe(false)              // 負の days
+  expect(parse(withTypes({ ...summer, usable: undefined })).ok).toBe(false)     // usable の項目が無い
+  expect(parse(withTypes({ ...summer, usable: { start: '07-01' } })).ok).toBe(false)
+  expect(parse(withTypes({ ...summer, id: 'paid' })).ok).toBe(false)            // 休暇の種類の id の重複
+  expect(parseStored(JSON.stringify(ok).replace('"days":0', '"days":1e999')).ok).toBe(false) // JSON.parse で Infinity
+  expect(parse({ ...ok, entries: null }).ok).toBe(false)
+  expect(parse({ ...ok, entries: {} }).ok).toBe(false)
+  expect(parse({ ...ok, settings: [] }).ok).toBe(false)
+  expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: [{ kind: 'once', start: '2026-8-13', end: '2026-08-16' }] } }).ok).toBe(false)
+  const proto = JSON.stringify(ok).replace('"grantYears":{}', '"grantYears":{"__proto__":{"grantDays":1,"entitlementMinutes":null}}')
+  expect(parseStored(proto).ok).toBe(false)                                     // __proto__ は実在する日付でない
+  const r = parse(ok)
+  expect(r.ok && r.value.settings.leaveTypes).not.toBe(DEFAULT_SETTINGS.leaveTypes) // 参照の共有
+})

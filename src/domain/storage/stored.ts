@@ -1,4 +1,4 @@
-import { withHolidayName } from '@/domain/entries/settingsInput'
+import { checkLeaveTypeDraft, withHolidayName } from '@/domain/entries/settingsInput'
 import { isValidCompanyHoliday } from '@/domain/calendar/companyHoliday'
 import { isValidGrantDay } from '@/domain/leave/grantYear'
 import { isValidIsoDate } from '@/domain/shared/date'
@@ -6,6 +6,7 @@ import type { MonthDay } from '@/domain/shared/date'
 import type { Result } from '@/domain/shared/result'
 import { DEFAULT_SETTINGS, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { Amount, CompanyHoliday, Entry, GrantYearSetting, LeaveType, Settings, WeekStart } from '@/domain/types'
+import { STORAGE_LIMITS, isValidId } from './limits'
 
 export const STORAGE_KEY = 'renkyu-planner'
 export const UNREADABLE_KEY = 'renkyu-planner:unreadable'
@@ -28,13 +29,13 @@ export function parseStored(text: string): Result<StoredData> {
   }
 }
 
-/** D-3。新しい版が書いた記録（`version` が数で、STORAGE_VERSION より大きい）か。読めない記録のうち、上書きしてはならないものを見分ける */
+/** D-3。新しい版が書いた記録（`version` が整数で、STORAGE_VERSION より大きい）か。読めない記録のうち、上書きしてはならないものを見分ける */
 export function isNewerVersion(text: string): boolean {
   try {
     const v: unknown = JSON.parse(text)
     if (typeof v !== 'object' || v === null || Array.isArray(v)) return false
     const version = (v as Readonly<Record<string, unknown>>).version
-    return typeof version === 'number' && version > STORAGE_VERSION
+    return typeof version === 'number' && Number.isInteger(version) && version > STORAGE_VERSION
   } catch {
     return false
   }
@@ -53,14 +54,30 @@ function obj(v: unknown, what: string): Obj {
   return v as Obj
 }
 
-function arr(v: unknown, what: string): readonly unknown[] {
+/** D-10: 件数の上限は、中を読む前に確かめる */
+function arr(v: unknown, what: string, max: number): readonly unknown[] {
   if (!Array.isArray(v)) fail(what)
+  if (v.length > max) fail(`${what}の件数`)
   return v
 }
 
 function str(v: unknown, what: string): string {
   if (typeof v !== 'string') fail(what)
   return v
+}
+
+/** D-10: 名前の長さ（length）の上限 */
+function text(v: unknown, what: string): string {
+  const s = str(v, what)
+  if (s.length > STORAGE_LIMITS.textLength) fail(`${what}の長さ`)
+  return s
+}
+
+/** D-10: 日程と休暇の種類の id */
+function id(v: unknown, what: string): string {
+  const s = str(v, what)
+  if (!isValidId(s)) fail(what)
+  return s
 }
 
 function nonEmptyStr(v: unknown, what: string): string {
@@ -117,11 +134,11 @@ function readAmount(v: unknown): Amount {
 function readEntry(v: unknown): Entry {
   const o = obj(v, '日程')
   return {
-    id: nonEmptyStr(o.id, '日程の id'),
+    id: id(o.id, '日程の id'),
     date: isoDate(o.date, '日程の date'),
     leaveTypeId: nonEmptyStr(o.leaveTypeId, '日程の leaveTypeId'),
     amount: readAmount(o.amount),
-    title: str(o.title, '日程の title'),
+    title: text(o.title, '日程の title'),
     done: bool(o.done, '日程の done'),
   }
 }
@@ -133,15 +150,18 @@ function readLeaveType(v: unknown): LeaveType {
     const u = obj(o.usable, '休暇の種類の usable')
     usable = { start: monthDay(u.start, 'usable の start'), end: monthDay(u.end, 'usable の end') }
   }
-  return {
-    id: nonEmptyStr(o.id, '休暇の種類の id'),
-    name: str(o.name, '休暇の種類の name'),
+  const type: LeaveType = {
+    id: id(o.id, '休暇の種類の id'),
+    name: text(o.name, '休暇の種類の name'),
     days: num(o.days, '休暇の種類の days', 0),
     usable,
     // D-4: 項目が無い記録は null・false として読む
     grantDay: o.grantDay === undefined || o.grantDay === null ? null : grantDayValue(o.grantDay, '休暇の種類の grantDay'),
     together: o.together === undefined ? false : bool(o.together, '休暇の種類の together'),
   }
+  // D-4: 有休でない休暇の種類は M-5（画面定義書 §5.5）と同じ決まり。有休はいまの決まりのまま読む
+  if (type.id !== PAID_LEAVE_TYPE_ID && checkLeaveTypeDraft(type).length > 0) fail('休暇の種類')
+  return type
 }
 
 function formOf(v: unknown, re: RegExp, what: string): string {
@@ -150,11 +170,10 @@ function formOf(v: unknown, re: RegExp, what: string): string {
   return s
 }
 
-/** D-4: 会社の休日の名前。項目が無ければ名前なし。文字列でなければ失敗 */
+/** D-4・D-10: 会社の休日の名前。項目が無ければ名前なし。文字列でなければ失敗。長さは前後の空白を除く前で数える */
 function holidayName(v: unknown): string {
   if (v === undefined) return ''
-  if (typeof v !== 'string') return fail('会社の休日の name')
-  return v
+  return text(v, '会社の休日の name')
 }
 
 /** 形だけを確かめる。R-15 に合うかは readSettings が確かめる */
@@ -173,6 +192,7 @@ function readCompanyHoliday(v: unknown): CompanyHoliday {
 
 function readGrantYears(v: unknown): Record<string, GrantYearSetting> {
   const o = obj(v, 'grantYears')
+  if (Object.keys(o).length > STORAGE_LIMITS.grantYears) fail('grantYears の件数')
   const out: Record<string, GrantYearSetting> = {}
   for (const [key, val] of Object.entries(o)) {
     const g = obj(val, 'grantYears の値')
@@ -193,7 +213,7 @@ function readWeekStart(v: unknown): WeekStart {
 
 function readSettings(v: unknown): Settings {
   const o = obj(v, 'settings')
-  const leaveTypes = arr(o.leaveTypes, 'leaveTypes').map(readLeaveType)
+  const leaveTypes = arr(o.leaveTypes, 'leaveTypes', STORAGE_LIMITS.leaveTypes).map(readLeaveType)
   if (leaveTypes[0]?.id !== PAID_LEAVE_TYPE_ID) fail('leaveTypes の先頭（有休）')
   checkUniqueIds(leaveTypes.map((t) => t.id), '休暇の種類')
   const grantDay = o.grantDay === null ? null : grantDayValue(o.grantDay, 'grantDay')
@@ -202,7 +222,7 @@ function readSettings(v: unknown): Settings {
     grantDay,
     grantYears: readGrantYears(o.grantYears),
     // D-4: R-15 に合わない会社の休日は、記録の全体を読めなくせず、その休日だけを落とす
-    companyHolidays: arr(o.companyHolidays, 'companyHolidays').map(readCompanyHoliday).filter(isValidCompanyHoliday),
+    companyHolidays: arr(o.companyHolidays, 'companyHolidays', STORAGE_LIMITS.companyHolidays).map(readCompanyHoliday).filter(isValidCompanyHoliday),
     leaveTypes,
     weekStart: readWeekStart(o.weekStart),
   }
@@ -211,7 +231,11 @@ function readSettings(v: unknown): Settings {
 function readStored(v: unknown): StoredData {
   const o = obj(v, '記録')
   if (o.version !== STORAGE_VERSION) fail('version')
-  const entries = arr(o.entries, 'entries').map(readEntry)
+  const entries = arr(o.entries, 'entries', STORAGE_LIMITS.entries).map(readEntry)
   checkUniqueIds(entries.map((e) => e.id), '日程')
-  return { version: STORAGE_VERSION, settings: readSettings(o.settings), entries }
+  const settings = readSettings(o.settings)
+  // D-4: 日程は、設定にある休暇の種類を指す
+  const typeIds = new Set(settings.leaveTypes.map((t) => t.id))
+  if (entries.some((e) => !typeIds.has(e.leaveTypeId))) fail('日程の leaveTypeId')
+  return { version: STORAGE_VERSION, settings, entries }
 }
