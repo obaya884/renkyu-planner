@@ -332,9 +332,9 @@ const GRANT_YEAR_LABELS: Readonly<Record<GrantYearPosition, string>> = {
   next: T.nextGrantYearLabel,
 }
 
-/** §5.1 の未割り当ての行の見出し。1 行だけなら未割り当て、2 行以上なら、今日が入る付与年と比べた位置 */
+/** §5.1 の未割り当ての行の見出し。2 行以上なら、今日が入る付与年と比べた位置。1 行だけなら未割り当て。ただし前の付与年は、1 行でも「前の付与年」と出す */
 export function unassignedLabel(position: GrantYearPosition, rows: number): string {
-  return rows === 1 ? T.unassigned : GRANT_YEAR_LABELS[position]
+  return rows === 1 && position !== 'previous' ? T.unassigned : GRANT_YEAR_LABELS[position]
 }
 
 /** §5.1 の未割り当ての 1 行。例: 未割り当て 4 日と 2 時間 → 3 日と 2 時間。ラベルは 1 行のときは未割り当て、2 行のときは付与年 */
