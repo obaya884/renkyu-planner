@@ -13,7 +13,9 @@ type Props = {
   workMinutes: number
   weekStart: WeekStart
   companyHolidayRows: readonly CompanyHolidayRow[]
+  companyHolidayFull: boolean
   leaveTypeRows: readonly LeaveTypeRow[]
+  leaveTypeFull: boolean
   onOpenGrant: (grantYearStart: IsoDate) => void
   onFirstGrant: () => void
   onChangeGrantDay: () => void
@@ -44,12 +46,12 @@ export function SettingsSections(p: Props) {
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.companyHolidaySection}</h2>
         <p className="text-sm text-sub">{T.companyHolidayHint}</p>
-        <CompanyHolidaySection rows={p.companyHolidayRows} onOpen={p.onOpenCompanyHoliday} onAdd={p.onAddCompanyHoliday} />
+        <CompanyHolidaySection rows={p.companyHolidayRows} full={p.companyHolidayFull} onOpen={p.onOpenCompanyHoliday} onAdd={p.onAddCompanyHoliday} />
       </section>
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.leaveTypeSection}</h2>
         <p className="text-sm text-sub">{T.leaveTypeHint}</p>
-        <LeaveTypeSection rows={p.leaveTypeRows} onOpen={p.onOpenLeaveType} onAdd={p.onAddLeaveType} />
+        <LeaveTypeSection rows={p.leaveTypeRows} full={p.leaveTypeFull} onOpen={p.onOpenLeaveType} onAdd={p.onAddLeaveType} />
       </section>
     </>
   )

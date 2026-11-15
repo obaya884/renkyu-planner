@@ -385,7 +385,7 @@ export function formatAmount(minutes: number, workMinutes: number): string {
 }
 
 /** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay・endBeforeStart・noDays・tooManyDays 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
-export function errorText(e: DraftError | RangeError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries', lastAddable?: IsoDate): string {
+export function errorText(e: DraftError | RangeError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries' | 'tooManyEntries' | 'tooManyCompanyHolidays' | 'tooManyLeaveTypes', lastAddable?: IsoDate): string {
   switch (e) {
     case 'tooFar':
       return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
@@ -409,6 +409,12 @@ export function errorText(e: DraftError | RangeError | GrantError | CompanyHolid
       return '終わりの日を、始まりの日と同じかそれより後にしてください'
     case 'invalidEntitlement':
       return 'この年に使える日数は、0以上で入れてください'
+    case 'tooManyEntries':
+      return '日程は 5,000件までです。古い日程を消してから足してください'
+    case 'tooManyCompanyHolidays':
+      return '会社の休日は 100件までです'
+    case 'tooManyLeaveTypes':
+      return '休暇の種類は 100件までです'
     case 'hasEntries':
       return 'この種類の日程が残っています。先に日程を消してください'
     case 'emptyName':

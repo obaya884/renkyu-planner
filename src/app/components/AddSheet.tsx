@@ -5,8 +5,9 @@ import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS,
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
+import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
+import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
 import { previewAdd, remainingFor } from '@/domain/view/addPreview'
 import { defaultLeaveTypeId } from '@/domain/view/defaultLeaveType'
@@ -31,7 +32,9 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
   const drafts: readonly EntryDraft[] = leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title, done: false }))
   // R-17・F-306: 別のタブで記録が変わっていても、休みの日と重なる日程は入れない
   const checks = drafts.map((d) => checkEntryDraft(input, d, null))
-  const errors = [...new Set(checks.flatMap((c) => c.errors))]
+  const errors: (DraftError | 'tooManyEntries')[] = [...new Set(checks.flatMap((c) => c.errors))]
+  // D-10: 足すと日程が上限を超えるときは入れられない
+  if (!canAdd(input.entries.length, drafts.length, STORAGE_LIMITS.entries)) errors.push('tooManyEntries')
   const overOneDay = checks.some((c) => c.overOneDay)
   // 休む日がその種類の 1 つの付与年に入るときだけ、その付与年の残りを添える（§5.1）
   const typeLabel = (t: { id: string; name: string }) => {
@@ -67,7 +70,7 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
           <UnassignedLines deltas={deltas} workMinutes={workMinutes} />
         )}
         <Field label={T.entryTitleLabel}>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
+          <input type="text" maxLength={STORAGE_LIMITS.textLength} value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
         {errors.map((e) => (
           <p key={e} role="alert" className="text-sm text-danger">

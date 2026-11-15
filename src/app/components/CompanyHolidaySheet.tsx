@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FIELD_CLASS, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
+import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
 import { checkCompanyHoliday, monthDayChoices, withHolidayName } from '@/domain/entries/settingsInput'
 import type { IsoDate } from '@/domain/shared/date'
@@ -42,7 +43,7 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
       <div className="space-y-3">
         <label className="block">
           <span className="block text-sm text-sub">{T.companyHolidayNameLabel}</span>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={FIELD_CLASS} />
+          <input type="text" maxLength={STORAGE_LIMITS.textLength} value={name} onChange={(e) => setName(e.target.value)} className={FIELD_CLASS} />
         </label>
         <fieldset>
           <legend className="text-sm text-sub">{T.repeatLabel}</legend>

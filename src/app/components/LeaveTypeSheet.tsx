@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
 import { FIELD_CLASS, Field, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
+import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { grantDayChoices } from '@/domain/entries/grantInput'
 import { type LeaveTypeDraft, checkLeaveTypeDraft, monthDayChoices, normalizeLeaveTypeDraft } from '@/domain/entries/settingsInput'
 import type { IsoDate } from '@/domain/shared/date'
@@ -47,7 +48,7 @@ export function LeaveTypeSheetBody({ type, hasEntries, today, onSubmit, onRemove
       <SheetTitle>{T.leaveTypeTitle}</SheetTitle>
       <div className="space-y-3">
         <Field label={T.nameLabel}>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={FIELD_CLASS} />
+          <input type="text" maxLength={STORAGE_LIMITS.textLength} value={name} onChange={(e) => setName(e.target.value)} className={FIELD_CLASS} />
         </Field>
         <div>
           <Field label={T.leaveDaysLabel}>

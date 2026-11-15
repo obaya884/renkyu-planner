@@ -288,3 +288,20 @@ test('F-104・§5.5: 休暇の種類を足す・直す。有休と、日程が�
   s.removeLeaveType('id-1')
   expect(s.getState().data.settings.leaveTypes.map((t) => t.id)).toEqual(['paid'])
 })
+test('D-10: ストアは上限を超える追加を断る', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.addEntries(Array.from({ length: 5000 }, () => draft('2026-05-15')))
+  s.addEntries([draft('2026-05-18')])
+  expect(s.getState().data.entries).toHaveLength(5000)
+  for (let i = 0; i < 101; i++) s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
+  expect(s.getState().data.settings.companyHolidays).toHaveLength(100)
+  for (let i = 0; i < 100; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(100) // 有休を含めて
+  expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true) // 上限いっぱいの記録は読める
+})
+test('D-10: 上限に達していても、会社の休日と休暇の種類を直すことはできる', () => {
+  const s = createPlannerStore(memory(), ids()); s.load()
+  for (let i = 0; i < 100; i++) s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
+  s.saveCompanyHoliday(0, { kind: 'yearly', start: '08-01', end: '08-03' })
+  expect(s.getState().data.settings.companyHolidays[0]).toEqual({ kind: 'yearly', start: '08-01', end: '08-03' })
+})

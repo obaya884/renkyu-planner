@@ -47,7 +47,9 @@ test('§6: 設定画面の節は、有休、1 日の所定労働時間、カレ�
       workMinutes={480}
       weekStart="monday"
       companyHolidayRows={companyHolidayRows(SHEET.settings)}
+      companyHolidayFull={false}
       leaveTypeRows={leaveTypeRows(SHEET)}
+      leaveTypeFull={false}
       onOpenGrant={noop}
       onFirstGrant={noop}
       onChangeGrantDay={noop}
@@ -104,7 +106,7 @@ test('§5.3・§6: 付与日の行は押せる', () => {
 })
 
 test('§6・§5.4: 会社の休日の行とモーダル', () => {
-  const h = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} onOpen={() => {}} onAdd={() => {}} />)
+  const h = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} full={false} onOpen={() => {}} onAdd={() => {}} />)
   expect(h).toContain('12/30〜1/3　毎年')
   expect(h).toContain(T.addCompanyHoliday)
   const edit = html(<CompanyHolidaySheetBody holiday={{ kind: 'yearly', start: '08-01', end: '09-01' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
@@ -132,7 +134,7 @@ test('§5.5: 付与される日は、項目名、2 つ目のラジオ、月日�
 })
 test('§6・§5.5: 休暇の種類の行とモーダル', () => {
   const input = { settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: SHEET.entries }
-  const h = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)
+  const h = html(<LeaveTypeSection rows={leaveTypeRows(input)} full={false} onOpen={() => {}} onAdd={() => {}} />)
   expect(h).toContain('有休　消せません')
   expect(h).toContain('夏季休暇　3日・7/1〜9/30')
   const used = html(<LeaveTypeSheetBody type={summer} hasEntries today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
@@ -154,16 +156,16 @@ test('§6: 押すとモーダルが開く行にだけ「›」を出す', () => 
   const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
   const grant = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
   expect(grant.match(/›/g)).toHaveLength(3) // 付与日、今の付与年、次の付与年。過ぎた付与年には出さない
-  const company = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} onOpen={() => {}} onAdd={() => {}} />)
+  const company = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} full={false} onOpen={() => {}} onAdd={() => {}} />)
   expect(company.match(/›/g)).toHaveLength(1) // 12/30〜1/3 の行だけ。「＋ 会社の休日を足す」には出さない
   const input = { settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: SHEET.entries }
-  const leave = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)
+  const leave = html(<LeaveTypeSection rows={leaveTypeRows(input)} full={false} onOpen={() => {}} onAdd={() => {}} />)
   expect(leave.match(/›/g)).toHaveLength(1) // 夏季休暇の行だけ。有休の行には出さない
 })
 
 test('F-103・§6・§5.4: 会社の休日の名前は、行の先頭に出し、モーダルに名前の欄がある', () => {
   const rows = companyHolidayRows({ ...SHEET.settings, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }, { kind: 'once', start: '2027-08-13', end: '2027-08-13' }] })
-  const h = html(<CompanyHolidaySection rows={rows} onOpen={() => {}} onAdd={() => {}} />)
+  const h = html(<CompanyHolidaySection rows={rows} full={false} onOpen={() => {}} onAdd={() => {}} />)
   expect(h).toContain('年末年始　12/30〜1/3　毎年')
   expect(h).toContain('<span>2027/8/13〜2027/8/13　その年だけ</span>')
   const edit = html(<CompanyHolidaySheetBody holiday={{ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
@@ -171,4 +173,18 @@ test('F-103・§6・§5.4: 会社の休日の名前は、行の先頭に出し�
   const add = html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
   expect(add).toMatch(/<input[^>]*type="text"[^>]*value=""/)
   expect(add).not.toMatch(/<button[^>]* disabled=""[^>]*>保存する/) // 名前が空でも保存できる（class の中の disabled: は数えない）
+})
+
+test('D-10・§6: 上限に達したら「＋ …を足す」の代わりに理由を出す', () => {
+  const h = html(<CompanyHolidaySection rows={[]} full onOpen={() => {}} onAdd={() => {}} />)
+  expect(h).not.toContain(T.addCompanyHoliday)
+  expect(h).toContain('会社の休日は 100件までです')
+  const leave = html(<LeaveTypeSection rows={leaveTypeRows(SHEET)} full onOpen={() => {}} onAdd={() => {}} />)
+  expect(leave).not.toContain(T.addLeaveType)
+  expect(leave).toContain('休暇の種類は 100件までです')
+})
+test('D-10・§5.4・§5.5: 会社の休日と休暇の種類の名前の欄は 100 文字まで', () => {
+  const noop = () => {}
+  expect(html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={noop} onRemove={noop} onClose={noop} />)).toContain('maxLength="100"')
+  expect(html(<LeaveTypeSheetBody type={null} hasEntries={false} today="2026-11-15" onSubmit={noop} onRemove={noop} onClose={noop} />)).toContain('maxLength="100"')
 })

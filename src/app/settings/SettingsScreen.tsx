@@ -10,6 +10,7 @@ import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
+import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
 import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 
 /** 開いているモーダル（1 つだけ）。節を足すタスクで種類を足す */
@@ -45,7 +46,9 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         workMinutes={data.settings.workMinutes}
         weekStart={data.settings.weekStart}
         companyHolidayRows={companyHolidayRows(data.settings)}
+        companyHolidayFull={!canAdd(data.settings.companyHolidays.length, 1, STORAGE_LIMITS.companyHolidays)}
         leaveTypeRows={leaveRows}
+        leaveTypeFull={!canAdd(data.settings.leaveTypes.length, 1, STORAGE_LIMITS.leaveTypes)}
         onOpenGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
         onFirstGrant={() => setSheet({ kind: 'grant', grantYearStart: null })}
         onChangeGrantDay={() => setSheet({ kind: 'grantDay' })}

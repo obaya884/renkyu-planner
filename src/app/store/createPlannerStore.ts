@@ -3,6 +3,7 @@ import { settingsAfterGrant } from '@/domain/entries/grantInput'
 import type { IsoDate } from '@/domain/shared/date'
 import type { LeaveTypeDraft } from '@/domain/entries/settingsInput'
 import { type CompanyHoliday, PAID_LEAVE_TYPE_ID, type WeekStart } from '@/domain/types'
+import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
 import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVersion, parseStored, serializeStored } from '@/domain/storage/stored'
 
 export type KeyValueStore = Readonly<{
@@ -18,6 +19,7 @@ export type PlannerStore = Readonly<{
   load(): void
   /** 読み込んだあとで、保存できるときだけ読み直す（D-8）。保存を止めているときに読み直すと、メモリにだけある記録が消える */
   reload(): void
+  /** D-10: 足すと上限（5,000 件）を超えるときは何もしない */
   addEntries(drafts: readonly EntryDraft[]): void
   updateEntry(id: string, draft: EntryDraft): void
   removeEntry(id: string): void
@@ -92,6 +94,8 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       if (state.ready && state.canSave) load()
     },
     addEntries(drafts) {
+      // D-10: 上限を超える追加は何もしない（記録が読めなくなるのを防ぐ）
+      if (!canAdd(state.data.entries.length, drafts.length, STORAGE_LIMITS.entries)) return
       const added = drafts.map((d) => ({ id: newId(), ...d }))
       change({ ...state.data, entries: [...state.data.entries, ...added] })
     },
@@ -115,6 +119,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
     saveCompanyHoliday(index, holiday) {
       const { settings } = state.data
       if (index !== null && !(Number.isInteger(index) && index >= 0 && index < settings.companyHolidays.length)) return
+      if (index === null && !canAdd(settings.companyHolidays.length, 1, STORAGE_LIMITS.companyHolidays)) return
       const companyHolidays = index === null ? [...settings.companyHolidays, holiday] : settings.companyHolidays.map((h, i) => (i === index ? holiday : h))
       change({ ...state.data, settings: { ...settings, companyHolidays } })
     },
@@ -127,6 +132,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       const { settings } = state.data
       if (id === PAID_LEAVE_TYPE_ID) return
       if (id !== null && !settings.leaveTypes.some((t) => t.id === id)) return
+      if (id === null && !canAdd(settings.leaveTypes.length, 1, STORAGE_LIMITS.leaveTypes)) return
       const leaveTypes =
         id === null ? [...settings.leaveTypes, { id: newId(), ...draft }] : settings.leaveTypes.map((t) => (t.id === id ? { id, ...draft } : t))
       change({ ...state.data, settings: { ...settings, leaveTypes } })

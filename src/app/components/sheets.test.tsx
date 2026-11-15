@@ -241,3 +241,17 @@ test('§5.1: 未割り当ての行は 1 つの部品で描く。1 行なら「�
   expect(two).toContain(`${T.nextGrantYearLabel} 1 日 → ${T.short} 1 日`)
   expect(two).toContain('text-warn-ink')
 })
+
+const MANY = Array.from({ length: 5000 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+test('D-10: 名前の欄は 100 文字まで。日程が上限のときは理由を出して保存できない', () => {
+  const h = html(<EntrySheetBody input={{ ...SHEET, entries: MANY }} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(h).toContain('maxLength="100"')
+  expect(h).toContain('日程は 5,000件までです。古い日程を消してから足してください')
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
+})
+test('D-10: M-1 も、予定の名前は 100 文字まで。日程が上限のときは理由を出して入れられない', () => {
+  const h = html(<AddSheetBody input={{ ...SHEET, entries: MANY }} leaveDays={['2026-11-16']} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('maxLength="100"')
+  expect(h).toContain('日程は 5,000件までです。古い日程を消してから足してください')
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>予定に入れる/)
+})

@@ -5,12 +5,13 @@ import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS,
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
+import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
 import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
+import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
-import { planEntrySave } from '@/domain/view/entrySave'
+import { type SaveError, planEntrySave } from '@/domain/view/entrySave'
 import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
 
 type Props = {
@@ -40,7 +41,7 @@ function Choice({ name, label, checked, onChange }: { name: string; label: strin
   )
 }
 
-function ErrorLines({ errors, lastAddable }: { errors: readonly (DraftError | RangeError)[]; lastAddable: IsoDate }) {
+function ErrorLines({ errors, lastAddable }: { errors: readonly (SaveError | RangeError)[]; lastAddable: IsoDate }) {
   return (
     <>
       {errors.map((e) => (
@@ -110,6 +111,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   const range = ranged ? previewRange(input, date, endDate, leaveTypeId) : null
   const { drafts, errors: saveErrors, canSave } = planEntrySave(input, draft, entry?.id ?? null, range)
   const typeErrors = saveErrors.filter((e) => e === 'unknownLeaveType')
+  const limitErrors = saveErrors.filter((e) => e === 'tooManyEntries')
 
   return (
     <>
@@ -184,7 +186,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
           </div>
         )}
         <Field label={T.entryTitleLabel}>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
+          <input type="text" maxLength={STORAGE_LIMITS.textLength} value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
         <fieldset>
           <legend className="text-sm text-sub">{T.statusLabel}</legend>
@@ -192,6 +194,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
           <Choice name="status" label={T.done} checked={done} onChange={() => setDone(true)} />
         </fieldset>
         {!ranged && run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
+        <ErrorLines errors={limitErrors} lastAddable={lastAddable} />
       </div>
       <SheetButtons
         left={

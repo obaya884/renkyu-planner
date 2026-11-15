@@ -33,3 +33,22 @@ test('F-104・F-307: 期間で足すとき、引く休暇が設定に無けれ�
   expect(plan.drafts.map((d) => d.date)).toEqual(['2026-11-24', '2026-11-25'])
   expect(plan).toMatchObject({ errors: ['unknownLeaveType'], canSave: false })
 })
+test('D-10: 足すと日程が 5,000 件を超えるときは保存できない。直すときは数えない', () => {
+  const many = Array.from({ length: 5000 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+  const input = { ...SHEET, entries: many }
+  const add = planEntrySave(input, draft({ date: '2026-11-16' }), null, null)
+  expect(add.canSave).toBe(false)
+  expect(add.errors).toContain('tooManyEntries')
+  expect(planEntrySave(input, draft({ date: '2026-11-16' }), 'e0', null).errors).not.toContain('tooManyEntries')
+  expect(planEntrySave({ ...SHEET, entries: many.slice(1) }, draft({ date: '2026-11-16' }), null, null).errors).not.toContain('tooManyEntries')
+})
+test('D-10: 期間で足すときも、合計が 5,000 件を超えるなら保存できない', () => {
+  const many = Array.from({ length: 4999 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+  const input = { ...SHEET, entries: many }
+  // 2026-11-16（月）と 2026-11-17（火）の 2 日。4,999 件に 2 件足すと 5,001 件
+  const range = previewRange(input, '2026-11-16', '2026-11-17', 'paid')
+  const plan = planEntrySave(input, draft({ date: '2026-11-16' }), null, range)
+  expect(plan.drafts).toHaveLength(2)
+  expect(plan.errors).toContain('tooManyEntries')
+  expect(plan.canSave).toBe(false)
+})
