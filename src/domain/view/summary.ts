@@ -54,7 +54,9 @@ export function buildSummary(input: PlannerInput): SummaryView {
     cards.push({
       leaveTypeId: type.id,
       name: type.name,
-      remaining: b.remaining,
+      // §3.2: 残りが負（取得済みが持ち分を超えた）なら 0 として出す。足りない量は unassigned（負）の側で不足として出す。
+      // 表示用の値なので、カード・足した休暇の行・張り付く 1 行が読むここで 1 回だけ切る（balanceOf の値は変えない）
+      remaining: Math.max(0, b.remaining),
       planned: b.planned,
       unassigned: b.unassigned,
       short: isShort(b.unassigned),

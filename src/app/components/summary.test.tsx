@@ -6,6 +6,7 @@ import { T } from '@/app/texts'
 import { BalanceCards } from './BalanceCards'
 import { LongBreakStrip } from './LongBreakStrip'
 import { Notices } from './Notices'
+import { StickySummary } from './StickySummary'
 
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 
@@ -150,4 +151,17 @@ test('§3.2・F-211: 使い切りと不足が重なるときは、不足を優�
   expect(li).toContain(`${T.short} 1 日`)
   expect(li).toContain('text-warn-ink')
   expect(li).not.toContain(T.usedUp)
+})
+
+test('§3.2・I-2: 残りが負のときは、足した休暇の 1 行も、有休のカードも、上に張り付く 1 行も「残り 0 日」と出す', () => {
+  // 夏季休暇 1 日に取得済み 2 件: 計算の残り −1 日 → 「残り 0 日」。不足 1 日は未割り当ての側に出る
+  const done = (id: string, date: string, leaveTypeId: string) => ({ id, date, leaveTypeId, amount: { unit: 'day' }, title: '', done: true }) as const
+  const h = cardsHtml(withTypes([extra('summer', '夏季休暇', 1)], [...SHEET.entries, done('a', '2026-07-15', 'summer'), done('b', '2026-07-16', 'summer')]))
+  const li = h.slice(h.indexOf('<li'), h.indexOf('</li>'))
+  expect(li).toContain(`夏季休暇　${T.remaining} 0 日・${T.short} 1 日`)
+  // 有休 付与 5 日 = 2400 分、取得済み 2280 + 960 = 3240 分 → 計算の残り −840 分 → 「0 日」
+  const over = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 5, entitlementMinutes: null } } }, entries: [...SHEET.entries, done('x', '2026-11-04', 'paid'), done('y', '2026-11-05', 'paid')] }
+  const card = paidCard(cardsHtml(over))
+  expect(card).toContain('<div class="text-xl font-bold">0 日</div>')
+  expect(html(<StickySummary summary={buildSummary(over)} workMinutes={480} />)).toContain(`有休 ${T.remaining} 0 日・${T.short}`)
 })

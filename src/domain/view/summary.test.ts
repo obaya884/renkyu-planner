@@ -74,3 +74,15 @@ test('§3.2・F-211: paid は有休の 1 件、extras は足した休暇。使�
   const over = buildSummary({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: [...SHEET.entries, e('a', '2026-07-15'), e('b', '2026-07-16')] })
   expect(over.extras[0]).toMatchObject({ leaveTypeId: 'summer', short: true, usedUp: false })
 })
+
+test('§3.2・I-2: 取得済みが持ち分を超えて残りが負なら、残りは 0。未割り当ては負のまま（不足で出す）', () => {
+  // 夏季休暇 1 日（480 分）に取得済みの 1 日分が 2 件: 計算の残り 480 − 960 = −480 → 出す残りは 0。未割り当て −480 − 0 = −480
+  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true }) as const
+  const over = buildSummary(withSummer([...SHEET.entries, e('a', '2026-07-15'), e('b', '2026-07-16')]))
+  expect(over.extras[0]).toMatchObject({ remaining: 0, unassigned: -480, short: true, usedUp: false })
+  // 有休: 付与 5 日（2400 分）に、SHEET の取得済み 4 日と 6 時間（4 × 480 + 3 × 120 = 2280 分）と、取得済みの 1 日分 2 件（960 分）
+  // 計算の残り 2400 − 3240 = −840 → 出す残りは 0
+  const p = (id: string, date: string) => ({ id, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const
+  const paid = buildSummary({ ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 5, entitlementMinutes: null } } }, entries: [...SHEET.entries, p('x', '2026-11-04'), p('y', '2026-11-05')] })
+  expect(paid.paid).toMatchObject({ remaining: 0, short: true })
+})
