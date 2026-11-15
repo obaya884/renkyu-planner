@@ -50,7 +50,7 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
           <div className="flex gap-4">
             {(['yearly', 'once'] as const).map((k) => (
               <label key={k} className="flex min-h-11 items-center gap-2">
-                <input type="radio" name="repeat" value={k} checked={kind === k} onChange={() => setKind(k)} />
+                <input type="radio" name="repeat" value={k} checked={kind === k} onChange={() => setKind(k)} className="h-5 w-5 accent-primary" />
                 {k === 'yearly' ? T.yearly : T.once}
               </label>
             ))}

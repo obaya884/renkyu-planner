@@ -310,3 +310,12 @@ test('画面定義書 §5: 焦点が下の欄に移っても、張り付けた�
   const dialog = h.match(/<dialog[^>]*>/)![0]
   expect(classesOf(dialog)).toContain('scroll-pb-20')
 })
+test('画面定義書 §5: 付与日の月・日の選択は w-20 で出し、w-full を付けない。高さは h-11', () => {
+  const g = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
+  const selects = tagsOf(g, /<select[^>]*>/g)
+  expect(selects).toHaveLength(2)
+  for (const s of selects) {
+    expect(classesOf(s)).toEqual(expect.arrayContaining(['w-20', 'h-11']))
+    expect(classesOf(s)).not.toContain('w-full')
+  }
+})

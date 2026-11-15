@@ -196,3 +196,21 @@ test('画面定義書 §7: 休暇の種類のモーダルの日数の欄は w-28
   expect(classes).toContain('w-28')
   expect(classes).not.toContain('w-full')
 })
+
+const classesIn = (tag: string) => (tag.match(/class="([^"]*)"/)?.[1] ?? '').split(' ')
+test('画面定義書 §5: 会社の休日の月・日の選択は w-20 で出し、w-full を付けない', () => {
+  const h = html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  const selects = h.match(/<select[^>]*>/g) ?? []
+  expect(selects).toHaveLength(4)
+  for (const s of selects) {
+    expect(classesIn(s)).toEqual(expect.arrayContaining(['w-20', 'h-11']))
+    expect(classesIn(s)).not.toContain('w-full')
+  }
+})
+test('ラジオボタンは主色で出す（accent-primary。日程のモーダルと同じ）: 会社の休日の繰り返しと、週の始まり', () => {
+  const sheet = html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  const row = html(<WeekStartRow weekStart="monday" onChange={() => {}} />)
+  const radios = [...(sheet.match(/<input type="radio"[^>]*>/g) ?? []), ...(row.match(/<input type="radio"[^>]*>/g) ?? [])]
+  expect(radios).toHaveLength(4)
+  for (const r of radios) expect(classesIn(r)).toEqual(expect.arrayContaining(['h-5', 'w-5', 'accent-primary']))
+})

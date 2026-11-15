@@ -14,7 +14,7 @@ export function WeekStartRow({ weekStart, onChange }: { weekStart: WeekStart; on
       <div className="flex gap-4">
         {OPTIONS.map((o) => (
           <label key={o.value} className="flex min-h-11 items-center gap-2">
-            <input type="radio" name="weekStart" value={o.value} checked={weekStart === o.value} onChange={() => onChange(o.value)} />
+            <input type="radio" name="weekStart" value={o.value} checked={weekStart === o.value} onChange={() => onChange(o.value)} className="h-5 w-5 accent-primary" />
             {o.label}
           </label>
         ))}

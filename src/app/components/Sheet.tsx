@@ -102,6 +102,8 @@ export const DATE_FIELD_CLASS = `${FIELD_CLASS} block min-w-0 appearance-none py
 export const SELECT_FIELD_CLASS = `${FIELD_CLASS} h-11`
 /** 幅を w-20 などで決める短い欄。FIELD_CLASS の w-full は w-20 より後に出力されて勝つので、幅を含めない */
 export const SHORT_FIELD_CLASS = 'min-h-11 shrink-0 rounded-md border border-line bg-white px-2'
+/** 幅を w-20 などで決める短い選択の欄（月・日）。SELECT_FIELD_CLASS と同じ理由で h-11 を足す */
+export const SHORT_SELECT_FIELD_CLASS = `${SHORT_FIELD_CLASS} h-11`
 export const PRIMARY_BUTTON_CLASS = 'min-h-11 rounded-md bg-primary px-4 text-sm font-bold text-white disabled:opacity-40'
 export const SECONDARY_BUTTON_CLASS = 'min-h-11 rounded-md border border-line px-4 text-sm'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, SHORT_SELECT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText, grantDayText, grantPeriodText, nextEntitlementText } from '@/app/texts'
 import { type GrantDraft, checkGrantDraft } from '@/domain/entries/checkDraft'
 import {
@@ -112,7 +112,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
           <fieldset>
             <legend className="text-sm text-sub">{T.grantDayLabel}</legend>
             <div className="flex items-center gap-2">
-              <select aria-label={T.monthUnit} value={month} onChange={(e) => changeMonth(Number(e.target.value))} className={`${SELECT_FIELD_CLASS} w-20`}>
+              <select aria-label={T.monthUnit} value={month} onChange={(e) => changeMonth(Number(e.target.value))} className={`${SHORT_SELECT_FIELD_CLASS} w-20`}>
                 {MONTHS.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -120,7 +120,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
                 ))}
               </select>
               {T.monthUnit}
-              <select aria-label={T.dayUnit} value={day} onChange={(e) => setDay(Number(e.target.value))} className={`${SELECT_FIELD_CLASS} w-20`}>
+              <select aria-label={T.dayUnit} value={day} onChange={(e) => setDay(Number(e.target.value))} className={`${SHORT_SELECT_FIELD_CLASS} w-20`}>
                 {grantDayChoices(month).map((d) => (
                   <option key={d} value={d}>
                     {d}
