@@ -1,6 +1,7 @@
 import { MAX_COMPANY_HOLIDAY_DAYS, companyHolidayDays, isValidMonthDay } from '../calendar/companyHoliday'
 import { isValidGrantDay } from '../leave/grantYear'
 import { type MonthDay, isValidIsoDate } from '../shared/date'
+import { clipText } from '../storage/limits'
 import type { CompanyHoliday } from '../types'
 
 /** F-102: 時間（0〜24 の整数）と分（0〜59 の整数）の文字から、所定労働時間（分）に直す。どちらかが空・小数・範囲の外なら NaN */
@@ -17,10 +18,10 @@ export function isValidWorkMinutes(m: number): boolean {
   return Number.isInteger(m) && m >= 1 && m <= 1440
 }
 
-/** F-103・D-4: 会社の休日に名前を入れる。前後の空白を除き、空なら名前の項目を持たない */
+/** F-103・D-4: 会社の休日に名前を入れる。前後の空白を除いて 100 文字で切り（D-10）、空なら名前の項目を持たない */
 export function withHolidayName(h: CompanyHoliday, name: string): CompanyHoliday {
   const { name: _old, ...rest } = h
-  const trimmed = name.trim()
+  const trimmed = clipText(name.trim())
   return trimmed === '' ? rest : { ...rest, name: trimmed }
 }
 
@@ -57,9 +58,9 @@ export type LeaveTypeDraft = Readonly<{
 
 export type LeaveTypeError = 'emptyName' | 'invalidDays' | 'invalidUsable' | 'invalidGrantDay'
 
-/** §5.5: 名前は前後の空白を除いて保存する。検証と保存に同じ値を使う */
+/** §5.5: 名前は前後の空白を除いて 100 文字で切って保存する（D-10）。検証と保存に同じ値を使う */
 export function normalizeLeaveTypeDraft(draft: LeaveTypeDraft): LeaveTypeDraft {
-  return { ...draft, name: draft.name.trim() }
+  return { ...draft, name: clipText(draft.name.trim()) }
 }
 
 /** §5.5: 休暇の種類の検証。年をまたぐ使える期間（開始が終了より後）は入れられない */

@@ -165,5 +165,6 @@ test('D-3・D-4: 検証の境目（計画 2 から送られた点）', () => {
   const proto = JSON.stringify(ok).replace('"grantYears":{}', '"grantYears":{"__proto__":{"grantDays":1,"entitlementMinutes":null}}')
   expect(parseStored(proto).ok).toBe(false)                                     // __proto__ は実在する日付でない
   const r = parse(ok)
+  expect(r.ok).toBe(true)
   expect(r.ok && r.value.settings.leaveTypes).not.toBe(DEFAULT_SETTINGS.leaveTypes) // 参照の共有
 })

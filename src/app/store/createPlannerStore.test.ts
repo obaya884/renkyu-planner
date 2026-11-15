@@ -97,7 +97,8 @@ test('D-5: 写しを書けなかったときは、元の記録を上書きしな
 test('Review Focus 4・D-8: 読み直すと、ほかのタブが書いた内容になる', () => {
   const m = memory()
   const a = createPlannerStore(m, ids())
-  const b = createPlannerStore(m, ids())
+  let n = 0
+  const b = createPlannerStore(m, () => `other-${++n}`) // 実際の id は乱数。同じ id を作ると D-14 で断られる
   a.load()
   b.load()
   a.addEntries([draft('2026-12-28')])
@@ -336,4 +337,59 @@ test('F-505・D-12: 置き換える前の記録で置き換え直すと、元に
   s.replaceAll(sheetData)
   s.replaceAll(before)
   expect(parseStored(m.dump()[STORAGE_KEY])).toEqual({ ok: true, value: before })
+})
+
+test('D-14: 設定に無い休暇の種類を指す日程は、足せない・直せない（2 つのタブで種類を消した場合）', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.addEntries([draft('2026-11-20')])
+  const before = s.getState().data
+  const stored = m.dump()[STORAGE_KEY]
+  s.addEntries([{ ...draft('2026-11-21'), leaveTypeId: 'gone' }])
+  s.updateEntry('id-1', { ...draft('2026-11-20'), leaveTypeId: 'gone' })
+  expect(s.getState().data).toBe(before)
+  expect(m.dump()[STORAGE_KEY]).toBe(stored)
+})
+test('D-14: 名前が 100 文字を超える記録は、保存しない', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.addEntries([draft('2026-11-20')])
+  const before = s.getState().data
+  const long = 'あ'.repeat(101)
+  s.addEntries([{ ...draft('2026-11-21'), title: long }])
+  s.updateEntry('id-1', { ...draft('2026-11-20'), title: long })
+  s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03', name: long })
+  s.saveLeaveType(null, { name: long, days: 1, usable: null, grantDay: null, together: false })
+  s.replaceAll({ ...before, entries: [{ id: 'x', ...draft('2026-11-20'), title: long }] })
+  expect(s.getState().data).toBe(before)
+  expect(parseStored(m.dump()[STORAGE_KEY])).toEqual({ ok: true, value: before })
+})
+test('D-14: 読めない記録になる置き換えは、読めなかった 1 行の表示も変えない', () => {
+  const s = createPlannerStore(memory({ [STORAGE_KEY]: '{oops' }), ids()); s.load()
+  s.replaceAll({ ...sheetData, entries: [{ id: 'x', ...draft('2026-11-20'), leaveTypeId: 'gone' }] })
+  expect(s.getState()).toMatchObject({ unreadable: true, data: EMPTY_STORED })
+})
+test('D-14: ふつうの操作は今までどおり通り、どの操作のあとも保存した記録は読める', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  const readable = () => expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
+  s.addEntries([draft('2026-11-20'), draft('2026-11-23')]); readable()
+  s.updateEntry('id-1', { ...draft('2026-11-20'), title: 'あ'.repeat(100), done: true }); readable()
+  s.saveLeaveType(null, { name: '夏季', days: 3, usable: null, grantDay: null, together: false }); readable()
+  s.saveCompanyHoliday(null, { kind: 'once', start: '2026-08-13', end: '2026-08-16', name: '盆' }); readable()
+  s.setWorkMinutes(450); s.setWeekStart('sunday'); readable()
+  s.setGrant({ grantDays: 14, entitlementMinutes: null, grantDay: '05-01' }, '2026-05-01'); readable()
+  s.removeEntry('id-2'); s.removeCompanyHoliday(0); readable()
+  expect(s.getState().data.entries).toHaveLength(1)
+  expect(s.getState().data.settings.weekStart).toBe('sunday')
+})
+test('D-14: R-15 に合わない会社の休日は、落としたあとの記録を保存する', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.saveCompanyHoliday(null, { kind: 'once', start: '2026-08-16', end: '2026-08-13' })
+  expect(s.getState().data.settings.companyHolidays).toEqual([])
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).settings.companyHolidays).toEqual([])
+})
+test('D-10: 休暇の種類の 101 件目は断る', () => {
+  const s = createPlannerStore(memory(), ids()); s.load()
+  for (let i = 0; i < 99; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
+  s.saveLeaveType(null, { name: '多すぎ', days: 1, usable: null, grantDay: null, together: false })
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
 })

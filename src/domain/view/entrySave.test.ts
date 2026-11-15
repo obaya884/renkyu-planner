@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import type { EntryDraft } from '@/domain/entries/checkDraft'
 import { SHEET } from './fixture'
-import { planEntrySave } from './entrySave'
+import { planAddSave, planEntrySave } from './entrySave'
 import { previewRange } from './rangePreview'
 
 const draft = (patch: Partial<EntryDraft> = {}): EntryDraft => ({ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '通院', done: false, ...patch })
@@ -51,4 +51,24 @@ test('D-10: 期間で足すときも、合計が 5,000 件を超えるなら保�
   expect(plan.drafts).toHaveLength(2)
   expect(plan.errors).toContain('tooManyEntries')
   expect(plan.canSave).toBe(false)
+})
+
+test('D-10: 予定の名前は 100 文字で切る（1 件・期間）', () => {
+  const long = 'あ'.repeat(101)
+  expect(planEntrySave(SHEET, draft({ title: long }), null, null).drafts[0].title).toBe('あ'.repeat(100))
+  const range = previewRange(SHEET, '2026-11-16', '2026-11-17', 'paid')
+  expect(planEntrySave(SHEET, draft({ date: '2026-11-16', title: long }), null, range).drafts.every((d) => d.title === 'あ'.repeat(100))).toBe(true)
+})
+test('D-10: 期間で足してちょうど 5,000 件になるなら足せる', () => {
+  const many = Array.from({ length: 4998 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+  const input = { ...SHEET, entries: many }
+  const range = previewRange(input, '2026-11-16', '2026-11-17', 'paid')
+  expect(planEntrySave(input, draft({ date: '2026-11-16' }), null, range)).toMatchObject({ errors: [], canSave: true })
+})
+test('D-10・§5.1: planAddSave は、名前を 100 文字で切り、足すと 5,000 件を超えるなら tooManyEntries', () => {
+  const ok = planAddSave(SHEET, ['2026-11-16'], 'paid', 'あ'.repeat(101))
+  expect(ok.drafts).toEqual([{ date: '2026-11-16', leaveTypeId: 'paid', amount: { unit: 'day' }, title: 'あ'.repeat(100), done: false }])
+  expect(ok.errors).toEqual([])
+  const many = Array.from({ length: 4999 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: true }) as const)
+  expect(planAddSave({ ...SHEET, entries: many }, ['2026-11-16', '2026-11-17'], 'paid', '').errors).toContain('tooManyEntries')
 })

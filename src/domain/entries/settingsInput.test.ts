@@ -47,3 +47,10 @@ test('F-103・§5.4: 会社の休日の名前は、前後の空白を除く。�
   expect(withHolidayName({ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }, '  ')).toEqual({ kind: 'yearly', start: '12-30', end: '01-03' })
   expect(withHolidayName({ kind: 'once', start: '2027-08-13', end: '2027-08-13' }, '')).toEqual({ kind: 'once', start: '2027-08-13', end: '2027-08-13' })
 })
+
+test('D-10: 名前は前後の空白を除いたあと 100 文字で切る（M-4・M-5）', () => {
+  const long = ` ${'あ'.repeat(120)} `
+  expect(withHolidayName({ kind: 'yearly', start: '12-30', end: '01-03' }, long)).toMatchObject({ name: 'あ'.repeat(100) })
+  expect(normalizeLeaveTypeDraft({ name: long, days: 1, usable: null, grantDay: null, together: false }).name).toBe('あ'.repeat(100))
+  expect(withHolidayName({ kind: 'yearly', start: '12-30', end: '01-03' }, `  ${'a'.repeat(100)}  `)).toMatchObject({ name: 'a'.repeat(100) })
+})

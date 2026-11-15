@@ -5,10 +5,11 @@ import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS,
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
-import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
+import { type EntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
-import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
+import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import { planAddSave } from '@/domain/view/entrySave'
 import { previewAdd, remainingFor } from '@/domain/view/addPreview'
 import { defaultLeaveTypeId } from '@/domain/view/defaultLeaveType'
 
@@ -29,13 +30,8 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
   const [title, setTitle] = useState('')
 
   const deltas = previewAdd(input, leaveDays, leaveTypeId)
-  const drafts: readonly EntryDraft[] = leaveDays.map((date) => ({ date, leaveTypeId, amount: { unit: 'day' }, title, done: false }))
-  // R-17・F-306: 別のタブで記録が変わっていても、休みの日と重なる日程は入れない
-  const checks = drafts.map((d) => checkEntryDraft(input, d, null))
-  const errors: (DraftError | 'tooManyEntries')[] = [...new Set(checks.flatMap((c) => c.errors))]
-  // D-10: 足すと日程が上限を超えるときは入れられない
-  if (!canAdd(input.entries.length, drafts.length, STORAGE_LIMITS.entries)) errors.push('tooManyEntries')
-  const overOneDay = checks.some((c) => c.overOneDay)
+  // R-17・F-306・D-10: 別のタブで記録が変わっていても、休みの日と重なる日程は入れない。上限を超えるときも入れられない
+  const { drafts, errors, overOneDay } = planAddSave(input, leaveDays, leaveTypeId, title)
   // 休む日がその種類の 1 つの付与年に入るときだけ、その付与年の残りを添える（§5.1）
   const typeLabel = (t: { id: string; name: string }) => {
     const remaining = remainingFor(input, t.id, leaveDays)

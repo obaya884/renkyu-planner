@@ -76,7 +76,14 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
     return publish({ ready: true, data: EMPTY_STORED, canSave: !isNewerVersion(text), unreadable: true })
   }
 
-  const change = (data: StoredData) => {
+  /**
+   * D-14: 保存する記録を、読むときと同じ検証に通す。読めない記録になる操作は、state も保存領域も変えずに断る。
+   * 検証が項目を落としたとき（R-15 に合わない会社の休日）は、検証を通った側を保存する。断ったときは利用者に知らせない
+   */
+  const change = (requested: StoredData, extra: Partial<PlannerState> = {}) => {
+    const parsed = parseStored(serializeStored(requested))
+    if (!parsed.ok) return
+    const data = parsed.value
     let canSave = state.canSave
     if (storage !== null && canSave) {
       try {
@@ -85,7 +92,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
         canSave = false
       }
     }
-    publish({ ...state, data, canSave })
+    publish({ ...state, ...extra, data, canSave })
   }
 
   return {
@@ -149,8 +156,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       change({ ...state.data, settings: { ...settings, leaveTypes: settings.leaveTypes.filter((t) => t.id !== id) } })
     },
     replaceAll(data) {
-      state = { ...state, unreadable: false }
-      change(data)
+      change(data, { unreadable: false })
     },
   }
 }

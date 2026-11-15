@@ -6,7 +6,15 @@ export const MAX_IMPORT_BYTES = 3_145_728
 
 /** D-10: 日程と休暇の種類の id は、半角の英数字・ハイフン・下線だけの 1〜64 文字 */
 export function isValidId(s: string): boolean {
-  return /^[A-Za-z0-9_-]{1,64}$/.test(s)
+  return s.length >= 1 && s.length <= STORAGE_LIMITS.idLength && /^[A-Za-z0-9_-]+$/.test(s)
+}
+
+/** D-10: 名前を textLength で切る（保存する名前の長さをそろえる）。サロゲートペアの途中で切れたときは、その片割れも落とす */
+export function clipText(s: string): string {
+  if (s.length <= STORAGE_LIMITS.textLength) return s
+  const cut = s.slice(0, STORAGE_LIMITS.textLength)
+  const last = cut.charCodeAt(cut.length - 1)
+  return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut
 }
 
 /** D-10: いま count 件あるところに adding 件を足しても、上限 limit を超えないか */
