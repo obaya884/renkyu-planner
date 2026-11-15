@@ -32,7 +32,7 @@ const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', '
 
 /** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
 export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onMarkDone, onAddDay, onEnterGrant, belowSummary = false }: Props) {
-  const { quarter, past, longBreak, months, marks, grantNote, candidates, together, noCandidates, entries } = view
+  const { quarter, past, longBreak, months, marks, grantNote, groups, monthGaps, together, noCandidates, entries } = view
   return (
     <section className="space-y-3">
       <h2 className={`bg-white py-1 text-lg font-bold lg:sticky lg:z-10 ${belowSummary ? BELOW_SUMMARY_TOP_LG : 'lg:top-0'}`}>{quarterHeading(quarter.start)}</h2>
@@ -76,7 +76,7 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
               ) : (
                 <div className="space-y-3.5">
                   <CandidateLegend />
-                  <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
+                  <CandidateList groups={groups} monthGaps={monthGaps} workMinutes={workMinutes} onAdd={onAdd} />
                   <TogetherList blocks={together} onAdd={onAddTogether} />
                 </div>
               )}

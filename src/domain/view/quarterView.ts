@@ -3,11 +3,11 @@ import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
-import { type CandidateBlock, type Ctx, candidateBlocks, isLongRun } from './candidateBlocks'
+import { type CandidateGroup, type Ctx, type MonthGapBlock, candidateBlocks, entryMarkOf, isLongRun } from './candidateBlocks'
 import { type PlannerInput, restCalendarOf } from './input'
 import { type TogetherBlock, togetherBlocks } from './togetherBlocks'
 
-export type { CandidateBlock, CandidateRow, CoreHead, Strip, StripDay, StripKind } from './candidateBlocks'
+export type { CandidateGroup, CandidateRow, CoreHead, MonthGapBlock, Strip, StripDay, StripKind } from './candidateBlocks'
 export type { TogetherBlock, TogetherRow } from './togetherBlocks'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */
@@ -40,10 +40,13 @@ export type QuarterView = Readonly<{
   months: readonly MonthView[]
   marks: readonly DayMark[]
   grantNote: GrantNote | null
-  candidates: readonly CandidateBlock[]
+  /** 有休の候補の組（R-7 の順） */
+  groups: readonly CandidateGroup[]
+  /** 祝日のない月の候補（月の早い順）。§3.7 で 1 枚のカードにまとめる */
+  monthGaps: readonly MonthGapBlock[]
   /** まとめて取る休暇の組。種類の並びは設定画面と同じ（§3.7） */
   together: readonly TogetherBlock[]
-  /** candidates と together がどちらも空（§3.7） */
+  /** groups、monthGaps、together がどれも空（§3.7） */
   noCandidates: boolean
   entries: readonly EntryBlock[]
 }>
@@ -51,9 +54,8 @@ export type QuarterView = Readonly<{
 // ---- 月カレンダー ----
 
 function markOf(ctx: Ctx, d: IsoDate, candidateDays: ReadonlySet<IsoDate>): DayMark | null {
-  const onDay = ctx.input.entries.filter((e) => e.date === d)
-  if (onDay.some((e) => e.done)) return 'done'
-  if (onDay.length > 0) return 'planned'
+  const entry = entryMarkOf(ctx.input, d)
+  if (entry !== null) return entry
   if (candidateDays.has(d)) return 'candidate'
   const kind = ctx.cal.kindOf(d)
   if (kind === 'company') return 'company'
@@ -148,18 +150,19 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
 export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarter[]): QuarterView[] {
   const ctx: Ctx = { input, cal: restCalendarOf(input) }
   const active = quarters.filter((q) => q.end >= input.today)
-  const { placed, primaryDays } = candidateBlocks(ctx, active)
+  const placed = candidateBlocks(ctx, active)
   const togetherPlaced = togetherBlocks(ctx, active)
   const none = new Set<IsoDate>()
 
   return quarters.map((quarter) => {
     const past = quarter.end < input.today
-    const months = monthsOf(quarter).map((m) => monthView(ctx, m, past ? none : primaryDays))
+    const months = monthsOf(quarter).map((m) => monthView(ctx, m, past ? none : placed.primaryDays))
     const shown = new Set(months.flatMap((m) => m.weeks.flat()).map((c) => c?.mark ?? null))
-    const groups = placed.filter((p) => p.quarterStart === quarter.start && p.block.kind === 'group')
-    const gaps = placed.filter((p) => p.quarterStart === quarter.start && p.block.kind === 'monthGap')
-    const candidates = past ? [] : [...groups, ...gaps].map((p) => p.block)
-    const together = past ? [] : togetherPlaced.filter((p) => p.quarterStart === quarter.start).map((p) => p.block)
+    const inQuarter = <B>(list: readonly Readonly<{ quarterStart: IsoDate; block: B }>[]): B[] =>
+      past ? [] : list.filter((p) => p.quarterStart === quarter.start).map((p) => p.block)
+    const groups = inQuarter(placed.groups)
+    const monthGaps = inQuarter(placed.monthGaps)
+    const together = inQuarter(togetherPlaced)
     return {
       quarter,
       past,
@@ -167,9 +170,10 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
       months,
       marks: MARK_ORDER.filter((m) => shown.has(m)),
       grantNote: grantNoteOf(ctx, quarter),
-      candidates,
+      groups,
+      monthGaps,
       together,
-      noCandidates: candidates.length === 0 && together.length === 0,
+      noCandidates: groups.length === 0 && monthGaps.length === 0 && together.length === 0,
       entries: entryBlocks(ctx, quarter),
     }
   })

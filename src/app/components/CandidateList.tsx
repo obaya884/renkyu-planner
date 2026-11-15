@@ -1,57 +1,50 @@
 import { Card, MoreRow, StripRow } from '@/app/components/CandidateCard'
-import { T, candidateTake, coreHeading, leaveDaysUsed, monthGapLine, restSummary, shortText } from '@/app/texts'
+import { T, candidateDays, candidateNotes, coreHeading, monthGapLine, restSummary, shortNote } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
-import type { CandidateBlock, CandidateRow } from '@/domain/view/quarterView'
+import type { CandidateGroup, CandidateRow, MonthGapBlock } from '@/domain/view/quarterView'
 
 type Props = { workMinutes: number; onAdd: (leaveDays: readonly IsoDate[]) => void }
 
 function Row({ row, workMinutes, onAdd }: { row: CandidateRow } & Props) {
-  const notes = [
-    row.leaveDays.length >= 2 ? leaveDaysUsed(row.leaveDays.length) : null,
-    row.nextGrantYear ? T.nextGrantYear : null,
-    row.unconfirmed ? T.unconfirmed : null,
-  ].filter((s) => s !== null)
   return (
     <StripRow
-      take={candidateTake(row.leaveDays)}
-      runDays={row.run.days}
+      days={candidateDays(row.leaveDays)}
+      run={row.run}
       long={row.long}
       strip={row.strip}
-      notes={notes}
-      warn={row.shortMinutes === null ? null : shortText(row.leaveTypeName, row.shortMinutes, workMinutes)}
+      notes={candidateNotes(row)}
+      warn={shortNote(row, workMinutes)}
       onAdd={() => onAdd(row.leaveDays)}
     />
   )
 }
 
-/** §3.7（試作 D 案）。組ごとにカードにし、祝日のない月はカード 1 枚にまとめる。開く行は標準の <details>（状態は持たない） */
-export function CandidateList({ blocks, workMinutes, onAdd }: { blocks: readonly CandidateBlock[] } & Props) {
-  if (blocks.length === 0) return null
-  const groups = blocks.filter((b) => b.kind === 'group')
-  const gaps = blocks.filter((b) => b.kind === 'monthGap')
+/** §3.7。組ごとにカードにし、祝日のない月はカード 1 枚にまとめる。開く行は標準の <details>（状態は持たない） */
+export function CandidateList({ groups, monthGaps, workMinutes, onAdd }: { groups: readonly CandidateGroup[]; monthGaps: readonly MonthGapBlock[] } & Props) {
+  if (groups.length === 0 && monthGaps.length === 0) return null
   return (
     <div className="space-y-3.5">
-      {groups.map((block) => (
-        <Card key={`group-${block.core}`} heading={coreHeading(block.head)}>
+      {groups.map((group) => (
+        <Card key={`group-${group.core}`} heading={coreHeading(group.head)}>
           <ul>
-            {block.primary.map((row) => (
+            {group.primary.map((row) => (
               <Row key={row.leaveDays.join()} row={row} workMinutes={workMinutes} onAdd={onAdd} />
             ))}
           </ul>
-          {block.rest.length > 0 && (
-            <MoreRow summary={restSummary(block.rest.length)} tag={block.restHasLong ? T.restHasLong : null}>
-              {block.rest.map((row) => (
+          {group.rest.length > 0 && (
+            <MoreRow summary={restSummary(group.rest.length)} tag={group.restHasLong ? T.restHasLong : null}>
+              {group.rest.map((row) => (
                 <Row key={row.leaveDays.join()} row={row} workMinutes={workMinutes} onAdd={onAdd} />
               ))}
             </MoreRow>
           )}
         </Card>
       ))}
-      {gaps.length > 0 && (
+      {monthGaps.length > 0 && (
         <Card heading={T.noHolidayMonths}>
-          {gaps.map((block) => (
-            <MoreRow key={`gap-${block.month}`} summary={monthGapLine(block.month, block.runDays, block.rows.length)}>
-              {block.rows.map((row) => (
+          {monthGaps.map((gap) => (
+            <MoreRow key={`gap-${gap.month}`} summary={monthGapLine(gap.month, gap.runDays, gap.rows.length)}>
+              {gap.rows.map((row) => (
                 <Row key={row.leaveDays.join()} row={row} workMinutes={workMinutes} onAdd={onAdd} />
               ))}
             </MoreRow>
