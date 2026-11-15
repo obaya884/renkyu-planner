@@ -8,7 +8,8 @@ export function downloadText(fileName: string, text: string, type: string): void
   a.download = fileName
   a.click()
   // すぐに取り消すと、保存が始まる前に URL が消えるブラウザがある
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  // iOS の Safari は保存の前に確かめる画面を出すので、利用者が押すまで 40 秒待つ
+  setTimeout(() => URL.revokeObjectURL(url), 40_000)
 }
 
 /** D-12: 選んだファイルの中身。3MB を超えるときは中を読まずに null。読むのに失敗したときも null */
