@@ -20,9 +20,13 @@ test('§5.3: この年に使える日数は、日と時間で入れて分に直�
   expect(splitDaysHours(465 + 232, 465)).toEqual({ days: 1, hours: 3 }) // 232 分 → 3 時間（52 分は切り捨て）
 })
 test('§5.3・R-13: 触らなかったか、計算した値と同じなら、上書きを持たない', () => {
-  expect(entitlementToSave(false, 17 * 480, 14 * 480)).toBeNull()
-  expect(entitlementToSave(true, 14 * 480, 14 * 480)).toBeNull()
-  expect(entitlementToSave(true, 17 * 480, 14 * 480)).toBe(17 * 480)
+  expect(entitlementToSave(false, 17 * 480, 14 * 480, null)).toBeNull()
+  expect(entitlementToSave(true, 14 * 480, 14 * 480, null)).toBeNull()
+  expect(entitlementToSave(true, 17 * 480, 14 * 480, null)).toBe(17 * 480)
+  // すでに上書きがある付与年は、触らなければその上書きを保つ
+  expect(entitlementToSave(false, 18 * 480, 14 * 480, 18 * 480)).toBe(18 * 480)
+  expect(entitlementToSave(true, 14 * 480, 14 * 480, 18 * 480)).toBeNull()
+  expect(entitlementToSave(true, 16 * 480, 14 * 480, 18 * 480)).toBe(16 * 480)
 })
 test('§5.3・R-13: 計算した持ち分は、その面の付与日数 × 所定労働時間 + 繰り越し', () => {
   expect(computedEntitlement(SHEET, '2027-05-01', 16)).toBe(16 * 480 + 2040)

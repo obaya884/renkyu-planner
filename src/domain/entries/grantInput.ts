@@ -46,7 +46,8 @@ export function computedEntitlement(input: PlannerInput, grantYearStart: IsoDate
   return grantDays * settings.workMinutes + carryOverOf({ settings, entries, grantYearStart })
 }
 
-/** §5.3: 「この年に使える日数」を触らなかったとき、または計算した値と同じときは、上書きを持たない（null） */
-export function entitlementToSave(touched: boolean, enteredMinutes: number, computedMinutes: number): number | null {
-  return !touched || enteredMinutes === computedMinutes ? null : enteredMinutes
+/** §5.3: 「この年に使える日数」を触らなかったときは、すでにある上書きを保つ（無ければ null）。触って、計算した値と同じにしたときは、上書きを持たない（null） */
+export function entitlementToSave(touched: boolean, enteredMinutes: number, computedMinutes: number, existing: number | null): number | null {
+  if (!touched) return existing
+  return enteredMinutes === computedMinutes ? null : enteredMinutes
 }
