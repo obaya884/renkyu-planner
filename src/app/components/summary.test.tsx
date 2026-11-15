@@ -39,6 +39,13 @@ test('F-403: 4 つの四半期の あり・まだ', () => {
   expect(h.match(new RegExp(T.notYet, 'g'))).toHaveLength(2)
   expect(h).toContain('10〜12月')
 })
+test('§3.3: 長めの休暇の札は、4 つを同じ幅で 1 列に並べ、月とあり・まだを分けて持つ', () => {
+  const h = html(<LongBreakStrip summary={buildSummary(SHEET)} />)
+  expect(h).toMatch(/<ul[^>]*grid-cols-4/)
+  expect(h).not.toMatch(/[\s"]flex-wrap/) // 折り返すのは PC（lg:）だけ
+  expect(h.match(/<li/g)).toHaveLength(4)
+  expect(h).toMatch(/<li[^>]*><span[^>]*>10〜12月<\/span>\s*<span[^>]*>(あり|まだ)<\/span><\/li>/)
+})
 test('N-08・D-5: 保存できない・読めなかったときの 1 行', () => {
   expect(html(<Notices canSave={false} unreadable={false} />)).toContain(T.cannotSave)
   expect(html(<Notices canSave unreadable />)).toContain(T.unreadable)
