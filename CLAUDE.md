@@ -56,11 +56,13 @@ src/domain/   計算の純関数。I/O・引数なしの new Date()・Date.now()
   view/       表示用の組み立て（持ち分、四半期の節、設定画面など）。文言を含まないデータ。画面は計算せず、ここの結果を描く
   storage/    保存するデータの検証
   entries/    入力の検証
+  transfer/   持ち出すファイルの中身（ファイル名、読み込む件数など）。文言を含まない
 src/data/     同梱する祝日データ（holidays.json）
 src/app/      Next.js の画面。site.ts にサービス名・題・説明文を持つ
   Planner.tsx 端末で動く主な画面
   settings/   設定画面（`/settings`）。page.tsx は静的、SettingsScreen.tsx は端末で動く
   store/      記録のストア。localStorage に触るのはここだけ。useToday.ts は今日の日付を読むフック
+  transfer/   ブラウザでファイルを扱う（書き出しと、選んだファイルの読み取り）
   components/ 表示だけの部品。計算をしない
   texts.ts    画面の文言は全部ここ
 scripts/      祝日の取り込み

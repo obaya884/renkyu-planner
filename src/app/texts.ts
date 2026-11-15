@@ -6,6 +6,7 @@ import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/setti
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import type { ImportCounts } from '@/domain/transfer/importCounts'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
 import type { CandidateRow, CoreHead, TogetherRow } from '@/domain/view/quarterView'
 import type { GrantYearRow } from '@/domain/view/settingsView'
@@ -148,7 +149,21 @@ export const T = {
   grantDayChangeNote: '付与日を変えると、ほかの年に入れた日数は消えます。日程は消えません',
   // §8.3
   overOneDay: 'この日の合計が 1日を超えています',
+  // §6 記録の持ち出し、§5.6
+  transferSection: '記録の持ち出し',
+  exportFile: 'ファイルに書き出す',
+  importFile: 'ファイルを読み込む',
+  exportIcs: 'カレンダー用のファイル（.ics）を書き出す',
+  clearAll: '記録をすべて消す',
+  transferNote: '記録は、このブラウザの中にだけ保存しています。運営には送られません。機種を変えるときや、ほかの端末で使うときは、ファイルに書き出して読み込んでください。',
+  importTitle: 'ファイルを読み込む',
+  importConfirm: 'いまの記録は置き換わります',
+  importSubmit: '置き換える',
+  restoreImport: '読み込む前に戻す',
 } as const
+
+/** §6 の記録の持ち出しの節に出す 1 行の種類。noCalendarEntries と cleared は、書き出し（.ics）と消す操作で使う */
+export type TransferNote = 'imported' | 'restored' | 'unreadableFile' | 'noCalendarEntries' | 'cleared'
 
 /** 日曜始まり（曜日の番号の順）。月カレンダーの曜日の行は weekdayHeader を使う */
 export const WEEKDAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const
@@ -384,8 +399,28 @@ export function formatAmount(minutes: number, workMinutes: number): string {
   return formatMinutes(minutes, workMinutes)
 }
 
+/** §6 の記録の持ち出しの節の 1 行。文は仮（G-6）。noCalendarEntries と cleared の文は、それを使うタスクで足す */
+export function transferNoteText(note: TransferNote): string {
+  switch (note) {
+    case 'imported':
+      return '読み込みました'
+    case 'restored':
+      return '読み込む前に戻しました'
+    case 'unreadableFile':
+      return errorText('unreadableFile')
+    case 'noCalendarEntries':
+    case 'cleared':
+      return ''
+  }
+}
+
+/** §5.6 の件数。例: 日程 12 件、会社の休日 1 件、休暇の種類 1 件を読み込みます */
+export function importCountsText(c: ImportCounts): string {
+  return `日程 ${c.entries} 件、会社の休日 ${c.companyHolidays} 件、休暇の種類 ${c.leaveTypes} 件を読み込みます`
+}
+
 /** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay・endBeforeStart・noDays・tooManyDays 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
-export function errorText(e: DraftError | RangeError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries' | 'tooManyEntries' | 'tooManyCompanyHolidays' | 'tooManyLeaveTypes', lastAddable?: IsoDate): string {
+export function errorText(e: DraftError | RangeError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries' | 'tooManyEntries' | 'tooManyCompanyHolidays' | 'tooManyLeaveTypes' | 'unreadableFile', lastAddable?: IsoDate): string {
   switch (e) {
     case 'tooFar':
       return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
@@ -415,6 +450,8 @@ export function errorText(e: DraftError | RangeError | GrantError | CompanyHolid
       return '会社の休日は 100件までです'
     case 'tooManyLeaveTypes':
       return '休暇の種類は 100件までです'
+    case 'unreadableFile':
+      return 'このファイルは読み込めませんでした'
     case 'hasEntries':
       return 'この種類の日程が残っています。先に日程を消してください'
     case 'emptyName':

@@ -305,3 +305,35 @@ test('D-10: 上限に達していても、会社の休日と休暇の種類を�
   s.saveCompanyHoliday(0, { kind: 'yearly', start: '08-01', end: '08-03' })
   expect(s.getState().data.settings.companyHolidays[0]).toEqual({ kind: 'yearly', start: '08-01', end: '08-03' })
 })
+
+const sheetData = { version: 1, settings: SHEET.settings, entries: SHEET.entries } as const
+test('F-505・D-12: 読み込んだ記録で全体を置き換えて保存する。読めなかった 1 行は消え、写しは残る', () => {
+  const m = memory({ [STORAGE_KEY]: '{oops' })
+  const s = createPlannerStore(m, ids()); s.load()
+  expect(s.getState().unreadable).toBe(true)
+  s.replaceAll(sheetData)
+  expect(s.getState()).toMatchObject({ data: sheetData, canSave: true, unreadable: false })
+  expect(parseStored(m.dump()[STORAGE_KEY])).toEqual({ ok: true, value: sheetData })
+  expect(m.dump()[UNREADABLE_KEY]).toBe('{oops')
+})
+test('D-3・D-12: 新しい版の記録があって保存を止めているときは、読み込んでもメモリだけを置き換える', () => {
+  const newer = JSON.stringify({ version: 2, settings: {}, entries: [] })
+  const m = memory({ [STORAGE_KEY]: newer })
+  const s = createPlannerStore(m, ids()); s.load()
+  s.replaceAll(sheetData)
+  expect(s.getState()).toMatchObject({ data: sheetData, canSave: false, unreadable: false })
+  expect(m.dump()[STORAGE_KEY]).toBe(newer)
+})
+test('N-08・D-12: 保存領域が使えないときも、メモリの記録を置き換える', () => {
+  const s = createPlannerStore(null, ids()); s.load()
+  s.replaceAll(sheetData)
+  expect(s.getState()).toMatchObject({ data: sheetData, canSave: false })
+})
+test('F-505・D-12: 置き換える前の記録で置き換え直すと、元に戻る', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.addEntries([draft('2026-11-20')])
+  const before = s.getState().data
+  s.replaceAll(sheetData)
+  s.replaceAll(before)
+  expect(parseStored(m.dump()[STORAGE_KEY])).toEqual({ ok: true, value: before })
+})

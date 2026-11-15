@@ -36,6 +36,11 @@ export type PlannerStore = Readonly<{
   saveLeaveType(id: string | null, draft: LeaveTypeDraft): void
   /** F-104。有休と、日程が残っている種類は何もしない */
   removeLeaveType(id: string): void
+  /**
+   * F-505・D-12: 記録の全体を置き換える。ほかの変更と同じく保存し、保存を止めているあいだはメモリだけを置き換える。
+   * 読めなかった 1 行（D-5）は消す。値は検証しないので、parseStored を通した記録か、置き換える前に持っておいた記録だけを渡す
+   */
+  replaceAll(data: StoredData): void
 }>
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
@@ -142,6 +147,10 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       if (id === PAID_LEAVE_TYPE_ID || entries.some((e) => e.leaveTypeId === id)) return
       if (!settings.leaveTypes.some((t) => t.id === id)) return
       change({ ...state.data, settings: { ...settings, leaveTypes: settings.leaveTypes.filter((t) => t.id !== id) } })
+    },
+    replaceAll(data) {
+      state = { ...state, unreadable: false }
+      change(data)
     },
   }
 }
