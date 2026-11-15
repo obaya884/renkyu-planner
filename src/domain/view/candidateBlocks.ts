@@ -4,12 +4,13 @@ import { type Candidate, findCandidates } from '../candidates/findCandidates'
 import { groupCandidates } from '../candidates/groupCandidates'
 import { monthGaps } from '../candidates/monthGap'
 import { isShort } from '../leave/amount'
-import { grantYearOfType } from '../leave/balance'
+import { type UsageTable, grantYearOfType, usageTableOf } from '../leave/balance'
 import type { Quarter } from '../quarters/quarters'
 import { type IsoDate, addDays, eachDay } from '../shared/date'
+import type { Entry } from '../types'
 import { previewAdd } from './addPreview'
 import { defaultLeaveTypeId } from './defaultLeaveType'
-import type { PlannerInput } from './input'
+import { type PlannerInput, restCalendarOf } from './input'
 
 /** §3.7: 日の並びの 1 マスの種類。take は休む日、done・planned は日程のある日（§3.6 の取得済み・予定）、company は会社の休日、off は土日・祝日 */
 export type StripKind = 'take' | 'done' | 'planned' | 'company' | 'off'
@@ -19,11 +20,18 @@ export type Strip = Readonly<{ size: 'normal' | 'small'; days: readonly StripDay
 
 const SMALL_STRIP_DAYS = 10
 
+export type EntryMark = 'done' | 'planned'
+
+/** §3.6: 日付ごとの日程の印。その日に取得済みが 1 件でもあれば done、取得済みが無く日程があれば planned。日程の無い日は持たない */
+function entryMarksOf(entries: readonly Entry[]): ReadonlyMap<IsoDate, EntryMark> {
+  const marks = new Map<IsoDate, EntryMark>()
+  for (const e of entries) if (e.done || !marks.has(e.date)) marks.set(e.date, e.done ? 'done' : 'planned')
+  return marks
+}
+
 /** §3.6: その日の日程の印。取得済みが 1 件でもあれば done、日程があれば planned、無ければ null。月カレンダーと日の並びで共通 */
-export function entryMarkOf(input: PlannerInput, d: IsoDate): 'done' | 'planned' | null {
-  const onDay = input.entries.filter((e) => e.date === d)
-  if (onDay.some((e) => e.done)) return 'done'
-  return onDay.length > 0 ? 'planned' : null
+export function entryMarkOf(ctx: Ctx, d: IsoDate): EntryMark | null {
+  return ctx.entryMarks.get(d) ?? null
 }
 
 /** §3.7: run の日を、休む日、日程のある日、会社の休日、土日・祝日に分ける。重なったときは §3.6 の順（休む日には日程が無い。R-4） */
@@ -31,7 +39,7 @@ export function stripOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run): Stri
   const take = new Set(leaveDays)
   const days = eachDay(run.start, run.end).map((date): StripDay => {
     if (take.has(date)) return { date, kind: 'take' }
-    const entry = entryMarkOf(ctx.input, date)
+    const entry = entryMarkOf(ctx, date)
     if (entry !== null) return { date, kind: entry }
     return { date, kind: ctx.cal.kindOf(date) === 'company' ? 'company' : 'off' }
   })
@@ -95,12 +103,17 @@ const LONG_RUN_DAYS = 5
 /** 連休が長め（5 日以上）か。連休の長めはここで 1 つに決める */
 export const isLongRun = (run: Run | null): boolean => run !== null && run.days >= LONG_RUN_DAYS
 
-export type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar }>
+/** 組み立て 1 回ぶんの共通の値。cal、entryMarks、usage（付与年ごとの取得済みと予定）は input から 1 度だけ作る（ctxOf） */
+export type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; entryMarks: ReadonlyMap<IsoDate, EntryMark>; usage: UsageTable }>
+
+export function ctxOf(input: PlannerInput): Ctx {
+  return { input, cal: restCalendarOf(input), entryMarks: entryMarksOf(input.entries), usage: usageTableOf(input.settings, input.entries) }
+}
 
 /** leaveDays をその種類の 1 日分の予定として足したときの、不足している付与年の不足の合計。モーダル（previewAdd）と同じ数え方（§3.7） */
-function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string): number | null {
+function shortMinutesOf(ctx: Ctx, leaveDays: readonly IsoDate[], leaveTypeId: string): number | null {
   let short = 0
-  for (const { after } of previewAdd(input, leaveDays, leaveTypeId)) if (isShort(after)) short += -after
+  for (const { after } of previewAdd(ctx.input, leaveDays, leaveTypeId, ctx.usage)) if (isShort(after)) short += -after
   return short > 0 ? short : null
 }
 
@@ -112,7 +125,7 @@ export function inNextGrantYear(input: PlannerInput, leaveDays: readonly IsoDate
 
 function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean, unconfirmed: boolean): CandidateRow {
   const { input } = ctx
-  const leaveTypeId = defaultLeaveTypeId(input, leaveDays)
+  const leaveTypeId = defaultLeaveTypeId(input, leaveDays, ctx.usage)
   return {
     leaveDays,
     run,
@@ -123,7 +136,7 @@ function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean,
     // defaultLeaveTypeId は leaveTypes の中の id を返すので、名前は見つかる（leaveTypes が空のときだけ ''）
     leaveTypeName: input.settings.leaveTypes.find((t) => t.id === leaveTypeId)?.name ?? '',
     nextGrantYear: inNextGrantYear(input, leaveDays, leaveTypeId),
-    shortMinutes: shortMinutesOf(input, leaveDays, leaveTypeId),
+    shortMinutes: shortMinutesOf(ctx, leaveDays, leaveTypeId),
   }
 }
 

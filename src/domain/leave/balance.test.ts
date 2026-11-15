@@ -129,3 +129,25 @@ test('R-13・F-104: 足した休暇は、その種類の付与される日で区
   expect(grantYearOfType(withFree('01-01'), 'free', '2026-11-15')).toEqual({ start: '2026-01-01', end: '2026-12-31' })
   expect(grantYearOfType({ ...withFree('01-01'), grantDay: null }, 'free', '2026-11-15')).toBeNull() // §2
 })
+test('R-13・F-405: 何年もさかのぼる繰り越しは、年ごとに数えたときと同じ（半日・時間単位・有休でない種類・上書きを含む）', () => {
+  // 所定 480 分。2020 は 10 日（2023 は持ち分を 4 日に上書き）。有休でない種類の日程は数えない
+  // 2020: 10 日 − 取得 3 日 = 7 日 → 2021 へ min(7, 10) = 7 日
+  // 2021: 17 日 − 取得 2 日 − 予定 半日 = 14.5 日 → 2022 へ min(14.5, 10) = 10 日
+  // 2022: 20 日 − 予定 25 日（分で入れる）= −5 日 → 2023 へ 0
+  // 2023: 上書きの 4 日 − 取得 1 日 = 3 日 → 2024 へ 3 日
+  // 2024: 13 日、日程なし → 2025 へ min(13, 10) = 10 日
+  const s = {
+    ...settings,
+    grantYears: { '2020-05-01': { grantDays: 10, entitlementMinutes: null }, '2023-05-01': { grantDays: 10, entitlementMinutes: 4 * 480 } },
+  }
+  const entries = [
+    e('2020-05-01', D, true), e('2020-12-31', D, true), e('2021-04-30', D, true),
+    e('2021-05-01', D, true), e('2022-04-30', D, true), e('2021-08-01', { unit: 'half' }, false), e('2021-09-01', D, true, 'summer'),
+    e('2022-06-01', { unit: 'minutes', minutes: 25 * 480 }, false),
+    e('2023-05-02', D, true),
+  ]
+  const carry = (grantYearStart: string) => carryOverOf({ settings: s, entries, grantYearStart })
+  expect(['2020-05-01', '2021-05-01', '2022-05-01', '2023-05-01', '2024-05-01', '2025-05-01'].map(carry)).toEqual([0, 7 * 480, 10 * 480, 0, 3 * 480, 10 * 480])
+  // 付与日に合わない開始日を渡したときも、これまでと同じ値（年ごとの範囲は grantYearOf の終わりまで。値は直す前のコードで求めた）
+  expect(['2021-06-01', '2022-06-01', '2024-06-01'].map(carry)).toEqual([8 * 480, 10 * 480, 10 * 480])
+})

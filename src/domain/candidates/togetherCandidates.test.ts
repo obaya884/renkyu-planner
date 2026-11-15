@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from '@/domain/view/fixture'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
-import { findTogetherCandidates } from './togetherCandidates'
+import { findTogetherCandidates, togetherWindowsOf } from './togetherCandidates'
 
 const free = (patch: object = {}) => ({ id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true, ...patch })
 const withFree = (patch: object = {}, base: PlannerInput = SHEET): PlannerInput =>
@@ -148,4 +148,12 @@ test('R-20: 使える期間の終わりが末日より前なら、期間の中�
       ['2027-08-25', '2027-08-31', '2027-08-25', '2027-08-31', 7],
     ]],
   ])
+})
+test('R-20: 種類をまたいで使い回す窓（togetherWindowsOf）を渡しても、候補は同じ', () => {
+  for (const i of [withFree(), withFree({ days: 1 }), withFree({ usable: { start: '08-23', end: '08-31' } }), noCompany(withFree()), noEntries(withFree({ days: 8 }))]) {
+    const cal = restCalendarOf(i)
+    const base = { cal, settings: i.settings, entries: i.entries, leaveTypeId: 'free', today: i.today, end: '2027-09-30' }
+    const windowsOf = (n: number) => togetherWindowsOf(cal, n, i.today, '2027-09-30')
+    expect(findTogetherCandidates({ ...base, windowsOf })).toEqual(findTogetherCandidates(base))
+  }
 })

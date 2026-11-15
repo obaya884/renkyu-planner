@@ -2,13 +2,12 @@ import { expect, test } from 'vitest'
 import { planningQuarters } from '@/domain/quarters/quarters'
 import { addDays } from '@/domain/shared/date'
 import type { CompanyHoliday, Entry } from '@/domain/types'
-import { type StripKind, stripOf } from './candidateBlocks'
+import { type StripKind, ctxOf, entryMarkOf, stripOf } from './candidateBlocks'
 import { SHEET, UNSET } from './fixture'
-import { type PlannerInput, restCalendarOf } from './input'
+import type { PlannerInput } from './input'
 import { buildQuarterViews } from './quarterView'
 
 const qs = planningQuarters('2026-11-15')
-const ctxOf = (input: PlannerInput) => ({ input, cal: restCalendarOf(input) })
 const kinds = (list: readonly (readonly [string, StripKind])[]) => list.map(([date, kind]) => ({ date, kind }))
 const day = (date: string, done: boolean): Entry => ({ id: date, date, leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done })
 
@@ -38,6 +37,18 @@ test('§3.7・§3.6: 会社の休日と、1 日分の日程の日（予定・取
   // 同じ日に予定と取得済みがあれば取得済み（§3.6 の月カレンダーと同じ）
   const both = { ...SHEET, entries: [...SHEET.entries, { ...day('2026-12-28', true), id: 'done-28' }] }
   expect(stripOf(ctxOf(both), [], { start: '2026-12-28', end: '2026-12-28', days: 1 }).days).toEqual(kinds([['2026-12-28', 'done']]))
+})
+test('§3.6: 日程の印。同じ日に何件あっても、取得済みが 1 件でもあれば done、無ければ planned、日程の無い日は null', () => {
+  const at = (id: string, done: boolean): Entry => ({ ...day('2026-12-24', done), id })
+  const mark = (entries: readonly Entry[], d = '2026-12-24') => entryMarkOf(ctxOf({ ...SHEET, entries }), d)
+  expect(mark([at('a', false), at('b', true), at('c', false)])).toBe('done')
+  expect(mark([at('a', true), at('b', false)])).toBe('done')
+  expect(mark([at('a', false), at('b', true)])).toBe('done')
+  expect(mark([at('a', false), at('b', false)])).toBe('planned')
+  expect(mark([at('a', false)], '2026-12-25')).toBeNull()
+  expect(mark([])).toBeNull()
+  // 5,000 件が同じ日にあっても同じ
+  expect(mark([...Array.from({ length: 4999 }, (_, i) => at(`p${i}`, false)), at('d', true)])).toBe('done')
 })
 test('§3.7: 連休が 9 日以下は normal、10 日以上は small のマス', () => {
   const ctx = ctxOf(SHEET)

@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from './fixture'
+import { usageTableOf } from '@/domain/leave/balance'
 import { previewAdd, remainingFor } from './addPreview'
 
 test('F-206: 1 日入れると未割り当てが 1 日分減る', () => {
@@ -49,4 +50,18 @@ test('R-13・F-209: 次の付与年に付与日数だけ入れたときは、繰
   // 足した後: 今の付与年の未割り当て 1560 → 繰り越し 1560。次の付与年の 5/6 も 1 日分引くので after = 16 × 480 + 1560 − 480
   const input = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
   expect(previewAdd(input, ['2027-04-28', '2027-05-06'], 'paid')[1]).toEqual({ grantYearStart: '2027-05-01', before: 16 * 480 + 2040, after: 16 * 480 + 1560 - 480, position: 'next' })
+})
+test('F-206・F-209・R-13: 組み立ての表（usageTableOf）を渡しても、値は渡さないときと同じ', () => {
+  const next16 = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
+  const withHalf = { ...next16, entries: [...next16.entries, { id: 'h', date: '2027-03-01', leaveTypeId: 'paid', amount: { unit: 'half' }, title: '', done: false } as const] }
+  const cases = [
+    [SHEET, ['2026-11-20'], 'paid'],
+    [next16, ['2027-04-28', '2027-05-06'], 'paid'],
+    [withHalf, ['2027-04-28', '2027-05-06', '2028-05-08'], 'paid'],
+    [{ ...SHEET, settings: withFree('01-01') }, ['2026-12-28', '2027-01-04'], 'free'],
+    [UNSET, ['2026-11-20'], 'paid'],
+  ] as const
+  for (const [input, days, type] of cases) {
+    expect(previewAdd(input, days, type, usageTableOf(input.settings, input.entries))).toEqual(previewAdd(input, days, type))
+  }
 })

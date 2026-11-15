@@ -1,4 +1,4 @@
-import { balanceOf, grantYearOfType } from '../leave/balance'
+import { type UsageTable, balanceOf, grantYearOfType, withAddedUsage } from '../leave/balance'
 import type { IsoDate } from '../shared/date'
 import type { Entry } from '../types'
 import type { PlannerInput } from './input'
@@ -29,9 +29,10 @@ function positionOf(grantYearStart: IsoDate, currentStart: IsoDate | undefined):
 
 /**
  * F-206・F-209: 休む日を 1 日分の予定として足したと仮定し、休む日が入る付与年ごとに未割り当てを足す前と後で求める。
- * 付与年はその休暇の種類の付与される日で区切る（R-13）。有休の付与日が未設定なら空
+ * 付与年はその休暇の種類の付与される日で区切る（R-13）。有休の付与日が未設定なら空。
+ * `usage` は input の settings と entries から作った表（usageTableOf）。渡すと数え直さずに済む。値は同じ
  */
-export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string): readonly GrantYearDelta[] {
+export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string, usage?: UsageTable): readonly GrantYearDelta[] {
   const starts = grantYearStartsOf(input, leaveTypeId, leaveDays)
   if (starts === null) return []
 
@@ -44,14 +45,15 @@ export function previewAdd(input: PlannerInput, leaveDays: readonly IsoDate[], l
     done: false,
   }))
   const after: PlannerInput = { ...input, entries: [...input.entries, ...added] }
+  const afterUsage = usage === undefined ? undefined : withAddedUsage(usage, input.settings, added)
 
   const currentStart = grantYearOfType(input.settings, leaveTypeId, input.today)?.start
-  const unassignedOf = (target: PlannerInput, grantYearStart: IsoDate): number =>
-    balanceOf({ settings: target.settings, entries: target.entries, leaveTypeId, grantYearStart })?.unassigned ?? 0
+  const unassignedOf = (target: PlannerInput, grantYearStart: IsoDate, table: UsageTable | undefined): number =>
+    balanceOf({ settings: target.settings, entries: target.entries, leaveTypeId, grantYearStart, usage: table })?.unassigned ?? 0
   return starts.map((grantYearStart) => ({
     grantYearStart,
-    before: unassignedOf(input, grantYearStart),
-    after: unassignedOf(after, grantYearStart),
+    before: unassignedOf(input, grantYearStart, usage),
+    after: unassignedOf(after, grantYearStart, afterUsage),
     position: positionOf(grantYearStart, currentStart),
   }))
 }

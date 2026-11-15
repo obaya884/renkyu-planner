@@ -8,11 +8,20 @@ export function isValidGrantDay(md: MonthDay): boolean {
   return /^\d{2}-\d{2}$/.test(md) && isValidIsoDate(`2000-${md}`)
 }
 
-/** R-12: 付与年は、d 以前で最も近い付与日から、次の付与日の前日まで */
-export function grantYearOf(d: IsoDate, grantDay: MonthDay): { start: IsoDate; end: IsoDate } {
+function startYearOf(d: IsoDate, grantDay: MonthDay): number {
   const year = Number(d.slice(0, 4))
   const thisYear = `${String(year).padStart(4, '0')}-${grantDay}`
-  const startYear = d >= thisYear ? year : year - 1
+  return d >= thisYear ? year : year - 1
+}
+
+/** R-12: d が入る付与年の開始日（grantYearOf の start。終わりの日を求めないぶん軽い） */
+export function grantYearStartOf(d: IsoDate, grantDay: MonthDay): IsoDate {
+  return `${String(startYearOf(d, grantDay)).padStart(4, '0')}-${grantDay}`
+}
+
+/** R-12: 付与年は、d 以前で最も近い付与日から、次の付与日の前日まで */
+export function grantYearOf(d: IsoDate, grantDay: MonthDay): { start: IsoDate; end: IsoDate } {
+  const startYear = startYearOf(d, grantDay)
   const start = `${String(startYear).padStart(4, '0')}-${grantDay}`
   const next = `${String(startYear + 1).padStart(4, '0')}-${grantDay}`
   return { start, end: addDays(next, -1) }

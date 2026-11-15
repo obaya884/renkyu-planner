@@ -3,8 +3,8 @@ import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
-import { type CandidateGroupView, type Ctx, type MonthGapBlock, type Placed, candidateBlocks, entryMarkOf, isLongRun } from './candidateBlocks'
-import { type PlannerInput, restCalendarOf } from './input'
+import { type CandidateGroupView, type Ctx, type MonthGapBlock, type Placed, candidateBlocks, ctxOf, entryMarkOf, isLongRun } from './candidateBlocks'
+import type { PlannerInput } from './input'
 import { type TogetherBlock, togetherBlocks } from './togetherBlocks'
 
 export type { CandidateGroupView, CandidateRow, CoreHead, MonthGapBlock, Strip, StripDay, StripKind } from './candidateBlocks'
@@ -54,7 +54,7 @@ export type QuarterView = Readonly<{
 // ---- 月カレンダー ----
 
 function markOf(ctx: Ctx, d: IsoDate, candidateDays: ReadonlySet<IsoDate>): DayMark | null {
-  const entry = entryMarkOf(ctx.input, d)
+  const entry = entryMarkOf(ctx, d)
   if (entry !== null) return entry
   if (candidateDays.has(d)) return 'candidate'
   const kind = ctx.cal.kindOf(d)
@@ -148,7 +148,7 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
 
 /** 主な画面の四半期ごとの節（月カレンダー・候補・日程）の組み立て */
 export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarter[]): QuarterView[] {
-  const ctx: Ctx = { input, cal: restCalendarOf(input) }
+  const ctx = ctxOf(input)
   const active = quarters.filter((q) => q.end >= input.today)
   const placed = candidateBlocks(ctx, active)
   const togetherPlaced = togetherBlocks(ctx, active)

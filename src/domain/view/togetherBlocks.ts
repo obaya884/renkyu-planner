@@ -1,5 +1,5 @@
 import type { Run } from '../calendar/restDays'
-import { findTogetherCandidates } from '../candidates/togetherCandidates'
+import { type TogetherWindow, findTogetherCandidates, togetherWindowsOf } from '../candidates/togetherCandidates'
 import { lastAddableDate } from '../entries/checkDraft'
 import type { Quarter } from '../quarters/quarters'
 import { type IsoDate, addDays } from '../shared/date'
@@ -26,8 +26,17 @@ export function togetherBlocks(ctx: Ctx, active: readonly Quarter[]): readonly R
   const starts = new Set(active.map((q) => q.start))
   const end = lastAddableDate(input.today)
   const placed: { quarterStart: IsoDate; block: TogetherBlock }[] = []
+  // 休む日と連休は日数だけで決まるので、同じ日数の種類では組み立て 1 回につき 1 度だけ数える
+  const windows = new Map<number, readonly TogetherWindow[]>()
+  const windowsOf = (n: number): readonly TogetherWindow[] => {
+    const found = windows.get(n)
+    if (found !== undefined) return found
+    const made = togetherWindowsOf(cal, n, input.today, end)
+    windows.set(n, made)
+    return made
+  }
   for (const type of input.settings.leaveTypes) {
-    const quarters = findTogetherCandidates({ cal, settings: input.settings, entries: input.entries, leaveTypeId: type.id, today: input.today, end })
+    const quarters = findTogetherCandidates({ cal, settings: input.settings, entries: input.entries, leaveTypeId: type.id, today: input.today, end, windowsOf })
     for (const { quarterStart, candidates } of quarters) {
       if (!starts.has(quarterStart) || candidates.length === 0) continue
       const rows = candidates.map((c): TogetherRow => ({

@@ -12,13 +12,52 @@ export type TogetherQuarter = Readonly<{ quarterStart: IsoDate; candidates: read
 /** R-20: 四半期ごとに出す候補の上限 */
 export const TOGETHER_LIMIT = 5
 
+/** R-20: 営業日を N 日続けて取る休む日 D と、D を休んだときの連休（無ければ null） */
+export type TogetherWindow = Readonly<{ leaveDays: readonly IsoDate[]; run: Run | null }>
+
+/**
+ * R-20: today から end までの営業日のそれぞれから、営業日（1 日分の日程の日も含む）を n 日続けて取る D と、その連休。
+ * D の最初の日の早い順。D の最後の日が end を過ぎるものは入れない。休暇の種類によらず cal と n だけで決まるので、
+ * 同じ日数の種類で使い回せる
+ */
+export function togetherWindowsOf(cal: RestCalendar, n: number, today: IsoDate, end: IsoDate): readonly TogetherWindow[] {
+  // 'leave'（1 日分の日程の日）は営業日として数える。cal.isRest は使わない
+  const isWorkday = (d: IsoDate) => {
+    const kind = cal.kindOf(d)
+    return kind !== 'weekend' && kind !== 'holiday' && kind !== 'company'
+  }
+  const windows: TogetherWindow[] = []
+  for (let d0 = today; d0 <= end; d0 = addDays(d0, 1)) {
+    if (!isWorkday(d0)) continue
+    const leaveDays: IsoDate[] = [d0]
+    let d = d0
+    // end を過ぎたら打ち切る（営業日が無い設定でも止まる）
+    while (leaveDays.length < n && d <= end) {
+      d = addDays(d, 1)
+      if (isWorkday(d)) leaveDays.push(d)
+    }
+    if (leaveDays.length < n || leaveDays[leaveDays.length - 1] > end) continue
+    windows.push({ leaveDays, run: runContaining(withLeaveDays(cal, leaveDays), d0) })
+  }
+  return windows
+}
+
 /**
  * R-20・F-212: まとめて取る休暇の候補を、四半期ごとに返す。
  * 営業日（土日・祝日・会社の休日でない日。1 日分の日程の日も含む）を、土日・祝日・会社の休日だけを飛ばして N 日続けて取る。
- * `cal` は restCalendarOf のカレンダー、`end` は R-19 の末日
+ * `cal` は restCalendarOf のカレンダー、`end` は R-19 の末日。
+ * `windowsOf` は、同じ cal・today・end で togetherWindowsOf を返す関数（種類をまたいで使い回すとき）。無ければここで作る
  */
 export function findTogetherCandidates(
-  input: Readonly<{ cal: RestCalendar; settings: Settings; entries: readonly Entry[]; leaveTypeId: string; today: IsoDate; end: IsoDate }>,
+  input: Readonly<{
+    cal: RestCalendar
+    settings: Settings
+    entries: readonly Entry[]
+    leaveTypeId: string
+    today: IsoDate
+    end: IsoDate
+    windowsOf?: (n: number) => readonly TogetherWindow[]
+  }>,
 ): TogetherQuarter[] {
   const { cal, settings, entries, leaveTypeId, today, end } = input
   const type = settings.leaveTypes.find((t) => t.id === leaveTypeId)
@@ -27,11 +66,6 @@ export function findTogetherCandidates(
   const n = type.days
   const { usable } = type
 
-  // 'leave'（1 日分の日程の日）は営業日として数える。cal.isRest は使わない
-  const isWorkday = (d: IsoDate) => {
-    const kind = cal.kindOf(d)
-    return kind !== 'weekend' && kind !== 'holiday' && kind !== 'company'
-  }
   const entryDates = new Set(entries.map((e) => e.date))
   const ownDates = entries.filter((e) => e.leaveTypeId === leaveTypeId).map((e) => e.date)
 
@@ -46,20 +80,11 @@ export function findTogetherCandidates(
   }
 
   const byQuarter = new Map<IsoDate, TogetherCandidate[]>()
-  for (let d0 = today; d0 <= end; d0 = addDays(d0, 1)) {
-    if (!isWorkday(d0)) continue
-    const leaveDays: IsoDate[] = [d0]
-    let d = d0
-    // end を過ぎたら打ち切る（営業日が無い設定でも止まる）
-    while (leaveDays.length < n && d <= end) {
-      d = addDays(d, 1)
-      if (isWorkday(d)) leaveDays.push(d)
-    }
-    if (leaveDays.length < n || leaveDays[leaveDays.length - 1] > end) continue
+  const windows = input.windowsOf?.(n) ?? togetherWindowsOf(cal, n, today, end)
+  for (const { leaveDays, run } of windows) {
     if (!accepted(leaveDays)) continue
-    const run = runContaining(withLeaveDays(cal, leaveDays), d0)
     if (run === null) continue
-    const q = quarterStart(d0)
+    const q = quarterStart(leaveDays[0])
     byQuarter.set(q, [...(byQuarter.get(q) ?? []), { leaveDays, run }])
   }
 
