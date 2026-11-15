@@ -10,6 +10,7 @@ import type { RangeError } from '@/domain/entries/entryRange'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
 import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import { planEntrySave } from '@/domain/view/entrySave'
 import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
 
 type Props = {
@@ -105,13 +106,10 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate' || e === 'tooFar')
   const amountErrors = errors.filter((e) => e === 'invalidAmount')
 
-  // F-307: 終わりの日を入れたときは、足す日ごとに 1 日の日程を作り、1 日ずつ検証する
+  // F-307: 終わりの日を入れたときは、足す日ごとに 1 日の日程を作り、1 日ずつ検証する（planEntrySave）
   const range = ranged ? previewRange(input, date, endDate, leaveTypeId) : null
-  const rangeDrafts: readonly EntryDraft[] = (range?.days ?? []).map((d) => ({ date: d, leaveTypeId, amount: { unit: 'day' }, title, done }))
-  const rangeErrors = [...new Set(rangeDrafts.flatMap((d) => checkEntryDraft(input, d, null).errors))]
-  const typeErrors = (range === null ? errors : rangeErrors).filter((e) => e === 'unknownLeaveType')
-  const canSave = range === null ? errors.length === 0 : range.errors.length === 0 && rangeErrors.length === 0
-  const drafts: readonly EntryDraft[] = range === null ? [draft] : rangeDrafts
+  const { drafts, errors: saveErrors, canSave } = planEntrySave(input, draft, entry?.id ?? null, range)
+  const typeErrors = saveErrors.filter((e) => e === 'unknownLeaveType')
 
   return (
     <>
