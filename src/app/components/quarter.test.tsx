@@ -28,26 +28,82 @@ test('F-502・F-108: 月カレンダーは月曜始まりで、印を data-mark 
   expect(h).toMatch(/data-mark="candidate"[^>]*>20</)
   expect(h).not.toContain('<button')
 })
-test('F-203: 最良の候補は 1 件 1 行。残りは 1 行にまとめ、長めがあれば添える', () => {
-  const h = html(<CandidateList blocks={q4.candidates} workMinutes={480} onAdd={noop} />)
-  expect(h).toContain('11/20(金) を休むと 4連休')
-  expect(h).toContain('11/24(火) を休むと 4連休')
+const text = (h: string) => h.replace(/<[^>]+>/g, '')
+const headings = (h: string) => [...h.matchAll(/<h4[^>]*>([^<]*)<\/h4>/g)].map((m) => m[1])
+/** 「〜を休む」を含む候補 1 件の行（li）の HTML */
+const rowOf = (h: string, take: string) => h.split('<li').find((x) => x.includes(`>${take}<`)) ?? ''
+const kindsOf = (row: string) => [...row.matchAll(/data-kind="([a-z]+)"/g)].map((m) => m[1])
+const candidateList = (v: typeof q4) => html(<CandidateList groups={v.groups} monthGaps={v.monthGaps} workMinutes={480} onAdd={noop} />)
+
+test('F-203・§3.7: 組ごとに見出しつきのカード。最良の候補は 1 件 1 行、残りはカードのいちばん下の開く行', () => {
+  const h = candidateList(q4)
+  // q4 の組は 12/30（12/25 を休むと 10 連休、効率 10）と 11/23（1 日で 4 連休、効率 4）。SHEET の会社の休日には名前が無い
+  expect(headings(h)).toEqual(['会社の休日（12/30〜1/3）のまわり', '11/23(月) 勤労感謝の日 のまわり'])
+  expect(h).toContain('>11/20(金) を休む<')
+  expect(h).toContain('>11/24(火) を休む<')
   expect(h).toContain('もっと多く休む取り方（7）')
   expect(h).toContain(T.restHasLong)
   expect(h).toContain('<details')
-  expect(h.indexOf('12/25(金) を休むと 10連休')).toBeLessThan(h.indexOf('11/20(金) を休むと 4連休')) // 効率の順
+  expect(h.indexOf('>12/25(金) を休む<')).toBeLessThan(h.indexOf('>11/20(金) を休む<')) // 効率の順
+  expect(h.lastIndexOf('もっと多く休む取り方')).toBeGreaterThan(h.indexOf('>11/24(火) を休む<')) // カードのいちばん下
 })
-test('F-205: 祝日のない月は、押して開く 1 行', () => {
+test('§3.7・F-204: 上の行の右に連休の日数。5 連休以上は長めの色の文字で、「長め」の札は付けない', () => {
+  const h = candidateList(q4)
+  expect(rowOf(h, '11/20(金) を休む')).toMatch(/<b[^>]*>4連休<\/b>/)
+  expect(rowOf(h, '11/20(金) を休む')).not.toContain('text-long-ink')
+  expect(rowOf(h, '12/25(金) を休む')).toMatch(/<b[^>]*text-long-ink[^>]*>10連休<\/b>/)
+  expect(text(h)).not.toMatch(new RegExp(`${T.long}(?!あり)`))
+})
+test('§3.7・F-202: 日の並び。休む日、土日・祝日、会社の休日、予定を data-kind に持ち、期間の文字は出さない', () => {
+  const h = candidateList(q4)
+  // 11/20(金) 休む日、11/21(土)・11/22(日) 土日、11/23(月) 勤労感謝の日
+  const nov = rowOf(h, '11/20(金) を休む')
+  expect(kindsOf(nov)).toEqual(['take', 'off', 'off', 'off'])
+  expect(nov).toContain('data-strip="normal"')
+  // 12/25(金) 休む日、12/26・12/27 土日、12/28・12/29 予定、12/30〜1/3 会社の休日。10 日なので小さいマス
+  const dec = rowOf(h, '12/25(金) を休む')
+  expect(kindsOf(dec)).toEqual(['take', 'off', 'off', 'planned', 'planned', 'company', 'company', 'company', 'company', 'company'])
+  expect(dec).toContain('data-strip="small"')
+  expect(dec).toContain('--days:10')
+  expect(text(nov)).toContain('金20土21日22月23')
+  expect(text(h)).not.toContain('11/20〜11/23')
+})
+test('§3.7・F-212: まとめて取る休暇の日の並びは、行の連休の日', () => {
+  const h = html(<TogetherList blocks={f4.together} onAdd={noop} />)
+  // 12/19(土)〜1/3 の 16 日。休む日 5、土日 4、予定 2（12/28・12/29）、会社の休日 5（12/30〜1/3）
+  const kinds = kindsOf(rowOf(h, '12/21(月)〜12/25(金) を休む'))
+  expect(kinds).toHaveLength(16)
+  expect(kinds.filter((k) => k === 'take')).toHaveLength(5)
+  expect(kinds.filter((k) => k === 'off')).toHaveLength(4)
+  expect(kinds.filter((k) => k === 'planned')).toHaveLength(2)
+  expect(kinds.filter((k) => k === 'company')).toHaveLength(5)
+})
+test('§3.7: 日の並びは 1 つにまとめて読ませ、「入れる」はどの候補かを読ませる', () => {
+  const nov = rowOf(candidateList(q4), '11/20(金) を休む')
+  expect(nov).toContain('role="img" aria-label="11/20〜11/23 の 4連休。休む日は 11/20(金)"')
+  expect(nov).toMatch(/aria-hidden="true"[^>]*data-strip/)
+  expect(nov).toContain('aria-label="11/20(金) を休む 4連休 を日程に入れる"')
+  expect(nov).toContain(`>${T.insert}</button>`)
+  const free = rowOf(html(<TogetherList blocks={f4.together} onAdd={noop} />), '12/21(月)〜12/25(金) を休む')
+  expect(free).toContain('aria-label="12/19〜1/3 の 16連休。休む日は 12/21(月)〜12/25(金)"')
+  expect(free).toContain('aria-label="12/21(月)〜12/25(金) を休む 16連休 を日程に入れる"')
+})
+test('F-205・§3.7: 祝日のない月は、組のカードの下に「祝日のない月」のカード 1 枚。月ごとの開く行', () => {
   const [u4] = buildQuarterViews(UNSET, qs)
-  const h = html(<CandidateList blocks={u4.candidates} workMinutes={480} onAdd={noop} />)
-  expect(h).toContain('12月は祝日がありません。金曜か月曜を休むと 3連休（8）')
-  expect(h).toContain('12/4(金) を休むと 3連休')
+  const h = candidateList(u4)
+  // UNSET の q4 の組は 11/23 と 1/1（12/31 を休む候補の四半期に置く。R-6）。12 月は祝日も会社の休日も無い（R-8）
+  expect(headings(h)).toEqual(['11/23(月) 勤労感謝の日 のまわり', '1/1(金) 元日 のまわり', T.noHolidayMonths])
+  expect(h).toContain('12月 金曜か月曜を休むと 3連休（8）')
+  expect(h).toContain('>12/4(金) を休む<')
+  expect(h.indexOf('12月 金曜か月曜を休むと')).toBeLessThan(h.indexOf('>12/4(金) を休む<')) // 開く行の中
 })
-test('F-209・F-211: 次の付与年から引く・足りない、の添え書き', () => {
-  expect(html(<CandidateList blocks={q2.candidates} workMinutes={480} onAdd={noop} />)).toContain(T.nextGrantYear)
+test('F-209・F-211・§3.7: 補足は並びの下。次の付与年から引く・足りない', () => {
+  expect(candidateList(q2)).toContain(T.nextGrantYear)
   const tight = { ...SHEET, settings: { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 10, entitlementMinutes: null } } } }
   const [t4] = buildQuarterViews(tight, qs)
-  expect(html(<CandidateList blocks={t4.candidates} workMinutes={480} onAdd={noop} />)).toContain('有休が 6 時間足りません')
+  const nov = rowOf(candidateList(t4), '11/20(金) を休む')
+  expect(nov).toContain('有休が 6 時間足りません')
+  expect(nov.indexOf('有休が 6 時間足りません')).toBeGreaterThan(nov.indexOf('data-strip'))
 })
 test('F-304・F-305・R-17: 日程の行。連休の見出し、過ぎた予定、重なり', () => {
   const h = html(<EntryList blocks={q4.entries} workMinutes={480} onOpen={noop} onMarkDone={noop} onAddDay={noop} />)
@@ -123,27 +179,39 @@ const freeType = { id: 'free', name: 'フリーバカンス', days: 5, usable: n
 const withFree = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, freeType] } }
 const [f4, f1] = buildQuarterViews(withFree, qs)
 
-test('F-212・§3.7: まとめて取る休暇の組。見出し、先頭の 1 件、残りの 1 行', () => {
+test('F-212・§3.7: まとめて取る休暇の組。見出しつきのカード、先頭の 1 件、残りの開く行', () => {
   const h = html(<TogetherList blocks={f4.together} onAdd={noop} />)
-  expect(h).toContain('フリーバカンス（5日）をまとめて取る')
-  expect(h).toContain('12/21(月)〜12/25(金) の 5日を休むと 16連休')
-  expect(h).toContain('12/19〜1/3')
+  expect(headings(h)).toEqual(['フリーバカンス（5日）をまとめて取る'])
+  expect(rowOf(h, '12/21(月)〜12/25(金) を休む')).toMatch(/<b[^>]*text-long-ink[^>]*>16連休<\/b>/)
+  expect(text(h)).not.toContain('12/19〜1/3')
   expect(h).toContain('ほかの取り方（4）')
   expect(h).toContain('<details')
-  expect(h).toContain(T.long)
   expect(h).not.toContain(T.nextGrantYear)
   expect(h.indexOf('12/21(月)〜12/25(金)')).toBeLessThan(h.indexOf('ほかの取り方（4）'))
-  expect(h.indexOf('ほかの取り方（4）')).toBeLessThan(h.indexOf('11/16(月)〜11/20(金) の 5日を休むと 10連休'))
+  expect(h.indexOf('ほかの取り方（4）')).toBeLessThan(h.indexOf('>11/16(月)〜11/20(金) を休む<'))
+  expect(rowOf(h, '11/16(月)〜11/20(金) を休む')).toMatch(/>10連休<\/b>/)
   const n = html(<TogetherList blocks={f1.together} onAdd={noop} />)
-  expect(n).toContain('1/4(月)〜1/8(金) の 5日を休むと 17連休')
-  expect(n).toContain('12/26〜1/11・次の付与年から引く')
+  const jan = rowOf(n, '1/4(月)〜1/8(金) を休む')
+  expect(jan).toMatch(/>17連休<\/b>/)
+  expect(text(jan)).toContain(T.nextGrantYear)
 })
 test('§3.7: まとめて取る休暇の組は、ふつうの候補と祝日のない月の候補の下。種類が無ければ出さない', () => {
   const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={f4} {...props} />)
   const heading = h.indexOf('フリーバカンス（5日）をまとめて取る')
-  expect(heading).toBeGreaterThan(h.indexOf('11/20(金) を休むと 4連休'))
+  expect(heading).toBeGreaterThan(h.indexOf('>11/20(金) を休む<'))
   expect(heading).toBeGreaterThan(h.lastIndexOf('もっと多く休む取り方'))
   // 祝日のない月の候補は CandidateList の中の最後に出るので、組はその下になる（この fixture の 12 月には 1 日分の日程があり、祝日のない月の行は出ない）
   expect(html(<QuarterSection view={q4} {...props} />)).not.toContain('をまとめて取る')
+})
+test('§3.7: 候補の見出しのすぐ下に凡例。候補が無い四半期には出さない', () => {
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const h = html(<QuarterSection view={q4} {...props} />)
+  const legend = h.indexOf('data-legend="candidates"')
+  expect(legend).toBeGreaterThan(h.indexOf(`>${T.candidates}</h3>`))
+  expect(legend).toBeLessThan(h.indexOf('<h4'))
+  expect(text(h.slice(h.indexOf('>', legend) + 1, h.indexOf('<h4')))).toBe(`${T.restDays}${T.legendOff}${T.legendCompany}`)
+  const none = html(<QuarterSection view={{ ...q4, groups: [], monthGaps: [], together: [], noCandidates: true }} {...props} />)
+  expect(none).toContain(T.noCandidates)
+  expect(none).not.toContain('data-legend="candidates"')
 })

@@ -19,14 +19,14 @@ test('成功基準 2: 何も入れずに候補が見え、候補を入れ、付�
 
   let v = view(s)
   expect(v.summary.state).toBe('unset')
-  const nov = v.quarters[0].candidates.find((b) => b.kind === 'group' && b.core === '2026-11-23')
-  expect(nov?.kind === 'group' && nov.primary[0].leaveDays).toEqual(['2026-11-20'])
+  const nov = v.quarters[0].groups.find((g) => g.core === '2026-11-23')
+  expect(nov?.primary[0].leaveDays).toEqual(['2026-11-20'])
 
   s.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }])
   v = view(s)
   expect(v.quarters[0].entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2026-11-20'])
   // F-207: 入れた日を休む候補は消え、その日を休みとして計算し直した候補が出る
-  const rows = v.quarters[0].candidates.flatMap((b) => (b.kind === 'group' ? [...b.primary, ...b.rest] : b.rows))
+  const rows = [...v.quarters[0].groups.flatMap((g) => [...g.primary, ...g.rest]), ...v.quarters[0].monthGaps.flatMap((b) => b.rows)]
   expect(rows.some((r) => r.leaveDays.includes('2026-11-20'))).toBe(false)
   expect(rows.some((r) => r.leaveDays.length === 1 && r.leaveDays[0] === '2026-11-24' && r.run.days === 5)).toBe(true)
 
