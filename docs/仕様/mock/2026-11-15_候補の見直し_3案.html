@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>候補の見直し 3 案（モック）</title>
+<style>
+  :root {
+    --primary: #0d9488; --ink: #1f2937; --sub: #6b7280; --line: #e5e7eb; --card: #f3f4f6;
+    --long-bg: #ede9fe; --long-ink: #5b21b6; --warn-ink: #92400e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; color: var(--ink); background: #e5e7eb; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .lead { color: var(--sub); font-size: 14px; margin: 0 0 20px; max-width: 900px; line-height: 1.7; }
+  .cols { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .col { width: 390px; }
+  .col > h2 { font-size: 16px; margin: 0 0 4px; }
+  .col > p { font-size: 13px; color: var(--sub); margin: 0 0 10px; line-height: 1.6; min-height: 84px; }
+  .phone { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .phone h3 { font-size: 16px; margin: 0 0 10px; }
+  .tag { display: inline-block; background: var(--long-bg); color: var(--long-ink); border-radius: 4px; padding: 0 6px; font-size: 12px; margin-left: 6px; vertical-align: 1px; }
+  .sub { color: var(--sub); font-size: 13px; }
+  button { font: inherit; cursor: pointer; }
+
+  /* ---- 今 ---- */
+  .now .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .now .row:last-of-type { border-bottom: 0; }
+  .now .btn { min-height: 44px; flex-shrink: 0; border: 1px solid var(--primary); color: var(--primary); background: #fff; border-radius: 8px; padding: 0 12px; font-size: 14px; }
+  .now .more { display: flex; align-items: center; min-height: 44px; background: var(--card); border-radius: 8px; padding: 0 12px; font-size: 14px; margin-bottom: 8px; }
+  .now h4 { font-size: 14px; margin: 8px 0 0; }
+
+  /* ---- A: カード ---- */
+  .a .group { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+  .a .ghead { background: var(--card); padding: 8px 12px; font-size: 13px; font-weight: 700; color: #374151; }
+  .a .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line); min-height: 56px; }
+  .a .btn { min-height: 44px; min-width: 56px; flex-shrink: 0; border: 0; color: var(--primary); background: transparent; font-size: 14px; font-weight: 700; }
+  .a .more { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--primary); }
+
+  /* ---- B: 見出しと行（行ごと押せる） ---- */
+  .b .group { margin-bottom: 22px; }
+  .b .ghead { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+  .b .ghead::before { content: ""; width: 4px; height: 16px; border-radius: 2px; background: var(--primary); }
+  .b .ghead.other::before { background: #9ca3af; }
+  .b .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0 8px 12px; border-bottom: 1px solid var(--line); min-height: 56px; }
+  .b .chev { color: var(--sub); font-size: 18px; padding-right: 4px; }
+  .b .more { display: flex; align-items: center; min-height: 44px; padding-left: 12px; font-size: 13px; color: var(--primary); }
+
+  /* ---- C: 日の並びで見せる ---- */
+  .c .group { margin-bottom: 22px; }
+  .c .ghead { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 2px; }
+  .c .row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .c .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .c .top b { font-size: 15px; white-space: nowrap; }
+  .c .top .long { color: var(--long-ink); }
+  .c .strip { display: flex; gap: 2px; margin-top: 6px; align-items: flex-end; }
+  .c .d { width: 26px; text-align: center; border-radius: 4px; padding: 2px 0 3px; line-height: 1.15; font-size: 13px; }
+  .c .d i { display: block; font-style: normal; font-size: 10px; color: inherit; opacity: .75; }
+  .c .d.rest { background: #fee2e2; color: #b91c1c; }
+  .c .d.co { background: #e0e7ff; color: #3730a3; }
+  .c .d.take { background: #fffbeb; border: 2px dashed #f59e0b; padding: 0 0 1px; font-weight: 700; color: var(--ink); }
+  .c .strip.small .d { width: 19px; font-size: 11px; }
+  .c .strip.small .d i { font-size: 9px; }
+  .c .gapmark { align-self: center; color: var(--sub); font-size: 12px; padding: 0 2px; }
+  .c .more { display: flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--primary); }
+  .c .legend { display: flex; gap: 12px; font-size: 11px; color: var(--sub); margin: -4px 0 12px; }
+  .c .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .c .legend .l1::before { background: #fffbeb; border: 1.5px dashed #f59e0b; }
+  .c .legend .l2::before { background: #fee2e2; }
+  .c .legend .l3::before { background: #e0e7ff; }
+  .note { margin-top: 24px; font-size: 13px; color: #374151; max-width: 900px; line-height: 1.8; background: #fff; border-radius: 12px; padding: 12px 16px; }
+</style>
+</head>
+<body>
+<h1>候補の見直し 3 案（スマホの幅）</h1>
+<p class="lead">2026年 10〜12月の候補の欄だけを抜き出したモックです。左が今の形、右の 3 つが案です。候補の中身は今の画面と同じで、見せ方だけを変えています（「祝日のない月」の行は、形を見るための例として入れています）。組の見出しに出す祝日の名前は、いまの画面には出していない新しい情報です。</p>
+
+<div class="cols">
+
+  <!-- 今 -->
+  <div class="col now">
+    <h2>今の形</h2>
+    <p>組に見出しが無く、灰色の帯（もっと多く休む取り方）が次の組の見出しのように見える。毎行のボタンが幅を取る。</p>
+    <div class="phone">
+      <h3>候補</h3>
+      <div class="row"><div><div>12/29(火) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/29〜1/3</div></div><button class="btn">日程に入れる</button></div>
+      <div class="row"><div><div>1/4(月) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/30〜1/4</div></div><button class="btn">日程に入れる</button></div>
+      <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span></div>
+      <div class="row"><div><div>11/20(金) を休むと 4連休</div><div class="sub">11/20〜11/23</div></div><button class="btn">日程に入れる</button></div>
+      <div class="row"><div><div>11/24(火) を休むと 4連休</div><div class="sub">11/21〜11/24</div></div><button class="btn">日程に入れる</button></div>
+      <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span></div>
+      <div class="more">10月は祝日がありません。金曜か月曜を休むと 3連休（8）</div>
+      <h4>フリーバカンス（5日）をまとめて取る</h4>
+      <div class="row"><div><div>12/21(月)〜12/25(金) の 5日を休むと 16連休<span class="tag">長め</span></div><div class="sub">12/19〜1/3</div></div><button class="btn">日程に入れる</button></div>
+      <div class="more">ほかの取り方（4）</div>
+    </div>
+  </div>
+
+  <!-- A -->
+  <div class="col a">
+    <h2>A. 組をカードにする</h2>
+    <p>組を枠で囲み、上に「何のまわりの候補か」を出す。「もっと多く」はカードの中のいちばん下。ボタンは枠なしの「入れる」。今の形にいちばん近い。</p>
+    <div class="phone">
+      <h3>候補</h3>
+      <div class="group">
+        <div class="ghead">年末年始（12/30〜1/3）のまわり</div>
+        <div class="row"><div><div>12/29(火) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/29〜1/3</div></div><button class="btn">入れる</button></div>
+        <div class="row"><div><div>1/4(月) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/30〜1/4</div></div><button class="btn">入れる</button></div>
+        <div class="more"><span>もっと多く休む取り方（7）<span class="tag">長めあり</span></span><span>▾</span></div>
+      </div>
+      <div class="group">
+        <div class="ghead">11/23(月) 勤労感謝の日 のまわり</div>
+        <div class="row"><div><div>11/20(金) を休むと 4連休</div><div class="sub">11/20〜11/23</div></div><button class="btn">入れる</button></div>
+        <div class="row"><div><div>11/24(火) を休むと 4連休</div><div class="sub">11/21〜11/24</div></div><button class="btn">入れる</button></div>
+        <div class="more"><span>もっと多く休む取り方（7）<span class="tag">長めあり</span></span><span>▾</span></div>
+      </div>
+      <div class="group">
+        <div class="ghead">祝日のない月</div>
+        <div class="more" style="border-top:0"><span>10月 金曜か月曜を休むと 3連休（8）</span><span>▾</span></div>
+      </div>
+      <div class="group">
+        <div class="ghead">フリーバカンス（5日）をまとめて取る</div>
+        <div class="row"><div><div>12/21(月)〜12/25(金) を休むと 16連休<span class="tag">長め</span></div><div class="sub">12/19〜1/3</div></div><button class="btn">入れる</button></div>
+        <div class="more"><span>ほかの取り方（4）</span><span>▾</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="col b">
+    <h2>B. 見出しと行（行ごと押せる）</h2>
+    <p>枠を使わず、色の付いた見出しと余白で組を分ける。ボタンをなくし、行のどこを押してもモーダルが開く（設定画面の行と同じ「›」）。いちばん軽い。</p>
+    <div class="phone">
+      <h3>候補</h3>
+      <div class="group">
+        <div class="ghead">年末年始（12/30〜1/3）のまわり</div>
+        <div class="row"><div><div>12/29(火) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/29〜1/3</div></div><span class="chev">›</span></div>
+        <div class="row"><div><div>1/4(月) を休むと 6連休<span class="tag">長め</span></div><div class="sub">12/30〜1/4</div></div><span class="chev">›</span></div>
+        <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span>&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead">11/23(月) 勤労感謝の日 のまわり</div>
+        <div class="row"><div><div>11/20(金) を休むと 4連休</div><div class="sub">11/20〜11/23</div></div><span class="chev">›</span></div>
+        <div class="row"><div><div>11/24(火) を休むと 4連休</div><div class="sub">11/21〜11/24</div></div><span class="chev">›</span></div>
+        <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span>&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead other">祝日のない月</div>
+        <div class="more">10月 金曜か月曜を休むと 3連休（8）&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead other">フリーバカンス（5日）をまとめて取る</div>
+        <div class="row"><div><div>12/21(月)〜12/25(金) を休むと 16連休<span class="tag">長め</span></div><div class="sub">12/19〜1/3</div></div><span class="chev">›</span></div>
+        <div class="more">ほかの取り方（4）&nbsp;▾</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="col c">
+    <h2>C. 日の並びで見せる</h2>
+    <p>候補 1 件を、連休になる日の並びで見せる。点線の枠が休む日、色の付いた日が休みの日（月カレンダーと同じ色）。どこを休むとどうつながるかが、文を読まなくても分かる。行ごと押せる。</p>
+    <div class="phone">
+      <h3>候補</h3>
+      <div class="legend"><span class="l1">休む日</span><span class="l2">土日・祝日</span><span class="l3">会社の休日</span></div>
+      <div class="group">
+        <div class="ghead">年末年始（12/30〜1/3）のまわり</div>
+        <div class="row"><div class="top"><span>12/29(火) を休む</span><b class="long">6連休</b></div><div class="strip"><div class="d take"><i>火</i>29</div><div class="d co"><i>水</i>30</div><div class="d co"><i>木</i>31</div><div class="d co"><i>金</i>1</div><div class="d co"><i>土</i>2</div><div class="d co"><i>日</i>3</div></div></div>
+        <div class="row"><div class="top"><span>1/4(月) を休む</span><b class="long">6連休</b></div><div class="strip"><div class="d co"><i>水</i>30</div><div class="d co"><i>木</i>31</div><div class="d co"><i>金</i>1</div><div class="d co"><i>土</i>2</div><div class="d co"><i>日</i>3</div><div class="d take"><i>月</i>4</div></div></div>
+        <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span>&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead">11/23(月) 勤労感謝の日 のまわり</div>
+        <div class="row"><div class="top"><span>11/20(金) を休む</span><b>4連休</b></div><div class="strip"><div class="d take"><i>金</i>20</div><div class="d rest"><i>土</i>21</div><div class="d rest"><i>日</i>22</div><div class="d rest"><i>月</i>23</div></div></div>
+        <div class="row"><div class="top"><span>11/24(火) を休む</span><b>4連休</b></div><div class="strip"><div class="d rest"><i>土</i>21</div><div class="d rest"><i>日</i>22</div><div class="d rest"><i>月</i>23</div><div class="d take"><i>火</i>24</div></div></div>
+        <div class="more">もっと多く休む取り方（7）<span class="tag">長めあり</span>&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead">祝日のない月</div>
+        <div class="more">10月 金曜か月曜を休むと 3連休（8）&nbsp;▾</div>
+      </div>
+      <div class="group">
+        <div class="ghead">フリーバカンス（5日）をまとめて取る</div>
+        <div class="row"><div class="top"><span>12/21(月)〜12/25(金) を休む</span><b class="long">16連休</b></div><div class="strip small"><div class="d rest"><i>土</i>19</div><div class="d rest"><i>日</i>20</div><div class="d take"><i>月</i>21</div><div class="d take"><i>火</i>22</div><div class="d take"><i>水</i>23</div><div class="d take"><i>木</i>24</div><div class="d take"><i>金</i>25</div><div class="d rest"><i>土</i>26</div><div class="d rest"><i>日</i>27</div><div class="d rest"><i>月</i>28</div><div class="d rest"><i>火</i>29</div><div class="d co"><i>水</i>30</div><div class="d co"><i>木</i>31</div><div class="d co"><i>金</i>1</div><div class="d co"><i>土</i>2</div><div class="d co"><i>日</i>3</div></div></div>
+        <div class="more">ほかの取り方（4）&nbsp;▾</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>3 案に共通の変更</b><br>
+  ・組ごとに見出しを出す（「11/23(月) 勤労感謝の日 のまわり」「年末年始（12/30〜1/3）のまわり」）。会社の休日は、付けた名前があれば名前を出す。<br>
+  ・「もっと多く休む取り方」は、灰色の帯をやめて、組の中のいちばん下に文字で置く。<br>
+  ・有休の候補（祝日のまわり、祝日のない月）を先に、まとめて取る休暇の組を最後に置く。<br>
+  <b>行ごと押せる形（B・C）にした場合</b><br>
+  ・行を押すと、いまと同じ「日程に入れる」のモーダルが開く。すぐには入らず、モーダルで保存を押して入る点は、いまと同じ。
+</div>
+</body>
+</html>
