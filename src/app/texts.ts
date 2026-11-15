@@ -4,6 +4,7 @@ import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
 
 /** 画面に出す固定の文言（P-6、画面定義書 §8.1）。文言はすべて仮。計画 5（V-1）でまとめて直す */
@@ -17,6 +18,10 @@ export const T = {
   workMinutesLabel: '1 日の所定労働時間',
   calendarLabel: 'カレンダー',
   weekStartLabel: '週の始まり',
+  paidSection: '有休',
+  grantDayRowLabel: '付与日',
+  viewPastGrantYears: '過ぎた付与年を見る',
+  grantDayUnset: 'まだ入れていません',
   monday: '月曜',
   sunday: '日曜',
   // §3.2
@@ -289,10 +294,21 @@ export function entrySheetTitle(d: IsoDate): string {
   return `${formatDay(d)} の日程`
 }
 
+/** §6 の付与年の期間。例: 2026/5/1〜2027/4/30 */
+export function grantYearPeriod(start: IsoDate, end: IsoDate): string {
+  const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
+  return `${ymd(start)}〜${ymd(end)}`
+}
+
 /** §5.3 の題の下。例: 2027/5/1〜2028/4/30 の分 */
 export function grantPeriodText(start: IsoDate, end: IsoDate): string {
-  const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
-  return `${ymd(start)}〜${ymd(end)} の分`
+  return `${grantYearPeriod(start, end)} の分`
+}
+
+/** §6 の付与年の行の文。次の付与年で日数を入れていないときだけ、入力をうながす文になる */
+export function grantYearRowText(row: GrantYearRow, isNext: boolean, workMinutes: number): string {
+  if (isNext && !row.entered) return `日数を入れる（いまは ${row.grantDays}日で計算）`
+  return `付与 ${row.grantDays}日・使える日数 ${formatMinutes(row.entitlement, workMinutes)}`
 }
 
 /** §5.3 の付与日の文字。例: 5月1日 */

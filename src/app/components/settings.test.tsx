@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { T } from '@/app/texts'
+import { buildGrantSection } from '@/domain/view/settingsView'
+import { SHEET } from '@/domain/view/fixture'
+import { GrantSection } from './GrantSection'
 import { Header } from './Header'
 import { HolidayAbout } from './HolidayAbout'
 import { HolidayNote } from './StaticCandidates'
@@ -34,4 +37,21 @@ test('F-108: 週の始まりの行。選んでいる方に印', () => {
   const input = (v: string) => h.match(new RegExp(`<input[^>]*value="${v}"[^>]*>`))?.[0] ?? ''
   expect(input('sunday')).toContain('checked')
   expect(input('monday')).not.toContain('checked')
+})
+
+test('§6: 付与年の行の文', () => {
+  const h = html(<GrantSection view={buildGrantSection(SHEET)} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)
+  expect(h).toContain('5月1日')
+  expect(h).toContain('2026/5/1〜2027/4/30')
+  expect(h).toContain('付与 14日・使える日数 14 日')
+  expect(h).toContain('2027/5/1〜2028/4/30')
+  expect(h).toContain('日数を入れる（いまは 14日で計算）')
+  expect(h).not.toContain(T.viewPastGrantYears)
+  expect(html(<GrantSection view={null} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)).toContain(T.grantDayUnset)
+})
+test('F-405・§6: 過ぎた付与年は <details> に入り、押せない', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  const h = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)
+  expect(h).toMatch(/<details>.*過ぎた付与年を見る.*2025\/5\/1〜2026\/4\/30.*付与 12日・使える日数 12 日.*<\/details>/)
+  expect(h.match(/<button/g)).toHaveLength(2)
 })

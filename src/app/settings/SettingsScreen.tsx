@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { GrantSection } from '@/app/components/GrantSection'
+import { GrantSheet } from '@/app/components/GrantSheet'
 import { Notices } from '@/app/components/Notices'
 import { WeekStartRow } from '@/app/components/WeekStartRow'
 import { WorkMinutesRow } from '@/app/components/WorkMinutesRow'
@@ -8,9 +10,11 @@ import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import { T } from '@/app/texts'
 import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
+import type { IsoDate } from '@/domain/shared/date'
+import { buildGrantSection } from '@/domain/view/settingsView'
 
 /** 開いているモーダル（1 つだけ）。節を足すタスクで種類を足す */
-type SettingsSheet = null
+type SettingsSheet = null | { kind: 'grant'; grantYearStart: IsoDate | null }
 
 /**
  * 設定画面（画面定義書 §6）。記録を読み終え、今日がそろうまでは何も描かない。
@@ -19,7 +23,7 @@ type SettingsSheet = null
 export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   const { ready, canSave, unreadable, data } = usePlanner()
   const today = useToday()
-  const sheet: SettingsSheet = null
+  const [sheet, setSheet] = useState<SettingsSheet>(null)
   const shown = ready && today !== null
 
   // 記録を読み終えると上の節の高さが増える。#holidays で開いたときは、描き終えたあとに 1 回だけ動かす
@@ -31,12 +35,19 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   }, [shown])
 
   if (!shown) return null
-  // 節を足すタスクで holidays と sheet を使う。それまでは未使用の警告を避ける
-  void holidays
-  void sheet
+  const input = { holidays, settings: data.settings, entries: data.entries, today }
   return (
     <div className="space-y-6">
       <Notices canSave={canSave} unreadable={unreadable} />
+      <section className="space-y-2">
+        <h2 className="text-sm font-bold text-sub">{T.paidSection}</h2>
+        <GrantSection
+          view={buildGrantSection(input)}
+          workMinutes={data.settings.workMinutes}
+          onOpen={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
+          onFirst={() => setSheet({ kind: 'grant', grantYearStart: null })}
+        />
+      </section>
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.workMinutesLabel}</h2>
         <WorkMinutesRow workMinutes={data.settings.workMinutes} onChange={plannerStore.setWorkMinutes} />
@@ -46,6 +57,18 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         <div className="text-sm text-sub">{T.weekStartLabel}</div>
         <WeekStartRow weekStart={data.settings.weekStart} onChange={plannerStore.setWeekStart} />
       </section>
+      {sheet?.kind === 'grant' && (
+        <GrantSheet
+          key={sheet.grantYearStart ?? 'first'}
+          input={input}
+          grantYearStart={sheet.grantYearStart}
+          onSubmit={(draft, grantYearStart) => {
+            plannerStore.setGrant(draft, grantYearStart)
+            setSheet(null)
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
     </div>
   )
 }

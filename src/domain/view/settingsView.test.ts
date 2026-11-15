@@ -1,0 +1,28 @@
+import { expect, test } from 'vitest'
+import { SHEET, UNSET } from './fixture'
+import { buildGrantSection } from './settingsView'
+
+test('F-405・§6: 今の付与年と次の付与年の行。次は前の年の付与日数で計算', () => {
+  expect(buildGrantSection(SHEET)).toEqual({
+    grantDay: '05-01',
+    current: { start: '2026-05-01', end: '2027-04-30', entered: true, grantDays: 14, entitlement: 6720 },
+    next: { start: '2027-05-01', end: '2028-04-30', entered: false, grantDays: 14, entitlement: 8760 }, // 14 日 + 繰り越し 2040 分
+    past: [],
+  })
+  expect(buildGrantSection(UNSET)).toBeNull()
+})
+test('F-405・R-13: 過ぎた付与年。前の年の未割り当てが繰り越される', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  const v = buildGrantSection({ ...SHEET, settings })
+  expect(v?.past).toEqual([{ start: '2025-05-01', end: '2026-04-30', entered: true, grantDays: 12, entitlement: 5760 }])
+  expect(v?.current.entitlement).toBe(12480) // 14 日 + 2025 年の未割り当て 12 日
+})
+test('F-405・§6: 過ぎた付与年は、日程の日付が入るいちばん古い年から今の年の 1 つ前まで、新しい順', () => {
+  // 設定は 2026 のみ。有休の日程が 2024-06-01 にあるので、2024・2025 の 2 年が出る（新しい 2025 が先）
+  const entries = [...SHEET.entries, { ...SHEET.entries[0], id: 'old', date: '2024-06-01' }]
+  const v = buildGrantSection({ ...SHEET, entries })
+  expect(v?.past.map((r) => r.start)).toEqual(['2025-05-01', '2024-05-01'])
+  // 有休でない日程は数えない
+  const other = [{ ...SHEET.entries[0], id: 'o', date: '2024-06-01', leaveTypeId: 'summer' }]
+  expect(buildGrantSection({ ...SHEET, entries: other })?.past).toEqual([])
+})

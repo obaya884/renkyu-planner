@@ -93,3 +93,22 @@ test('R-13・§5.1: いちばん古い設定より 100 年以上先の付与年�
   expect(balanceOf({ settings, entries: [], leaveTypeId: 'paid', grantYearStart: '2126-05-01' })?.entitlement).toBe(14 * 480)
   expect(carryOverOf({ settings, entries: [], grantYearStart: '2125-05-01' })).toBe(14 * 480)
 })
+test('R-13: 設定のある付与年が 3 つあるとき、3 つ目の繰り越しは 2 つ目の未割り当てから決まる', () => {
+  // 設定: 2026 は 14 日、2027 は 16 日、2028 は 10 日（所定 480 分）。日程は 2027 年だけ: 取得済み 1 日、予定 3 日
+  // 2026: 持ち分 14 × 480 = 6720。日程なしで未割り当て 6720。2027 への繰り越し = min(6720, 14 × 480) = 6720
+  // 2027: 持ち分 16 × 480 + 6720 = 14400。残り 14400 − 480 = 13920、未割り当て 13920 − 3 × 480 = 12480。
+  //       2028 への繰り越し = min(12480, 2027 の付与日数 16 × 480 = 7680) = 7680
+  // 2028: 持ち分 10 × 480 + 7680 = 12480（2026 の未割り当てを引き継ぐ誤りなら 4800 + 6720 = 11520 になる）
+  const s = {
+    ...settings,
+    grantYears: {
+      '2026-05-01': { grantDays: 14, entitlementMinutes: null },
+      '2027-05-01': { grantDays: 16, entitlementMinutes: null },
+      '2028-05-01': { grantDays: 10, entitlementMinutes: null },
+    },
+  }
+  const entries = [e('2027-06-01', D, true), e('2027-07-01', D, false), e('2027-07-02', D, false), e('2027-07-03', D, false)]
+  expect(carryOverOf({ settings: s, entries, grantYearStart: '2027-05-01' })).toBe(6720)
+  expect(carryOverOf({ settings: s, entries, grantYearStart: '2028-05-01' })).toBe(7680)
+  expect(balanceOf({ settings: s, entries, leaveTypeId: 'paid', grantYearStart: '2028-05-01' })?.entitlement).toBe(12480)
+})
