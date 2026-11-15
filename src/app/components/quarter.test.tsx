@@ -60,6 +60,7 @@ test('§3.7・F-202: 日の並び。休む日、土日・祝日、会社の休�
   const nov = rowOf(h, '11/20(金) を休む')
   expect(kindsOf(nov)).toEqual(['take', 'off', 'off', 'off'])
   expect(nov).toContain('data-strip="normal"')
+  expect(nov).toContain('w-[min(26px,') // 9 日以下も 26px を上限に行の幅に合わせて縮める
   // 12/25(金) 休む日、12/26・12/27 土日、12/28・12/29 予定、12/30〜1/3 会社の休日。10 日なので小さいマス
   const dec = rowOf(h, '12/25(金) を休む')
   expect(kindsOf(dec)).toEqual(['take', 'off', 'off', 'planned', 'planned', 'company', 'company', 'company', 'company', 'company'])
@@ -95,6 +96,8 @@ test('F-205・§3.7: 祝日のない月は、組のカードの下に「祝日�
   expect(headings(h)).toEqual(['11/23(月) 勤労感謝の日 のまわり', '1/1(金) 元日 のまわり', T.noHolidayMonths])
   expect(h).toContain('12月 金曜か月曜を休むと 3連休（8）')
   expect(h).toContain('>12/4(金) を休む<')
+  // 12/4(金) を休むと 12/4〜12/6 の 3 連休（12/5・12/6 は土日）
+  expect(rowOf(h, '12/4(金) を休む')).toMatch(/<b[^>]*>3連休<\/b>/)
   expect(h.indexOf('12月 金曜か月曜を休むと')).toBeLessThan(h.indexOf('>12/4(金) を休む<')) // 開く行の中
 })
 test('F-209・F-211・§3.7: 補足は並びの下。次の付与年から引く・足りない', () => {

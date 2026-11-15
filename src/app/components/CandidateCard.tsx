@@ -16,12 +16,12 @@ const KIND_CLASS: Readonly<Record<StripKind, string>> = {
 const BORDERED: ReadonlySet<StripKind> = new Set(['take', 'planned'])
 
 /**
- * §3.7 の寸法。normal は 1 マス 26px で折り返さない。
- * small は 19px を上限に、並びが行の幅（100cqw）に収まる幅まで 14px を下限に縮め、収まらなければ折り返す。
- * 幅はマスの数（--days）だけで決まるので、折り返した段のマスも 1 段目と同じ幅になる
+ * §3.7 の寸法。マスの幅は、並びが行の幅（100cqw）に収まる幅をマスの数（--days）とマスのあいだから求め、上限で抑える。
+ * normal は 26px を上限に縮め、折り返さない。
+ * small は 19px を上限に、14px を下限に縮め、収まらなければ折り返す。幅はマスの数だけで決まるので、折り返した段のマスも 1 段目と同じ幅になる
  */
 const SIZE = {
-  normal: { strip: 'gap-0.5', cell: 'w-[26px] flex-none text-[13px]', border: 'border-2 pt-0 pb-px', plain: 'pt-0.5 pb-[3px]', weekday: 'text-[10px]' },
+  normal: { strip: 'gap-0.5', cell: 'w-[min(26px,calc((100cqw_-_(var(--days)_-_1)_*_2px)_/_var(--days)))] flex-none text-[13px]', border: 'border-2 pt-0 pb-px', plain: 'pt-0.5 pb-[3px]', weekday: 'text-[10px]' },
   small: {
     strip: 'flex-wrap gap-px',
     cell: 'w-[clamp(14px,calc((100cqw_-_(var(--days)_-_1)_*_1px)_/_var(--days)),19px)] flex-none text-[10px]',
@@ -82,7 +82,7 @@ export function StripRow({ days, run, long, strip, notes, warn = null, onAdd }: 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span>{takeText(days)}</span>
-          <b className={`whitespace-nowrap text-[15px] ${long ? 'text-long-ink' : ''}`} data-long={long ? '' : undefined}>
+          <b className={`whitespace-nowrap text-[15px] ${long ? 'text-long-ink' : ''}`}>
             {runDaysText(run.days)}
           </b>
         </div>

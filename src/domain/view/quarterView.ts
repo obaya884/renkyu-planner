@@ -3,11 +3,11 @@ import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
-import { type CandidateGroup, type Ctx, type MonthGapBlock, candidateBlocks, entryMarkOf, isLongRun } from './candidateBlocks'
+import { type CandidateGroupView, type Ctx, type MonthGapBlock, type Placed, candidateBlocks, entryMarkOf, isLongRun } from './candidateBlocks'
 import { type PlannerInput, restCalendarOf } from './input'
 import { type TogetherBlock, togetherBlocks } from './togetherBlocks'
 
-export type { CandidateGroup, CandidateRow, CoreHead, MonthGapBlock, Strip, StripDay, StripKind } from './candidateBlocks'
+export type { CandidateGroupView, CandidateRow, CoreHead, MonthGapBlock, Strip, StripDay, StripKind } from './candidateBlocks'
 export type { TogetherBlock, TogetherRow } from './togetherBlocks'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */
@@ -41,7 +41,7 @@ export type QuarterView = Readonly<{
   marks: readonly DayMark[]
   grantNote: GrantNote | null
   /** 有休の候補の組（R-7 の順） */
-  groups: readonly CandidateGroup[]
+  groups: readonly CandidateGroupView[]
   /** 祝日のない月の候補（月の早い順）。§3.7 で 1 枚のカードにまとめる */
   monthGaps: readonly MonthGapBlock[]
   /** まとめて取る休暇の組。種類の並びは設定画面と同じ（§3.7） */
@@ -158,7 +158,7 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
     const past = quarter.end < input.today
     const months = monthsOf(quarter).map((m) => monthView(ctx, m, past ? none : placed.primaryDays))
     const shown = new Set(months.flatMap((m) => m.weeks.flat()).map((c) => c?.mark ?? null))
-    const inQuarter = <B>(list: readonly Readonly<{ quarterStart: IsoDate; block: B }>[]): B[] =>
+    const inQuarter = <B>(list: readonly Placed<B>[]): B[] =>
       past ? [] : list.filter((p) => p.quarterStart === quarter.start).map((p) => p.block)
     const groups = inQuarter(placed.groups)
     const monthGaps = inQuarter(placed.monthGaps)

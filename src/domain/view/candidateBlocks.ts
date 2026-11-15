@@ -86,7 +86,7 @@ export type CandidateRow = Readonly<{
 }>
 
 /** 同じ核の候補の組（R-5）。head は見出しの元（§3.7） */
-export type CandidateGroup = Readonly<{ core: IsoDate; head: CoreHead; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }>
+export type CandidateGroupView = Readonly<{ core: IsoDate; head: CoreHead; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }>
 /** 祝日のない月の候補（R-8） */
 export type MonthGapBlock = Readonly<{ month: IsoDate; unconfirmed: boolean; runDays: number; rows: readonly CandidateRow[] }>
 
@@ -138,8 +138,8 @@ function runWithLeave(cal: RestCalendar, d: IsoDate): Run | null {
 export type Placed<B> = Readonly<{ quarterStart: IsoDate; block: B }>
 
 /** 過ぎていない四半期の最初の日から最後の日までを 1 回で列挙し、四半期ごとに置く組と祝日のない月（R-5〜R-10） */
-export function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { groups: Placed<CandidateGroup>[]; monthGaps: Placed<MonthGapBlock>[]; primaryDays: Set<IsoDate> } {
-  const groups: Placed<CandidateGroup>[] = []
+export function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { groups: Placed<CandidateGroupView>[]; monthGaps: Placed<MonthGapBlock>[]; primaryDays: Set<IsoDate> } {
+  const groups: Placed<CandidateGroupView>[] = []
   const gaps: Placed<MonthGapBlock>[] = []
   const primaryDays = new Set<IsoDate>()
   if (active.length === 0) return { groups, monthGaps: gaps, primaryDays }

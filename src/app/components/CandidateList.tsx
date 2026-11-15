@@ -1,7 +1,7 @@
 import { Card, MoreRow, StripRow } from '@/app/components/CandidateCard'
 import { T, candidateDays, candidateNotes, coreHeading, monthGapLine, restSummary, shortNote } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
-import type { CandidateGroup, CandidateRow, MonthGapBlock } from '@/domain/view/quarterView'
+import type { CandidateGroupView, CandidateRow, MonthGapBlock } from '@/domain/view/quarterView'
 
 type Props = { workMinutes: number; onAdd: (leaveDays: readonly IsoDate[]) => void }
 
@@ -20,7 +20,7 @@ function Row({ row, workMinutes, onAdd }: { row: CandidateRow } & Props) {
 }
 
 /** §3.7。組ごとにカードにし、祝日のない月はカード 1 枚にまとめる。開く行は標準の <details>（状態は持たない） */
-export function CandidateList({ groups, monthGaps, workMinutes, onAdd }: { groups: readonly CandidateGroup[]; monthGaps: readonly MonthGapBlock[] } & Props) {
+export function CandidateList({ groups, monthGaps, workMinutes, onAdd }: { groups: readonly CandidateGroupView[]; monthGaps: readonly MonthGapBlock[] } & Props) {
   if (groups.length === 0 && monthGaps.length === 0) return null
   return (
     <div className="space-y-3.5">
