@@ -1,8 +1,9 @@
 import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
+import type { CompanyHolidayError } from '@/domain/entries/settingsInput'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
-import type { Amount, WeekStart } from '@/domain/types'
+import type { Amount, CompanyHoliday, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
@@ -22,6 +23,15 @@ export const T = {
   grantDayRowLabel: '付与日',
   viewPastGrantYears: '過ぎた付与年を見る',
   grantDayUnset: 'まだ入れていません',
+  companyHolidaySection: '会社の休日',
+  addCompanyHoliday: '＋ 会社の休日を足す',
+  companyHolidayTitle: '会社の休日',
+  repeatLabel: '繰り返し',
+  yearly: '毎年',
+  once: 'その年だけ',
+  startLabel: '開始',
+  endLabel: '終了',
+  removeCompanyHoliday: 'この休日を消す',
   monday: '月曜',
   sunday: '日曜',
   // §3.2
@@ -323,7 +333,7 @@ export function formatAmount(minutes: number, workMinutes: number): string {
 }
 
 /** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
-export function errorText(e: DraftError | GrantError | 'invalidWorkMinutes', lastAddable?: IsoDate): string {
+export function errorText(e: DraftError | GrantError | CompanyHolidayError | 'invalidWorkMinutes', lastAddable?: IsoDate): string {
   switch (e) {
     case 'tooFar':
       return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
@@ -341,7 +351,21 @@ export function errorText(e: DraftError | GrantError | 'invalidWorkMinutes', las
       return '付与日数は、0日から366日まで、0.5日きざみで入れてください'
     case 'invalidWorkMinutes':
       return '1分から24時間までで入れてください'
+    case 'tooLong':
+      return '会社の休日は 1 件 31日までです。長い休みは分けて入れてください'
+    case 'reversed':
+      return '終わりの日を、始まりの日と同じかそれより後にしてください'
     case 'invalidEntitlement':
       return 'この年に使える日数は、0以上で入れてください'
   }
+}
+
+/** §6 の会社の休日の行（仮の文）。例: 12/30〜1/3　毎年、2026/8/13〜2026/8/16　その年だけ */
+export function companyHolidayText(h: CompanyHoliday): string {
+  if (h.kind === 'yearly') {
+    const md = (m: MonthDay) => `${Number(m.slice(0, 2))}/${Number(m.slice(3, 5))}`
+    return `${md(h.start)}〜${md(h.end)}　${T.yearly}`
+  }
+  const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
+  return `${ymd(h.start)}〜${ymd(h.end)}　${T.once}`
 }

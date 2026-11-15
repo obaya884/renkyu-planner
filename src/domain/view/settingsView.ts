@@ -2,6 +2,7 @@ import { addDays } from '../shared/date'
 import type { IsoDate, MonthDay } from '../shared/date'
 import { balanceOf, grantDaysOf } from '../leave/balance'
 import { grantYearOf } from '../leave/grantYear'
+import type { CompanyHoliday, Settings } from '../types'
 import { type PlannerInput, currentGrantYear } from './input'
 
 /** 設定画面の付与年の 1 行（§6）。entered は、その付与年の設定を入れてあるか */
@@ -47,4 +48,17 @@ export function buildGrantSection(input: PlannerInput): GrantSectionView | null 
   }
 
   return { grantDay, current: rowOf(input, grantDay, year.start), next: rowOf(input, grantDay, addDays(year.end, 1)), past }
+}
+
+/** 設定画面の会社の休日の 1 行（§6）。index は settings.companyHolidays の中の位置 */
+export type CompanyHolidayRow = Readonly<{ index: number; holiday: CompanyHoliday }>
+
+/** §6: 会社の休日の並び。「毎年」を先に開始の月日の早い順、そのあと「その年だけ」を開始日の早い順 */
+export function companyHolidayRows(settings: Settings): readonly CompanyHolidayRow[] {
+  return settings.companyHolidays
+    .map((holiday, index) => ({ index, holiday }))
+    .sort((a, b) => {
+      if (a.holiday.kind !== b.holiday.kind) return a.holiday.kind === 'yearly' ? -1 : 1
+      return a.holiday.start < b.holiday.start ? -1 : a.holiday.start > b.holiday.start ? 1 : a.index - b.index
+    })
 }

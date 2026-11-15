@@ -218,3 +218,18 @@ test('F-102・F-108: 所定労働時間と週の始まりを保存する。上�
   expect(saved.entries[0].amount).toEqual({ unit: 'minutes', minutes: 480 }) // 新しい所定労働時間より長くても残す
   expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
 })
+
+test('F-103: 会社の休日を足す・直す・消す', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
+  s.saveCompanyHoliday(null, { kind: 'once', start: '2026-08-13', end: '2026-08-16' })
+  s.saveCompanyHoliday(0, { kind: 'yearly', start: '12-29', end: '01-03' })
+  s.removeCompanyHoliday(1)
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).settings.companyHolidays).toEqual([{ kind: 'yearly', start: '12-29', end: '01-03' }])
+})
+test('F-103: 範囲の外の位置は何もしない', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.saveCompanyHoliday(5, { kind: 'yearly', start: '12-29', end: '01-03' })
+  s.removeCompanyHoliday(0)
+  expect(s.getState().data.settings.companyHolidays).toEqual([])
+})

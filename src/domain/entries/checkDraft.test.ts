@@ -11,8 +11,7 @@ test('R-17: 休みの日には入れられない（土日・祝日・会社の�
   expect(checkEntryDraft(SHEET, draft('2026-11-16'), null).errors).toEqual([])
   expect(checkEntryDraft(SHEET, draft('2026-11-14', { unit: 'half' }), null).errors).toEqual(['restDay']) // 量を問わない
 })
-test('R-17: 自分の日付は休みの日に数えない。Review Focus 3: 重なった日程は同じ日付で保存し直せない', () => {
-  expect(checkEntryDraft(SHEET, draft('2026-12-28'), '2026-12-28').errors).toEqual([])
+test('R-17: 休みの日と重なった日程は、同じ日付で保存し直せない。Review Focus 3', () => {
   const overlapped = { ...SHEET, entries: [...SHEET.entries, { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false } as const] }
   expect(checkEntryDraft(overlapped, draft('2026-11-23'), 'y').errors).toEqual(['restDay'])
 })

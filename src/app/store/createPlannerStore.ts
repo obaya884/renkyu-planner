@@ -1,6 +1,6 @@
 import type { EntryDraft, GrantDraft } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
-import type { WeekStart } from '@/domain/types'
+import type { CompanyHoliday, WeekStart } from '@/domain/types'
 import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVersion, parseStored, serializeStored } from '@/domain/storage/stored'
 
 export type KeyValueStore = Readonly<{
@@ -24,6 +24,10 @@ export type PlannerStore = Readonly<{
   setWorkMinutes(minutes: number): void
   /** F-108 */
   setWeekStart(weekStart: WeekStart): void
+  /** F-103。index が null なら末尾に足す。範囲の外の index は何もしない */
+  saveCompanyHoliday(index: number | null, holiday: CompanyHoliday): void
+  /** F-103 */
+  removeCompanyHoliday(index: number): void
 }>
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
@@ -105,6 +109,17 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
     },
     setWeekStart(weekStart) {
       change({ ...state.data, settings: { ...state.data.settings, weekStart } })
+    },
+    saveCompanyHoliday(index, holiday) {
+      const { settings } = state.data
+      if (index !== null && !(Number.isInteger(index) && index >= 0 && index < settings.companyHolidays.length)) return
+      const companyHolidays = index === null ? [...settings.companyHolidays, holiday] : settings.companyHolidays.map((h, i) => (i === index ? holiday : h))
+      change({ ...state.data, settings: { ...settings, companyHolidays } })
+    },
+    removeCompanyHoliday(index) {
+      const { settings } = state.data
+      if (!(Number.isInteger(index) && index >= 0 && index < settings.companyHolidays.length)) return
+      change({ ...state.data, settings: { ...settings, companyHolidays: settings.companyHolidays.filter((_, i) => i !== index) } })
     },
   }
 }

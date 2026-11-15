@@ -43,7 +43,7 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(bad({ done: 'yes' })).toBe(false)
     expect(parse({ ...ok, entries: [entry, entry] }).ok).toBe(false) // id の重複
   })
-  test('D-4: 設定の決まり。R-15 に合わない会社の休日は保存できる', () => {
+  test('D-4: 設定の決まり。R-15 に合わない会社の休日は読むときに落とす', () => {
     const bad = (patch: object) => parse({ ...ok, settings: { ...DEFAULT_SETTINGS, ...patch } }).ok
     expect(bad({ workMinutes: 0 })).toBe(false)
     expect(bad({ workMinutes: 1441 })).toBe(false)
@@ -51,8 +51,16 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(bad({ leaveTypes: [] })).toBe(false)
     expect(bad({ leaveTypes: [{ id: 'summer', name: '夏季休暇', days: 3, usable: null }] })).toBe(false)
     expect(bad({ grantYears: { '2026-05-01': { grantDays: -1, entitlementMinutes: null } } })).toBe(false)
-    expect(bad({ companyHolidays: [{ kind: 'yearly', start: '01-01', end: '12-31' }] })).toBe(true)
     expect(bad({ companyHolidays: [{ kind: 'monthly' }] })).toBe(false)
+    // 366 日の休日は R-15 に合わない。記録の全体は読めて、その休日だけが落ちる
+    expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: [{ kind: 'yearly', start: '01-01', end: '12-31' }] } })).toEqual({ ok: true, value: ok })
+  })
+  test('D-4: 会社の休日は、R-15 に合うものだけが残る', () => {
+    const good = { kind: 'yearly', start: '12-30', end: '01-03' }
+    const once = { kind: 'once', start: '2026-08-13', end: '2026-08-16' }
+    const companyHolidays = [good, { kind: 'once', start: '2026-08-13', end: '2026-08-12' }, { kind: 'yearly', start: '08-01', end: '09-01' }, once]
+    const r = parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays } })
+    expect(r.ok && r.value.settings.companyHolidays).toEqual([good, once])
   })
   test('D-4: 付与年の設定は grantDays と entitlementMinutes（null か 0 以上の整数）。古い形（carryOverMinutes）は読めない', () => {
     const grant = (g: object) => parse({ ...ok, settings: { ...DEFAULT_SETTINGS, grantDay: '05-01', grantYears: { '2026-05-01': g } } }).ok

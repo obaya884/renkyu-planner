@@ -1,3 +1,4 @@
+import { isValidCompanyHoliday } from '@/domain/calendar/companyHoliday'
 import { isValidGrantDay } from '@/domain/leave/grantYear'
 import { isValidIsoDate } from '@/domain/shared/date'
 import type { MonthDay } from '@/domain/shared/date'
@@ -138,7 +139,7 @@ function formOf(v: unknown, re: RegExp, what: string): string {
   return s
 }
 
-/** 形だけを確かめる（R-15 に合わないものも保存はできる） */
+/** 形だけを確かめる。R-15 に合うかは readSettings が確かめる */
 function readCompanyHoliday(v: unknown): CompanyHoliday {
   const o = obj(v, '会社の休日')
   if (o.kind === 'yearly') {
@@ -183,7 +184,8 @@ function readSettings(v: unknown): Settings {
     workMinutes: num(o.workMinutes, 'workMinutes', 1, 1440, true),
     grantDay,
     grantYears: readGrantYears(o.grantYears),
-    companyHolidays: arr(o.companyHolidays, 'companyHolidays').map(readCompanyHoliday),
+    // D-4: R-15 に合わない会社の休日は、記録の全体を読めなくせず、その休日だけを落とす
+    companyHolidays: arr(o.companyHolidays, 'companyHolidays').map(readCompanyHoliday).filter(isValidCompanyHoliday),
     leaveTypes,
     weekStart: readWeekStart(o.weekStart),
   }

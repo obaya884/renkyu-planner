@@ -3,6 +3,7 @@ import { planningQuarters } from '@/domain/quarters/quarters'
 import { previewAdd } from './addPreview'
 import { SHEET, UNSET } from './fixture'
 import { buildQuarterViews } from './quarterView'
+import { buildSummary } from './summary'
 
 const qs = planningQuarters('2026-11-15')
 const [q4, , q2] = buildQuarterViews(SHEET, qs)
@@ -151,4 +152,13 @@ test('F-108: 週の始まりで、月カレンダーの先頭の週が変わる'
   expect(sunday.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([1, 2, 3, 4, 5, 6, 7]) // 2026-11-01 は日曜
   const monday = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, weekStart: 'monday' } }, qs)[0]
   expect(monday.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([null, null, null, null, null, null, 1])
+})
+
+// 持ち分から引く日程は 12-28・12-29・2027-02-12・02-22・04-30 の 5 日（重なっても残る）。1 日 480 分で 5 * 480
+test('R-17: 会社の休日を足して日程と重なっても、日程は残り、重なりを示し、持ち分から引く', () => {
+  const input = { ...SHEET, settings: { ...SHEET.settings, companyHolidays: [{ kind: 'yearly', start: '12-28', end: '01-03' }] } } as const
+  const [v] = buildQuarterViews(input, qs)
+  const dec = v.entries.flatMap((b) => b.rows).filter((r) => r.entry.date.startsWith('2026-12'))
+  expect(dec.map((r) => [r.entry.date, r.overlap])).toEqual([['2026-12-28', true], ['2026-12-29', true]])
+  expect(buildSummary(input).cards[0].planned).toBe(5 * 480)
 })

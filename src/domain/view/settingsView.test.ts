@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from './fixture'
-import { buildGrantSection } from './settingsView'
+import { buildGrantSection, companyHolidayRows } from './settingsView'
 
 test('F-405・§6: 今の付与年と次の付与年の行。次は前の年の付与日数で計算', () => {
   expect(buildGrantSection(SHEET)).toEqual({
@@ -25,4 +25,14 @@ test('F-405・§6: 過ぎた付与年は、日程の日付が入るいちばん�
   // 有休でない日程は数えない
   const other = [{ ...SHEET.entries[0], id: 'o', date: '2024-06-01', leaveTypeId: 'summer' }]
   expect(buildGrantSection({ ...SHEET, entries: other })?.past).toEqual([])
+})
+
+test('§6: 会社の休日の行は、毎年を月日の順、そのあとその年だけを日付の順', () => {
+  const companyHolidays = [
+    { kind: 'once', start: '2027-08-13', end: '2027-08-16' },
+    { kind: 'yearly', start: '12-30', end: '01-03' },
+    { kind: 'once', start: '2026-08-13', end: '2026-08-14' },
+    { kind: 'yearly', start: '08-13', end: '08-16' },
+  ] as const
+  expect(companyHolidayRows({ ...SHEET.settings, companyHolidays }).map((r) => r.index)).toEqual([3, 1, 2, 0])
 })

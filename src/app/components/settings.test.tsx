@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { T } from '@/app/texts'
-import { buildGrantSection } from '@/domain/view/settingsView'
+import { buildGrantSection, companyHolidayRows } from '@/domain/view/settingsView'
 import { SHEET } from '@/domain/view/fixture'
+import { CompanyHolidaySection } from './CompanyHolidaySection'
+import { CompanyHolidaySheetBody } from './CompanyHolidaySheet'
 import { GrantSection } from './GrantSection'
 import { Header } from './Header'
 import { HolidayAbout } from './HolidayAbout'
@@ -54,4 +56,22 @@ test('F-405・§6: 過ぎた付与年は <details> に入り、押せない', ()
   const h = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)
   expect(h).toMatch(/<details>.*過ぎた付与年を見る.*2025\/5\/1〜2026\/4\/30.*付与 12日・使える日数 12 日.*<\/details>/)
   expect(h.match(/<button/g)).toHaveLength(2)
+})
+
+test('§6・§5.4: 会社の休日の行とモーダル', () => {
+  const h = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} onOpen={() => {}} onAdd={() => {}} />)
+  expect(h).toContain('12/30〜1/3　毎年')
+  expect(h).toContain(T.addCompanyHoliday)
+  const edit = html(<CompanyHolidaySheetBody holiday={{ kind: 'yearly', start: '08-01', end: '09-01' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(edit).toContain('会社の休日は 1 件 31日までです。長い休みは分けて入れてください')
+  expect(edit).toMatch(/<button[^>]*disabled[^>]*>保存する/)
+  expect(edit).toContain(T.removeCompanyHoliday)
+  const once = html(<CompanyHolidaySheetBody holiday={{ kind: 'once', start: '2026-08-13', end: '2026-08-12' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(once).toContain('終わりの日を、始まりの日と同じかそれより後にしてください')
+  expect(once).toContain('type="date"')
+  const added = html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(added).not.toContain(T.removeCompanyHoliday)
+  expect(added).toMatch(/<input[^>]*checked=""[^>]*value="yearly"/)
+  expect(added.match(/<option value="11" selected="">/g)).toHaveLength(2) // 開始・終了の月
+  expect(added.match(/<option value="15" selected="">/g)).toHaveLength(2) // 開始・終了の日
 })

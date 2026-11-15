@@ -8,19 +8,26 @@ export const MAX_COMPANY_HOLIDAY_DAYS = 31
 const LEAP_YEAR = 2000
 const PREV_YEAR = 1999
 
-function isValidMonthDay(md: string): boolean {
+/** R-15。実在する月日か（2 月 29 日も実在として扱う） */
+export function isValidMonthDay(md: string): boolean {
   return /^\d{2}-\d{2}$/.test(md) && isValidIsoDate(`${LEAP_YEAR}-${md}`)
+}
+
+/**
+ * R-15。1 件の長さ（日）。日付と月日が実在するときだけ意味を持つ。
+ * 「その年だけ」で開始が終了より後のときは 0 以下になる。「毎年」は 2 月 29 日がある年で数える
+ */
+export function companyHolidayDays(h: CompanyHoliday): number {
+  if (h.kind === 'once') return diffDays(h.start, h.end) + 1
+  return h.start <= h.end
+    ? diffDays(`${LEAP_YEAR}-${h.start}`, `${LEAP_YEAR}-${h.end}`) + 1
+    : diffDays(`${PREV_YEAR}-${h.start}`, `${LEAP_YEAR}-${h.end}`) + 1
 }
 
 /** R-15。受け付けてよい会社の休日か */
 export function isValidCompanyHoliday(h: CompanyHoliday): boolean {
   if (h.kind === 'once') {
-    return isValidIsoDate(h.start) && isValidIsoDate(h.end) && h.start <= h.end && diffDays(h.start, h.end) + 1 <= MAX_COMPANY_HOLIDAY_DAYS
+    return isValidIsoDate(h.start) && isValidIsoDate(h.end) && h.start <= h.end && companyHolidayDays(h) <= MAX_COMPANY_HOLIDAY_DAYS
   }
-  if (!isValidMonthDay(h.start) || !isValidMonthDay(h.end)) return false
-  const days =
-    h.start <= h.end
-      ? diffDays(`${LEAP_YEAR}-${h.start}`, `${LEAP_YEAR}-${h.end}`) + 1
-      : diffDays(`${PREV_YEAR}-${h.start}`, `${LEAP_YEAR}-${h.end}`) + 1
-  return days <= MAX_COMPANY_HOLIDAY_DAYS
+  return isValidMonthDay(h.start) && isValidMonthDay(h.end) && companyHolidayDays(h) <= MAX_COMPANY_HOLIDAY_DAYS
 }
