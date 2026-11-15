@@ -6,8 +6,14 @@ import type { Amount, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import { weekday } from '@/domain/shared/date'
 
-/** 画面に出す固定の文言（P-6、画面定義書 §8.1）。文言はすべて仮。計画 3 でまとめて直す */
+/** 画面に出す固定の文言（P-6、画面定義書 §8.1）。文言はすべて仮。計画 5（V-1）でまとめて直す */
 export const T = {
+  // §3.1、§6、§3.10
+  settings: '設定',
+  backToMain: '‹ 戻る',
+  holidayMore: 'くわしく',
+  aboutHolidays: '祝日について',
+  settingsPageTitle: '設定｜連休プランナー',
   // §3.2
   remaining: '残り',
   planned: '予定',
@@ -182,6 +188,11 @@ export function longBreakChip(quarterStart: IsoDate, has: boolean): string {
 /** §3.10。例: 祝日は内閣府の公表データです。2027年12月31日まで確定。 */
 export function holidayNote(confirmedUntil: IsoDate): string {
   return `祝日は内閣府の公表データです。${formatJapaneseDate(confirmedUntil)}まで確定。`
+}
+
+/** §6 の「祝日について」の文。最終更新は祝日の内容が最後に変わった日（updatedAt） */
+export function holidayAboutText(confirmedUntil: IsoDate, updatedAt: IsoDate): string {
+  return `祝日は内閣府の公表データです。${formatJapaneseDate(confirmedUntil)}まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: ${formatJapaneseDate(updatedAt)}`
 }
 
 type CandidateLike = Pick<Candidate, 'leaveDays' | 'run'>

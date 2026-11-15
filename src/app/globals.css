@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* 画面定義書 §7 のデザイントークン（仮）。役割の名前で置き、計画 3 で値を決め直す */
+/* 画面定義書 §7 のデザイントークン（仮）。役割の名前で置き、計画 5（V-2）で値を決め直す */
 @theme {
   --color-primary: #0d9488;
   --color-primary-soft: #f0fdfa;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AddSheet } from '@/app/components/AddSheet'
 import { BalanceCards } from '@/app/components/BalanceCards'
 import { EntrySheet } from '@/app/components/EntrySheet'
@@ -16,8 +16,9 @@ import { defaultDayFor } from '@/domain/view/defaultDay'
 import { APP_DESCRIPTION } from '@/app/site'
 import { T } from '@/app/texts'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
+import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
-import { type IsoDate, todayInJapan, untilNextDayInJapan } from '@/domain/shared/date'
+import type { IsoDate } from '@/domain/shared/date'
 import { type Quarter, canGoBack as canGoBackFrom, quartersBetween } from '@/domain/quarters/quarters'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
@@ -30,31 +31,6 @@ type OpenSheet =
   | { kind: 'grant'; grantYearStart: IsoDate | null }
   | null
 
-// 今日の日付。サーバーの描画とハイドレーションでは null を使い、マウントしたあとに端末の時計から取る。
-// useEffect の中で setState すると react-hooks/set-state-in-effect に当たるので、useSyncExternalStore で読む。
-// 見える状態に戻ったときと、次の日本時間 0 時に知らせる。値は文字列なので、同じ日なら描き直さない
-const subscribeToday = (notify: () => void) => {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const schedule = () => {
-    // 0 時ちょうどより少し遅らせ、知らせたときに新しい日付が読めるようにする
-    timer = setTimeout(() => {
-      notify()
-      schedule()
-    }, untilNextDayInJapan(new Date()) + 1000)
-  }
-  const onVisibility = () => {
-    if (document.visibilityState === 'visible') notify()
-  }
-  schedule()
-  document.addEventListener('visibilitychange', onVisibility)
-  return () => {
-    clearTimeout(timer)
-    document.removeEventListener('visibilitychange', onVisibility)
-  }
-}
-const todayOnClient = () => todayInJapan(new Date())
-const todayOnServer = () => null
-
 /**
  * 主な画面（画面定義書 §2・§3）。記録を読み終えるまでは、サーバーが作った静的な一覧（children）を
  * 見えない状態で描き、読み終えたら端末で組み立てた画面に差し替える。
@@ -62,7 +38,7 @@ const todayOnServer = () => null
  */
 export function Planner({ holidays, children }: { holidays: HolidayData; children: React.ReactNode }) {
   const { ready, data, canSave, unreadable } = usePlanner()
-  const today: IsoDate | null = useSyncExternalStore(subscribeToday, todayOnClient, todayOnServer)
+  const today = useToday()
   // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
   const [shift, setShift] = useState(0)
   const [selected, setSelected] = useState<IsoDate | null>(null)

@@ -1,10 +1,18 @@
+import Link from 'next/link'
 import { T, describeCandidate, holidayNote, quarterHeading } from '@/app/texts'
 import { type CandidateGroup, bestCandidate } from '@/domain/candidates/groupCandidates'
 import type { IsoDate } from '@/domain/shared/date'
 
-/** §3.10。最初の HTML と、端末で描く画面の両方のいちばん下に置く */
+/** §3.10。文のあとに設定画面の「祝日について」への「くわしく」。最初の HTML と、端末で描く画面の両方のいちばん下に置く */
 export function HolidayNote({ confirmedUntil }: { confirmedUntil: IsoDate }) {
-  return <p className="text-sm text-sub">{holidayNote(confirmedUntil)}</p>
+  return (
+    <p className="text-sm text-sub">
+      {holidayNote(confirmedUntil)}
+      <Link href="/settings#holidays" className="ml-1 inline-flex min-h-11 items-center text-primary">
+        {T.holidayMore}
+      </Link>
+    </p>
+  )
 }
 
 /** N-04。最初の HTML に入れる、四半期ごとの見出しと、組ごとに最良の候補 1 件、祝日の 1 行 */

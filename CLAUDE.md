@@ -55,7 +55,8 @@ src/domain/   計算の純関数。I/O・引数なしの new Date()・Date.now()
 src/data/     同梱する祝日データ（holidays.json）
 src/app/      Next.js の画面。site.ts にサービス名・題・説明文を持つ
   Planner.tsx 端末で動く主な画面
-  store/      記録のストア。localStorage に触るのはここだけ
+  settings/   設定画面（`/settings`）。page.tsx は静的、SettingsScreen.tsx は端末で動く
+  store/      記録のストア。localStorage に触るのはここだけ。useToday.ts は今日の日付を読むフック
   components/ 表示だけの部品。計算をしない
   texts.ts    画面の文言は全部ここ
 scripts/      祝日の取り込み
