@@ -29,9 +29,10 @@ test('D-7: 日程を足す・直す・消すたびに全体を書く', () => {
     ['id-1', '2026-12-28'],
     ['id-2', '2026-12-29'],
   ])
-  s.updateEntry('id-1', { ...draft('2026-12-28') })
+  s.updateEntry('id-1', { ...draft('2026-12-28'), title: '直した名前', amount: { unit: 'half' } })
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries[0]).toEqual({ id: 'id-1', ...draft('2026-12-28'), title: '直した名前', amount: { unit: 'half' } })
   s.removeEntry('id-2')
-  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries).toEqual([{ id: 'id-1', ...draft('2026-12-28') }])
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries).toEqual([{ id: 'id-1', ...draft('2026-12-28'), title: '直した名前', amount: { unit: 'half' } }])
 })
 test('D-3: 保存された記録を読む', () => {
   const m = memory()

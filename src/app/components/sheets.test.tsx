@@ -37,13 +37,13 @@ test('F-211・F-106: 足りないときは不足と出す。付与日が未設�
 })
 test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
-  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('12/28(月) の日程')
   expect(h).toContain('年末年始')
   expect(h).not.toContain('連休') // §5.2: 連休はモーダルに出さない（一覧の行に出る。F-304）
   expect(h).toContain(T.remove)
   expect(h).not.toContain('type="date"')
-  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(add).toContain(T.addDayTitle)
   expect(add).toContain('type="date"')
   expect(add).toContain('value="2026-11-16"')
@@ -56,16 +56,16 @@ test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル',
   }
 })
 test('R-19: 日を足すモーダルの日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
-  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(add).toContain('max="2027-09-30"')
   expect(add).not.toContain('まだ入れられません')
-  const far = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2027-10-01" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const far = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2027-10-01" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(far).toContain('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
   expect(far).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
 })
 test('R-17・Review Focus 3: 休みの日と重なった日程を開くと、理由を出し、保存できない', () => {
   const y = { id: 'y', date: '2026-11-23', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
-  const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, y] }} entry={y} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, y] }} entry={y} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('この日は休みの日です。休みの日には入れられません')
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
   expect(h).toContain(T.remove)
@@ -136,8 +136,8 @@ test('§5・P-1: 3 つのモーダルの題は、開いたときに焦点を受�
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   const bodies = [
     <AddSheetBody key="add" input={SHEET} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />,
-    <EntrySheetBody key="entry" input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />,
-    <EntrySheetBody key="new" input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />,
+    <EntrySheetBody key="entry" input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />,
+    <EntrySheetBody key="new" input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />,
     <GrantSheetBody key="grant" input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />,
   ]
   for (const body of bodies) {
@@ -174,7 +174,7 @@ test('R-13・§5.1: 引く休暇の付与される日が 01-01 で、休む日�
 })
 test('F-104: 日程の種類が設定に無いときは、休暇の種類が有休だけでも理由を出す', () => {
   const entry = { id: 'x', date: '2026-12-28', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '' } as const
-  const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, entry] }} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, entry] }} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain(errorText('unknownLeaveType'))
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
 })
@@ -202,7 +202,7 @@ test('F-212・§3.7・§5.1: まとめて取る休暇の候補から開くと、
   expect(plain).toContain('<option value="paid" selected="">有休（残り 9 日と 2 時間）</option>') // 4440 分
 })
 test('F-307・§5.2: 日を足すモーダルの「期間で足す」。初めは外れていて終わりの日が無い。直すときはチェックも無い', () => {
-  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(add).toContain(T.rangeToggleLabel)
   expect(add).toMatch(/<label[^>]*min-h-11[^>]*><input type="checkbox"[^>]*h-5 w-5 accent-primary[^>]*\/>期間で足す<\/label>/)
   expect(add).not.toMatch(/type="checkbox"[^>]*checked=""/)
@@ -210,7 +210,7 @@ test('F-307・§5.2: 日を足すモーダルの「期間で足す」。初め�
   expect(add.match(/type="date"/g)).toHaveLength(1)
   expect(add).toContain(T.amountLabel) // 外れているあいだは量の欄がある
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
-  const edit = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const edit = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(edit).not.toContain(T.rangeToggleLabel)
   expect(edit).not.toContain('type="checkbox"')
   expect(edit).not.toContain(T.endDateLabel)
@@ -256,7 +256,7 @@ test('§5.1: 未割り当ての行は 1 つの部品で描く。1 行なら「�
 
 const MANY = Array.from({ length: 5000 }, (_, i) => ({ id: `e${i}`, date: '2026-05-15', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' }) as const)
 test('D-10: 名前の欄は 100 文字まで。日程が上限のときは理由を出して保存できない', () => {
-  const h = html(<EntrySheetBody input={{ ...SHEET, entries: MANY }} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={{ ...SHEET, entries: MANY }} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('maxLength="100"')
   expect(h).toContain('日程は 5,000件までです。古い日程を消してから足してください')
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
@@ -271,20 +271,20 @@ test('D-10: M-1 も、予定の名前は 100 文字まで。日程が上限の�
 test('F-506・§5.2: 直すときは、これからの予定にだけ「Google カレンダーに追加」を出し、別のタブで開く', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=%E5%B9%B4%E6%9C%AB%E5%B9%B4%E5%A7%8B&dates=20261228/20261229'
-  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={url} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={url} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=%E5%B9%B4%E6%9C%AB%E5%B9%B4%E5%A7%8B&amp;dates=20261228/20261229"')
   expect(h).toContain('target="_blank"')
   expect(h).toContain('rel="noopener noreferrer"')
   expect(h).toContain(T.addToGoogleCalendar)
   const past = SHEET.entries.find((e) => e.date === '2026-11-02')! // 取得済み
-  expect(html(<EntrySheetBody input={SHEET} entry={past} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
+  expect(html(<EntrySheetBody input={SHEET} entry={past} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
 })
 
 const tagsOf = (h: string, re: RegExp) => h.match(re) ?? []
 const classesOf = (tag: string) => (tag.match(/class="([^"]*)"/)?.[1] ?? '').split(' ')
 test('画面定義書 §5: ボタンの並びは、中身が収まらないときもモーダルの下端に残る（sticky）。左に置くボタンも同じ並びに入る', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
-  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const row = h.match(/<div class="([^"]*sticky[^"]*)"><div><button[^>]*>([^<]*)</)
   expect(row).not.toBeNull()
   expect(row![1]).toContain('bottom-0')
@@ -292,7 +292,7 @@ test('画面定義書 §5: ボタンの並びは、中身が収まらないと�
   expect(row![2]).toBe(T.remove)
 })
 test('画面定義書 §5・§7: 日付の欄は幅に収まり（min-w-0・appearance-none）、高さ 44px 以上。選択の欄は高さを 44px に決める', () => {
-  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   const dates = tagsOf(h, /<input type="date"[^>]*>/g)
   expect(dates).toHaveLength(1) // 終わりの日は「期間で足す」を入れるまで出ない
   for (const d of dates) for (const c of ['appearance-none', 'min-w-0', 'min-h-11']) expect(classesOf(d)).toContain(c)
@@ -303,7 +303,7 @@ test('画面定義書 §5・§7: 日付の欄は幅に収まり（min-w-0・appe
 })
 test('画面定義書 §7: 短い数の欄は決めた幅で出し、w-full を付けない（単位の文字が折れないように）', () => {
   const minutesEntry = SHEET.entries.find((e) => e.amount.unit === 'minutes')!
-  const entry = html(<EntrySheetBody input={SHEET} entry={minutesEntry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const entry = html(<EntrySheetBody input={SHEET} entry={minutesEntry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const grant = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
   const numbers = [...tagsOf(entry, /<input type="number"[^>]*>/g), ...tagsOf(grant, /<input type="number"[^>]*>/g)]
   expect(numbers).toHaveLength(5) // 時間・分、1 年に付与される日数、この年に使える日数の日・時間
@@ -331,7 +331,7 @@ test('画面定義書 §5: 付与日の月・日の選択は w-20 で出し、w-
   }
 })
 test('画面定義書 §5: 日付の欄は右端にカレンダーの印を重ねる。印は読み上げない（aria-hidden）', () => {
-  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
   const fields = h.match(/<span class="[^"]*date-field[^"]*"><input type="date"[^>]*>(<svg[^>]*>)/g) ?? []
   expect(fields).toHaveLength(1)
   for (const f of fields) {
@@ -358,7 +358,7 @@ test('F-506・§5.1: 最後の日が今日より前なら、リンクは消さ�
   expect(tag).not.toContain('tabindex')
 })
 test('F-506・§5.2: 日を足すモーダルにもリンクを出す。保存できない状態のときは押せない見た目', () => {
-  const add = (date: string) => html(<EntrySheetBody input={SHEET} entry={null} defaultDate={date} calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const add = (date: string) => html(<EntrySheetBody input={SHEET} entry={null} defaultDate={date} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const ok = linkTag(add('2026-11-20'))!
   expect(ok).toContain(`href="${CAL}?action=TEMPLATE`)
   expect(ok).toContain('dates=20261120/20261121')
@@ -369,7 +369,7 @@ test('F-506・§5.2: 日を足すモーダルにもリンクを出す。保存�
   expect(rest).not.toContain('tabindex')
   expect(linkTag(add('2026-11-13'))).toContain('aria-disabled="true"') // 最後の日が今日より前
 })
-test('F-506・§5.2: 直すときの条件は変わらない（calendarUrl が null なら行を出さない）', () => {
+test('F-506・§5.2: 直すときの条件は変わらない（editCalendarUrl が null なら行を出さない）', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-11-02')!
-  expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
+  expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" editCalendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
 })

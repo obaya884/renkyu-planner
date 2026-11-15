@@ -5,7 +5,7 @@ import { CalendarLinkRow } from '@/app/components/CalendarLinkRow'
 import { DateField } from '@/app/components/DateField'
 import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
-import { addCalendarUrlOf } from '@/app/transfer/calendarEvents'
+import { entrySheetAddUrlOf } from '@/app/transfer/calendarEvents'
 import { T, entrySheetTitle, errorText, rangeDaysText } from '@/app/texts'
 import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
@@ -21,8 +21,11 @@ type Props = {
   input: PlannerInput
   entry: Entry | null
   defaultDate: IsoDate
-  /** F-506: 直すときの「Google カレンダーに追加」の行き先。出さないときは null（取得済み、過ぎた日程）。足すときは入力中の内容から部品の中で作るので使わない */
-  calendarUrl: string | null
+  /**
+   * F-506: 直すときだけ渡す「Google カレンダーに追加」の行き先。null なら行を出さない（過ぎた日程）。
+   * 足すときは渡さない（行はいつも出し、行き先は入力中の内容から作る。押せないときは押せない見た目）
+   */
+  editCalendarUrl?: string | null
   /** 1 件を足す・直すときは [draft]、期間で足すときは足す日ごとの 1 日の日程（F-307） */
   onSubmit: (drafts: readonly EntryDraft[]) => void
   onRemove: () => void
@@ -78,7 +81,7 @@ export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview
 }
 
 /** §5.2 の中身。入力欄の値だけを状態に持つ。検証は checkEntryDraft を呼ぶだけ。連休は出さない（一覧の行に出る。F-304） */
-export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmit, onRemove, onClose }: Props) {
+export function EntrySheetBody({ input, entry, defaultDate, editCalendarUrl = null, onSubmit, onRemove, onClose }: Props) {
   const { leaveTypes } = input.settings
   const adding = entry === null
   const [date, setDate] = useState(entry?.date ?? defaultDate)
@@ -108,10 +111,8 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
   const typeErrors = saveErrors.filter((e) => e === 'unknownLeaveType')
   const limitErrors = saveErrors.filter((e) => e === 'tooManyEntries')
 
-  // F-506・§5.2: 足すときは入力中の内容から作る。保存できない状態のときと、最後の日が今日より前のときは null（押せない見た目）
-  const addUrl = canSave
-    ? addCalendarUrlOf(range?.days ?? [date], { leaveTypeId, amount: ranged ? { unit: 'day' } : amount, title }, input.settings, input.today)
-    : null
+  // F-506・§5.2: 足すときの行き先。判定は entrySheetAddUrlOf
+  const addUrl = entrySheetAddUrlOf({ canSave, rangeDays: range?.days ?? null, date, entry: { leaveTypeId, amount, title }, settings: input.settings, today: input.today })
 
   return (
     <>
@@ -212,7 +213,7 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
           <input type="text" maxLength={STORAGE_LIMITS.textLength} value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
         <ErrorLines errors={limitErrors} lastAddable={lastAddable} />
-        {(adding || calendarUrl !== null) && <CalendarLinkRow url={adding ? addUrl : calendarUrl} />}
+        {adding ? <CalendarLinkRow url={addUrl} /> : editCalendarUrl !== null && <CalendarLinkRow url={editCalendarUrl} />}
       </div>
       <SheetButtons
         left={

@@ -54,7 +54,8 @@ test('§5.2・壊れた文字: 名前や休暇の種類の名前に対になっ�
   const url2 = calendarUrlOf({ ...e, title: '', leaveTypeId: 'paid', amount: { unit: 'day' } }, broken, '2026-11-15')!
   expect(new URL(url2).searchParams.get('text')).toBe('a\ufffd')
 })
-import { addCalendarUrlOf } from './calendarEvents'
+import { previewRange } from '@/domain/view/rangePreview'
+import { addCalendarUrlOf, entrySheetAddUrlOf } from './calendarEvents'
 
 const day = { leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
 const datesOf = (url: string | null) => new URL(url!).searchParams.get('dates')
@@ -88,4 +89,36 @@ test('F-506・§6: 題は既存の決まり。名前が無ければ休暇の種�
 test('N-05・悪意のある題: 行き先のホストとパスは変わらない', () => {
   const u = new URL(addCalendarUrlOf(['2026-11-20'], { ...day, title: '//evil.example?a=b&c#d' }, SHEET.settings, '2026-11-16')!)
   expect([u.origin, u.pathname, u.hash, [...u.searchParams.keys()].join()]).toEqual(['https://calendar.google.com', '/calendar/render', '', 'action,text,dates'])
+})
+
+// §5.2・F-506: 日を足すモーダルのリンクの行き先。期間のとき（rangeDays が配列）は足す日の最初と最後を帯にし、量は 1 日にする
+const entrySheetInput = (input: Partial<Parameters<typeof entrySheetAddUrlOf>[0]> = {}) => ({
+  canSave: true,
+  rangeDays: null,
+  date: '2026-11-20',
+  entry: day,
+  settings: SHEET.settings,
+  today: '2026-11-16',
+  ...input,
+})
+test('F-506・§5.2: 期間の端が休みの日でも、帯は足す日の最初と最後（12/26 土〜1/4 月 → 12/28〜1/4）', () => {
+  const input = { ...SHEET, today: '2026-11-16' }
+  const preview = previewRange(input, '2026-12-26', '2027-01-04', 'paid')
+  expect(preview.days).toEqual(['2026-12-28', '2026-12-29', '2027-01-04'])
+  const url = entrySheetAddUrlOf(entrySheetInput({ rangeDays: preview.days, date: '2026-12-26', entry: { ...day, amount: { unit: 'half' } } }))
+  expect(datesOf(url)).toBe('20261228/20270105')
+  expect(new URL(url!).searchParams.get('text')).toBe('有休') // 期間のときは量を 1 日にする（半日の添えがない）
+})
+test('F-506・§5.2: 保存できないあいだは null（期間でも期間でなくても）', () => {
+  expect(entrySheetAddUrlOf(entrySheetInput({ canSave: false, rangeDays: ['2026-11-20'] }))).toBeNull()
+  expect(entrySheetAddUrlOf(entrySheetInput({ canSave: false }))).toBeNull()
+})
+test('F-506・§6: 期間でない半日は、題に「（半日）」を添える', () => {
+  const url = entrySheetAddUrlOf(entrySheetInput({ entry: { ...day, amount: { unit: 'half' } } }))
+  expect(new URL(url!).searchParams.get('text')).toBe('有休（半日）')
+  expect(datesOf(url)).toBe('20261120/20261121')
+})
+test('F-506・§5.2: 過ぎた日は null、今日ちょうどは押せる', () => {
+  expect(entrySheetAddUrlOf(entrySheetInput({ date: '2026-11-15' }))).toBeNull()
+  expect(datesOf(entrySheetAddUrlOf(entrySheetInput({ date: '2026-11-16' })))).toBe('20261116/20261117')
 })

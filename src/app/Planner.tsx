@@ -186,7 +186,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           input={input}
           entry={openedEntry ?? null}
           defaultDate={sheet.defaultDate}
-          calendarUrl={calendarUrlOf(openedEntry, settings, today)}
+          editCalendarUrl={openedEntry ? calendarUrlOf(openedEntry, settings, today) : undefined}
           onSubmit={(drafts) => {
             if (openedEntry) plannerStore.updateEntry(openedEntry.id, drafts[0])
             else plannerStore.addEntries(drafts)

@@ -40,3 +40,23 @@ export function addCalendarUrlOf(
   const { summary } = calendarEventOf({ ...entry, id: '', date: first, title: clipText(entry.title) }, settings)
   return googleCalendarUrl({ date: first, lastDate: last, summary })
 }
+
+/**
+ * F-506・画面定義書 §5.2: 日を足すモーダルの「Google カレンダーに追加」の行き先。入力中の値だけで決める。
+ * 保存できないあいだは null（押せない見た目）。rangeDays は期間で足すときの足す日（休みの日を除いた日）で、期間でなければ null。
+ * 期間のときは足す日の最初から最後までを帯にし、量は 1 日にする（保存する日程と同じ。planEntrySave）。
+ * 期間でないときは入力中の日付と量をそのまま使う。最後の日が今日より前なら null（addCalendarUrlOf）
+ */
+export function entrySheetAddUrlOf(input: Readonly<{
+  canSave: boolean
+  rangeDays: readonly IsoDate[] | null
+  date: IsoDate
+  entry: Readonly<{ leaveTypeId: string; amount: Amount; title: string }>
+  settings: Settings
+  today: IsoDate
+}>): string | null {
+  const { canSave, rangeDays, date, entry, settings, today } = input
+  if (!canSave) return null
+  const amount: Amount = rangeDays === null ? entry.amount : { unit: 'day' }
+  return addCalendarUrlOf(rangeDays ?? [date], { ...entry, amount }, settings, today)
+}
