@@ -43,10 +43,12 @@ export function SettingsSections(p: Props) {
       </section>
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.companyHolidaySection}</h2>
+        <p className="text-sm text-sub">{T.companyHolidayHint}</p>
         <CompanyHolidaySection rows={p.companyHolidayRows} onOpen={p.onOpenCompanyHoliday} onAdd={p.onAddCompanyHoliday} />
       </section>
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.leaveTypeSection}</h2>
+        <p className="text-sm text-sub">{T.leaveTypeHint}</p>
         <LeaveTypeSection rows={p.leaveTypeRows} onOpen={p.onOpenLeaveType} onAdd={p.onAddLeaveType} />
       </section>
     </>

@@ -54,6 +54,9 @@ test('§6: 設定画面の節は、有休、1 日の所定労働時間、カレ�
   )
   const headings = [...h.matchAll(/<h2[^>]*>([^<]*)<\/h2>/g)].map((m) => m[1])
   expect(headings).toEqual([T.paidSection, T.workMinutesLabel, T.calendarLabel, T.companyHolidaySection, T.leaveTypeSection])
+  // §6: 会社の休日と休暇の種類は、見出しのすぐ下に説明を 1 行出す
+  expect(h).toMatch(/<h2[^>]*>会社の休日<\/h2><p[^>]*>会社が決めた、全員が休む日。年末年始の休業など<\/p>/)
+  expect(h).toMatch(/<h2[^>]*>休暇の種類<\/h2><p[^>]*>日数が決まっていて、休む日を自分で選ぶ休暇。夏季休暇など<\/p>/)
 })
 test('F-102: 所定労働時間の行は時間と分の欄', () => {
   const h = html(<WorkMinutesRow workMinutes={465} onChange={() => {}} />)
