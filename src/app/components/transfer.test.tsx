@@ -8,7 +8,7 @@ import { TransferSection } from './TransferSection'
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 const section = (p: Partial<React.ComponentProps<typeof TransferSection>> = {}) =>
-  html(<TransferSection note={null} canRestore={false} onExport={noop} onPickFile={noop} onRestore={noop} onExportIcs={noop} onClear={noop} {...p} />)
+  html(<TransferSection note={null} canRestore={false} onExport={noop} onStartImport={noop} onPickFile={noop} onRestore={noop} onExportIcs={noop} onClear={noop} {...p} />)
 
 test('F-505・F-506・§6: 記録の持ち出しの節。4 つのボタンと、保存先の説明', () => {
   const h = section()
@@ -49,4 +49,7 @@ test('§5.7: 記録をすべて消すモーダル', () => {
   expect(h.indexOf(`>${T.cancel}<`)).toBeLessThan(h.indexOf(`>${T.clearSubmit}<`))
   expect(h.indexOf(`>${T.clearSubmit}<`)).toBeGreaterThan(0)
   expect(transferNoteText('cleared')).toBe('記録を消しました')
+})
+test('§6: 文の無い 1 行（あとのタスクで文を足す種類）は、空の段落を描かない', () => {
+  expect(section({ note: 'noCalendarEntries' })).toBe(section())
 })

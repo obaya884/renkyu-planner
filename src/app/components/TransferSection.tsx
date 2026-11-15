@@ -8,6 +8,8 @@ type Props = {
   note: TransferNote | null
   canRestore: boolean
   onExport: () => void
+  /** 「ファイルを読み込む」を押したとき。ファイルを選ばせる前に呼ぶ */
+  onStartImport: () => void
   onPickFile: (file: File) => void
   onRestore: () => void
   onExportIcs: () => void
@@ -17,8 +19,10 @@ type Props = {
 const BUTTON_CLASS = `${SECONDARY_BUTTON_CLASS} w-full text-left`
 
 /** §6 の記録の持ち出しの節。状態は持たず、選んだファイルを onPickFile に渡すだけ */
-export function TransferSection({ note, canRestore, onExport, onPickFile, onRestore, onExportIcs, onClear }: Props) {
+export function TransferSection({ note, canRestore, onExport, onStartImport, onPickFile, onRestore, onExportIcs, onClear }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
+  // 文をまだ持たない種類（あとのタスクで足す）は、空の段落を描かない
+  const noteText = note === null ? '' : transferNoteText(note)
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-bold text-sub">{T.transferSection}</h2>
@@ -26,7 +30,10 @@ export function TransferSection({ note, canRestore, onExport, onPickFile, onRest
         <button type="button" onClick={onExport} className={BUTTON_CLASS}>
           {T.exportFile}
         </button>
-        <button type="button" onClick={() => fileInput.current?.click()} className={BUTTON_CLASS}>
+        <button type="button" onClick={() => {
+            onStartImport()
+            fileInput.current?.click()
+          }} className={BUTTON_CLASS}>
           {T.importFile}
         </button>
         <input
@@ -48,13 +55,13 @@ export function TransferSection({ note, canRestore, onExport, onPickFile, onRest
           {T.clearAll}
         </button>
       </div>
-      {note !== null &&
+      {noteText !== '' &&
         (note === 'unreadableFile' ? (
           <p role="alert" className="text-sm text-danger">
-            {transferNoteText(note)}
+            {noteText}
           </p>
         ) : (
-          <p className="text-sm">{transferNoteText(note)}</p>
+          <p className="text-sm">{noteText}</p>
         ))}
       {canRestore && (
         <button type="button" onClick={onRestore} className={SECONDARY_BUTTON_CLASS}>

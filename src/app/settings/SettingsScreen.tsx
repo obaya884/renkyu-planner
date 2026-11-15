@@ -11,12 +11,22 @@ import { SettingsSections } from '@/app/components/SettingsSections'
 import { TransferSection } from '@/app/components/TransferSection'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import { useToday } from '@/app/store/useToday'
-import type { TransferNote } from '@/app/texts'
 import { downloadText, readFileText } from '@/app/transfer/download'
+import {
+  TRANSFER_IDLE,
+  type TransferState,
+  afterClear,
+  afterImport,
+  afterRestore,
+  afterUnreadable,
+  canRestore,
+  readPickedFile,
+  withCurrentData,
+} from '@/app/transfer/transferState'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
-import { type StoredData, parseStored, serializeStored } from '@/domain/storage/stored'
+import { type StoredData, serializeStored } from '@/domain/storage/stored'
 import { recordFileName } from '@/domain/transfer/fileName'
 import { importCounts } from '@/domain/transfer/importCounts'
 import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
@@ -31,9 +41,6 @@ type SettingsSheet =
   | { kind: 'import'; data: StoredData }
   | { kind: 'clear' }
 
-/** 読み込む前に戻すための記録（D-12）。after は置き換えたあとの記録の serializeStored で、記録がこれと違えば戻せない */
-type Undo = { before: StoredData; after: string }
-
 /**
  * 設定画面（画面定義書 §6）。記録を読み終え、今日がそろうまでは何も描かない。
  * 「祝日について」（サーバーで描く）は page.tsx がこの部品の下に置く
@@ -42,8 +49,11 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   const { ready, canSave, unreadable, data } = usePlanner()
   const today = useToday()
   const [sheet, setSheet] = useState<SettingsSheet>(null)
-  const [note, setNote] = useState<TransferNote | null>(null)
-  const [undo, setUndo] = useState<Undo | null>(null)
+  const [transfer, setTransfer] = useState<TransferState>(TRANSFER_IDLE)
+  // 入力欄（所定労働時間など）は props を初期値にだけ使う。記録が外から変わったら、この番号を増やして作り直す（§6）
+  const [fieldsKey, setFieldsKey] = useState(0)
+  // 所定労働時間の欄が出している値。欄が自分で変えた値と違う値が記録に入ったら（D-8 の読み直しなど）、欄を作り直す
+  const [fieldWorkMinutes, setFieldWorkMinutes] = useState<number | null>(null)
   const shown = ready && today !== null
 
   // 記録を読み終えると上の節の高さが増える。#holidays で開いたときは、描き終えたあとに 1 回だけ動かす
@@ -55,28 +65,29 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   }, [shown])
 
   if (!shown) return null
+  // §6: 記録が置き換えたあとの中身から変わったら、戻すための記録を捨てる（描画の途中で状態を合わせる）
+  const synced = withCurrentData(transfer, data)
+  if (synced !== transfer) setTransfer(synced)
+  if (fieldWorkMinutes !== data.settings.workMinutes) {
+    if (fieldWorkMinutes !== null) setFieldsKey((k) => k + 1)
+    setFieldWorkMinutes(data.settings.workMinutes)
+  }
+  const rebuildFields = () => setFieldsKey((k) => k + 1)
   const input = { holidays, settings: data.settings, entries: data.entries, today }
   const leaveRows = leaveTypeRows(input)
   const grantView = buildGrantSection(input)
-  // §6: ほかの変更（ほかのタブの書き込みを D-8 で読み直したときを含む）で記録が変わると、戻せなくなる
-  const canRestore = undo !== null && serializeStored(data) === undo.after
-  // 節のボタンを押したら、まず節の 1 行と、戻すための記録を消す（「読み込む前に戻す」を除く）
-  const resetTransfer = () => {
-    setNote(null)
-    setUndo(null)
-  }
+  // §6: 節のボタンを押したら、まず節の 1 行と、戻すための記録を消す（「読み込む前に戻す」を除く）
+  const resetTransfer = () => setTransfer(TRANSFER_IDLE)
   const pickFile = async (file: File) => {
-    // 読めないファイルなら記録も戻すための記録も変えない（D-12）
-    setNote(null)
-    const text = await readFileText(file)
-    const parsed = text === null ? null : parseStored(text)
-    if (parsed === null || !parsed.ok) return setNote('unreadableFile')
-    setSheet({ kind: 'import', data: parsed.value })
+    const picked = readPickedFile(await readFileText(file))
+    if (picked.kind === 'unreadable') return setTransfer(afterUnreadable())
+    setSheet({ kind: 'import', data: picked.data })
   }
   return (
     <div className="space-y-6">
       <Notices canSave={canSave} unreadable={unreadable} />
       <SettingsSections
+        key={fieldsKey}
         grantView={grantView}
         workMinutes={data.settings.workMinutes}
         weekStart={data.settings.weekStart}
@@ -87,7 +98,11 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         onOpenGrant={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
         onFirstGrant={() => setSheet({ kind: 'grant', grantYearStart: null })}
         onChangeGrantDay={() => setSheet({ kind: 'grantDay' })}
-        onChangeWorkMinutes={plannerStore.setWorkMinutes}
+        onChangeWorkMinutes={(minutes) => {
+          // 欄が自分で変えた値なので、作り直さない
+          setFieldWorkMinutes(minutes)
+          plannerStore.setWorkMinutes(minutes)
+        }}
         onChangeWeekStart={plannerStore.setWeekStart}
         onOpenCompanyHoliday={(index) => setSheet({ kind: 'companyHoliday', index })}
         onAddCompanyHoliday={() => setSheet({ kind: 'companyHoliday', index: null })}
@@ -95,18 +110,19 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         onAddLeaveType={() => setSheet({ kind: 'leaveType', id: null })}
       />
       <TransferSection
-        note={note}
-        canRestore={canRestore}
+        note={transfer.note}
+        canRestore={canRestore(transfer)}
         onExport={() => {
           resetTransfer()
           downloadText(recordFileName(today), serializeStored(data), 'application/json')
         }}
+        onStartImport={resetTransfer}
         onPickFile={(file) => void pickFile(file)}
         onRestore={() => {
-          if (undo === null) return
-          plannerStore.replaceAll(undo.before)
-          setUndo(null)
-          setNote('restored')
+          if (transfer.undo === null) return
+          plannerStore.replaceAll(transfer.undo.before)
+          setTransfer(afterRestore())
+          rebuildFields()
         }}
         onExportIcs={resetTransfer}
         onClear={() => {
@@ -118,10 +134,9 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         <ClearSheet
           onSubmit={() => {
             plannerStore.clearAll()
-            // 消したあとに戻せると、消した意味が無くなる
-            setUndo(null)
             setSheet(null)
-            setNote('cleared')
+            setTransfer(afterClear())
+            rebuildFields()
           }}
           onClose={() => setSheet(null)}
         />
@@ -130,10 +145,11 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         <ImportSheet
           counts={importCounts(sheet.data)}
           onSubmit={() => {
-            setUndo({ before: data, after: serializeStored(sheet.data) })
             plannerStore.replaceAll(sheet.data)
+            // 戻せるかは、ストアが持った値と比べる
+            setTransfer(afterImport(data, plannerStore.getState().data))
             setSheet(null)
-            setNote('imported')
+            rebuildFields()
           }}
           onClose={() => setSheet(null)}
         />
