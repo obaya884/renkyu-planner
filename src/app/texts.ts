@@ -13,6 +13,7 @@ export const T = {
   // §3.1、§6、§3.10
   settings: '設定',
   backToMain: '‹ 戻る',
+  rowChevron: '›',
   holidayMore: 'くわしく',
   aboutHolidays: '祝日について',
   settingsPageTitle: '設定｜連休プランナー',

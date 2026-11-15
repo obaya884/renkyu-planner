@@ -1,8 +1,8 @@
+import { ROW_CLASS, TapRow } from '@/app/components/SettingsRow'
 import { T, grantDayText, grantYearPeriod, grantYearRowText } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
 import type { GrantSectionView, GrantYearRow } from '@/domain/view/settingsView'
 
-const ROW_CLASS = 'flex min-h-11 w-full flex-wrap items-center gap-x-3 py-2 text-left'
 
 function RowBody({ row, isNext, workMinutes }: { row: GrantYearRow; isNext: boolean; workMinutes: number }) {
   return (
@@ -30,23 +30,23 @@ export function GrantSection({
   if (view === null) {
     return (
       <div className="space-y-1">
-        <button type="button" onClick={onFirst} className={ROW_CLASS}>
+        <TapRow onClick={onFirst}>
           <span>{T.grantDayRowLabel}</span>
           <span className="text-sub">{T.grantDayUnset}</span>
-        </button>
+        </TapRow>
       </div>
     )
   }
   return (
     <div className="space-y-1">
-      <button type="button" onClick={onChangeDay} className={ROW_CLASS}>
+      <TapRow onClick={onChangeDay}>
         <span>{T.grantDayRowLabel}</span>
         <span>{grantDayText(view.grantDay)}</span>
-      </button>
+      </TapRow>
       {[view.current, view.next].map((row, i) => (
-        <button key={row.start} type="button" onClick={() => onOpen(row.start)} className={ROW_CLASS}>
+        <TapRow key={row.start} onClick={() => onOpen(row.start)}>
           <RowBody row={row} isNext={i === 1} workMinutes={workMinutes} />
-        </button>
+        </TapRow>
       ))}
       {view.past.length > 0 && (
         <details>

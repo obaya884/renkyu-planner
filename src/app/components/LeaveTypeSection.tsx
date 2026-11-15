@@ -1,7 +1,7 @@
+import { ROW_CLASS, TapRow } from '@/app/components/SettingsRow'
 import { T, leaveTypeRowText } from '@/app/texts'
 import type { LeaveTypeRow } from '@/domain/view/settingsView'
 
-const ROW_CLASS = 'flex min-h-11 w-full items-center py-2 text-left'
 
 /** §6 の休暇の種類の節。並びは domain/view の組み立てのまま描く。有休の行は押せない（§5.5） */
 export function LeaveTypeSection({
@@ -21,9 +21,9 @@ export function LeaveTypeSection({
             {r.type.name}　{T.cannotRemovePaid}
           </div>
         ) : (
-          <button key={r.type.id} type="button" onClick={() => onOpen(r.type.id)} className={ROW_CLASS}>
-            {leaveTypeRowText(r.type)}
-          </button>
+          <TapRow key={r.type.id} onClick={() => onOpen(r.type.id)}>
+            <span>{leaveTypeRowText(r.type)}</span>
+          </TapRow>
         ),
       )}
       <button type="button" onClick={onAdd} className={`${ROW_CLASS} text-primary`}>

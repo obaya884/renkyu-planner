@@ -90,7 +90,7 @@ test('F-405・§6: 過ぎた付与年は <details> に入り、押せない', ()
 })
 test('§5.3・§6: 付与日の行は押せる', () => {
   const h = html(<GrantSection view={buildGrantSection(SHEET)} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
-  expect(h).toMatch(/<button[^>]*><span>付与日<\/span><span>5月1日<\/span><\/button>/)
+  expect(h).toMatch(/<button[^>]*><span>付与日<\/span><span>5月1日<\/span><span[^>]*aria-hidden="true"[^>]*>›<\/span><\/button>/)
 })
 
 test('§6・§5.4: 会社の休日の行とモーダル', () => {
@@ -138,4 +138,15 @@ test('§5.5: 休暇の種類の新規は、日数の欄が空で始まり、空�
   expect(added).toMatch(/<button[^>]*disabled[^>]*>保存する/)
   expect(added).not.toContain('日数は、0日から')
   expect(added).not.toContain('名前を入れてください')
+})
+
+test('§6: 押すとモーダルが開く行にだけ「›」を出す', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  const grant = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
+  expect(grant.match(/›/g)).toHaveLength(3) // 付与日、今の付与年、次の付与年。過ぎた付与年には出さない
+  const company = html(<CompanyHolidaySection rows={companyHolidayRows(SHEET.settings)} onOpen={() => {}} onAdd={() => {}} />)
+  expect(company.match(/›/g)).toHaveLength(1) // 12/30〜1/3 の行だけ。「＋ 会社の休日を足す」には出さない
+  const input = { settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: SHEET.entries }
+  const leave = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)
+  expect(leave.match(/›/g)).toHaveLength(1) // 夏季休暇の行だけ。有休の行には出さない
 })
