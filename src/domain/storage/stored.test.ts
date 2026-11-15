@@ -119,11 +119,11 @@ test('D-10: 件数の上限。上限ちょうどは読め、1 つ超えると読
   // R-15 に合わない休日も、落とす前の数で数える
   expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: Array.from({ length: 101 }, () => ({ kind: 'yearly', start: '01-01', end: '12-31' })) } }).ok).toBe(false)
   const types = (n: number) => withTypes(...Array.from({ length: n }, (_, i) => ({ ...summer, id: `t${i}` })))
-  expect(parse(types(99)).ok).toBe(true)  // 有休を含めて 100
-  expect(parse(types(100)).ok).toBe(false)
+  expect(parse(types(19)).ok).toBe(true)  // 有休を含めて 20
+  expect(parse(types(20)).ok).toBe(false)
   const years = (n: number) => ({ ...ok, settings: { ...DEFAULT_SETTINGS, grantDay: '05-01', grantYears: Object.fromEntries(Array.from({ length: n }, (_, i) => [`${1826 + i}-05-01`, { grantDays: 10, entitlementMinutes: null }])) } })
-  expect(parse(years(200)).ok).toBe(true)
-  expect(parse(years(201)).ok).toBe(false)
+  expect(parse(years(100)).ok).toBe(true)
+  expect(parse(years(101)).ok).toBe(false)
 })
 test('D-10: 名前は 100 文字まで', () => {
   expect(parse({ ...ok, entries: [{ ...entry, title: 'あ'.repeat(100) }] }).ok).toBe(true)

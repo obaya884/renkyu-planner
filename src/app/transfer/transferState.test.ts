@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED, type StoredData, serializeStored } from '@/domain/storage/stored'
 import { SHEET } from '@/domain/view/fixture'
-import { TRANSFER_IDLE, afterClear, keptAcrossScreens, afterImport, afterNoCalendarEntries, afterRestore, afterUnreadable, canRestore, readPickedFile, withCurrentData } from './transferState'
+import { TRANSFER_IDLE, afterClear, keptAcrossScreens, afterImport, afterNoCalendarEntries, afterRestore, afterUnreadable, canRestore, readPickedFile, showsClearHint, withCurrentData } from './transferState'
 
 const sheetData = { version: 1, settings: SHEET.settings, entries: SHEET.entries } as const
 const imported = afterImport(EMPTY_STORED, sheetData)
@@ -44,4 +44,8 @@ test('§6: 設定画面を離れても、戻せるあいだは「読み込みま
   expect(keptAcrossScreens(afterUnreadable())).toBe(TRANSFER_IDLE)
   expect(keptAcrossScreens(afterClear())).toBe(TRANSFER_IDLE)
   expect(keptAcrossScreens(afterNoCalendarEntries())).toBe(TRANSFER_IDLE)
+})
+test('§5.7・D-5: M-7 の添え書きは、記録を読めなかったときは出さない（書き出せるのは空の記録になる）', () => {
+  expect(showsClearHint({ unreadable: false })).toBe(true)
+  expect(showsClearHint({ unreadable: true })).toBe(false)
 })

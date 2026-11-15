@@ -6,6 +6,7 @@ import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/setti
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, Entry, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { isBlankEventName } from '@/domain/transfer/eventText'
 import type { ImportCounts } from '@/domain/transfer/importCounts'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
@@ -468,11 +469,11 @@ export function errorText(e: DraftError | RangeError | GrantError | CompanyHolid
     case 'invalidEntitlement':
       return 'この年に使える日数は、0以上で入れてください'
     case 'tooManyEntries':
-      return '日程は 5,000件までです。古い日程を消してから足してください'
+      return `日程は ${STORAGE_LIMITS.entries.toLocaleString('ja-JP')}件までです。古い日程を消してから足してください`
     case 'tooManyCompanyHolidays':
-      return '会社の休日は 100件までです'
+      return `会社の休日は ${STORAGE_LIMITS.companyHolidays}件までです`
     case 'tooManyLeaveTypes':
-      return '休暇の種類は 100件までです'
+      return `休暇の種類は ${STORAGE_LIMITS.leaveTypes}件までです`
     case 'unreadableFile':
       return 'このファイルは読み込めませんでした'
     case 'hasEntries':

@@ -41,7 +41,7 @@ test('§5.6: 読み込む前に確かめるモーダル。件数と、置き換�
 })
 
 test('§5.7: 記録をすべて消すモーダル', () => {
-  const h = html(<ClearSheetBody onSubmit={noop} onClose={noop} />)
+  const h = html(<ClearSheetBody showHint onSubmit={noop} onClose={noop} />)
   expect(h).toContain(T.clearTitle)
   expect(h).toContain('記録と設定をすべて消します。元に戻せません')
   expect(h).toContain('消す前にファイルに書き出しておけば、あとで読み込んで戻せます')
@@ -49,6 +49,12 @@ test('§5.7: 記録をすべて消すモーダル', () => {
   expect(h.indexOf(`>${T.cancel}<`)).toBeLessThan(h.indexOf(`>${T.clearSubmit}<`))
   expect(h.indexOf(`>${T.clearSubmit}<`)).toBeGreaterThan(0)
   expect(transferNoteText('cleared')).toBe('記録を消しました')
+})
+test('§5.7: 記録を読めなかったときの M-7 は、添え書きを出さない', () => {
+  const h = html(<ClearSheetBody showHint={false} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('記録と設定をすべて消します。元に戻せません')
+  expect(h).not.toContain(T.clearHint)
+  expect(h.indexOf(`>${T.clearSubmit}<`)).toBeGreaterThan(0)
 })
 test('§6: .ics に入れる日程が無いときの 1 行', () => {
   expect(transferNoteText('noCalendarEntries')).toBe('カレンダーに入れる日程がありません')

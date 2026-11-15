@@ -181,7 +181,7 @@ test('D-10・§6: 上限に達したら「＋ …を足す」の代わりに理�
   expect(h).toContain('会社の休日は 100件までです')
   const leave = html(<LeaveTypeSection rows={leaveTypeRows(SHEET)} full onOpen={() => {}} onAdd={() => {}} />)
   expect(leave).not.toContain(T.addLeaveType)
-  expect(leave).toContain('休暇の種類は 100件までです')
+  expect(leave).toContain('休暇の種類は 20件までです')
 })
 test('D-10・§5.4・§5.5: 会社の休日と休暇の種類の名前の欄は 100 文字まで', () => {
   const noop = () => {}

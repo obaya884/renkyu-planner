@@ -60,3 +60,8 @@ export function canRestore(s: TransferState): boolean {
 export function keptAcrossScreens(s: TransferState): TransferState {
   return s.undo === null ? TRANSFER_IDLE : s
 }
+
+/** §5.7: M-7 の添え書き（書き出しておけば戻せる）を出すか。記録を読めなかったとき（D-5）に書き出せるのは空の記録なので出さない */
+export function showsClearHint(planner: Readonly<{ unreadable: boolean }>): boolean {
+  return !planner.unreadable
+}

@@ -23,6 +23,7 @@ import {
   canRestore,
   keptAcrossScreens,
   readPickedFile,
+  showsClearHint,
 } from '@/app/transfer/transferState'
 import { transferStore, useTransfer } from '@/app/transfer/useTransfer'
 import type { HolidayData } from '@/domain/holidays/importCsv'
@@ -147,6 +148,7 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
       />
       {sheet?.kind === 'clear' && (
         <ClearSheet
+          showHint={showsClearHint({ unreadable })}
           onSubmit={() => {
             plannerStore.clearAll()
             setSheet(null)

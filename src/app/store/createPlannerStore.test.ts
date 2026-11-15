@@ -295,8 +295,8 @@ test('D-10: ストアは上限を超える追加を断る', () => {
   expect(s.getState().data.entries).toHaveLength(5000)
   for (let i = 0; i < 101; i++) s.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
   expect(s.getState().data.settings.companyHolidays).toHaveLength(100)
-  for (let i = 0; i < 100; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
-  expect(s.getState().data.settings.leaveTypes).toHaveLength(100) // 有休を含めて
+  for (let i = 0; i < 20; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(20) // 有休を含めて
   expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true) // 上限いっぱいの記録は読める
 })
 test('D-10: 上限に達していても、会社の休日と休暇の種類を直すことはできる', () => {
@@ -385,12 +385,12 @@ test('D-14: R-15 に合わない会社の休日は、落としたあとの記録
   expect(s.getState().data.settings.companyHolidays).toEqual([])
   expect(JSON.parse(m.dump()[STORAGE_KEY]).settings.companyHolidays).toEqual([])
 })
-test('D-10: 休暇の種類の 101 件目は断る', () => {
+test('D-10: 休暇の種類の 21 件目（有休を含めて数える）は断る', () => {
   const s = createPlannerStore(memory(), ids()); s.load()
-  for (let i = 0; i < 99; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
-  expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
+  for (let i = 0; i < 19; i++) s.saveLeaveType(null, { name: `種類${i}`, days: 1, usable: null, grantDay: null, together: false })
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(20)
   s.saveLeaveType(null, { name: '多すぎ', days: 1, usable: null, grantDay: null, together: false })
-  expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
+  expect(s.getState().data.settings.leaveTypes).toHaveLength(20)
 })
 
 test('D-13: 記録をすべて消すと、記録と写しのキーが消え、初めて開いたときと同じになる', () => {

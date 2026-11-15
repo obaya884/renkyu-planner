@@ -1,5 +1,5 @@
-/** D-10: 記録の上限（数字は仮）。件数と、名前の長さ（JavaScript の文字列の length）と、id の長さ */
-export const STORAGE_LIMITS = { entries: 5000, companyHolidays: 100, leaveTypes: 100, grantYears: 200, textLength: 100, idLength: 64 } as const
+/** D-10: 記録の上限（数字は仮）。件数と、名前の長さ（JavaScript の文字列の length）と、id の長さ。休暇の種類の件数は有休を含めて数える */
+export const STORAGE_LIMITS = { entries: 5000, companyHolidays: 100, leaveTypes: 20, grantYears: 100, textLength: 100, idLength: 64 } as const
 
 /** 読み込むファイルの大きさの上限（3MB） */
 export const MAX_IMPORT_BYTES = 3_145_728
