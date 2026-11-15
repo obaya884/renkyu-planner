@@ -1,9 +1,9 @@
 import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
-import type { CompanyHolidayError } from '@/domain/entries/settingsInput'
+import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/settingsInput'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
-import type { Amount, CompanyHoliday, WeekStart } from '@/domain/types'
+import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
@@ -32,6 +32,19 @@ export const T = {
   startLabel: '開始',
   endLabel: '終了',
   removeCompanyHoliday: 'この休日を消す',
+  leaveTypeSection: '休暇の種類',
+  addLeaveType: '＋ 休暇の種類を足す',
+  leaveTypeTitle: '休暇の種類',
+  nameLabel: '名前',
+  leaveDaysLabel: '日数',
+  usableLabel: '使える期間',
+  setUsable: '使える期間を決める',
+  leaveGrantDayLabel: '付与される日',
+  sameAsPaid: '有休と同じ',
+  togetherLabel: 'まとめて取る休暇',
+  togetherHint: '営業日で連続して、全部の日数を 1 回で取る休暇',
+  cannotRemovePaid: '消せません',
+  removeLeaveType: 'この種類を消す',
   monday: '月曜',
   sunday: '日曜',
   // §3.2
@@ -333,7 +346,7 @@ export function formatAmount(minutes: number, workMinutes: number): string {
 }
 
 /** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
-export function errorText(e: DraftError | GrantError | CompanyHolidayError | 'invalidWorkMinutes', lastAddable?: IsoDate): string {
+export function errorText(e: DraftError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries', lastAddable?: IsoDate): string {
   switch (e) {
     case 'tooFar':
       return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
@@ -357,6 +370,14 @@ export function errorText(e: DraftError | GrantError | CompanyHolidayError | 'in
       return '終わりの日を、始まりの日と同じかそれより後にしてください'
     case 'invalidEntitlement':
       return 'この年に使える日数は、0以上で入れてください'
+    case 'hasEntries':
+      return 'この種類の日程が残っています。先に日程を消してください'
+    case 'emptyName':
+      return '名前を入れてください'
+    case 'invalidDays':
+      return '日数は、0日から366日まで、0.5日きざみで入れてください'
+    case 'invalidUsable':
+      return '使える期間は、終わりを始まりと同じかそれより後にしてください（年をまたげません）'
   }
 }
 
@@ -368,4 +389,11 @@ export function companyHolidayText(h: CompanyHoliday): string {
   }
   const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
   return `${ymd(h.start)}〜${ymd(h.end)}　${T.once}`
+}
+
+/** §6 の休暇の種類の行（仮の文）。例: 夏季休暇　3日・7/1〜9/30。期間が無ければ 夏季休暇　3日。付与される日とまとめて取る印は添えない */
+export function leaveTypeRowText(t: LeaveType): string {
+  const md = (m: MonthDay) => `${Number(m.slice(0, 2))}/${Number(m.slice(3, 5))}`
+  const period = t.usable === null ? '' : `・${md(t.usable.start)}〜${md(t.usable.end)}`
+  return `${t.name}　${t.days}日${period}`
 }

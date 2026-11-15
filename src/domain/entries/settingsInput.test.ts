@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { checkCompanyHoliday, isValidWorkMinutes, workMinutesFrom } from './settingsInput'
+import { checkCompanyHoliday, checkLeaveTypeDraft, isValidWorkMinutes, workMinutesFrom } from './settingsInput'
 
 test('F-102・D-4: 時間と分から所定労働時間（分）', () => {
   expect(workMinutesFrom('7', '45')).toBe(465)
@@ -23,4 +23,16 @@ test('R-15: 会社の休日の検証', () => {
   expect(checkCompanyHoliday({ kind: 'once', start: '2026-08-01', end: '2026-08-31' })).toEqual([])
   expect(checkCompanyHoliday({ kind: 'once', start: '2026-08-01', end: '2026-09-01' })).toEqual(['tooLong'])
   expect(checkCompanyHoliday({ kind: 'once', start: '2027-02-30', end: '2027-03-01' })).toEqual(['invalidDate'])
+})
+
+test('F-104・§5.5: 休暇の種類の検証', () => {
+  const ok = { name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+  expect(checkLeaveTypeDraft(ok)).toEqual([])
+  expect(checkLeaveTypeDraft({ ...ok, name: '  ' })).toEqual(['emptyName'])
+  expect(checkLeaveTypeDraft({ ...ok, days: 2.3 })).toEqual(['invalidDays'])
+  expect(checkLeaveTypeDraft({ ...ok, days: 366.5 })).toEqual(['invalidDays'])
+  expect(checkLeaveTypeDraft({ ...ok, usable: { start: '12-01', end: '01-31' } })).toEqual(['invalidUsable']) // 年をまたげない
+  expect(checkLeaveTypeDraft({ ...ok, usable: { start: '02-29', end: '02-29' } })).toEqual([])
+  expect(checkLeaveTypeDraft({ ...ok, usable: null, grantDay: '01-01', together: true })).toEqual([])
+  expect(checkLeaveTypeDraft({ ...ok, grantDay: '02-29' })).toEqual(['invalidGrantDay'])
 })

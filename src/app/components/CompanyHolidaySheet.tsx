@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { FIELD_CLASS, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
-import { checkCompanyHoliday, clampMonthDay, monthDayChoices } from '@/domain/entries/settingsInput'
+import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
+import { checkCompanyHoliday, monthDayChoices } from '@/domain/entries/settingsInput'
 import type { IsoDate } from '@/domain/shared/date'
 import type { CompanyHoliday } from '@/domain/types'
 
@@ -13,47 +14,6 @@ type Props = {
   onSubmit: (h: CompanyHoliday) => void
   onRemove: () => void
   onClose: () => void
-}
-
-type Md = { month: number; day: number }
-const pad = (n: number) => String(n).padStart(2, '0')
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
-const toMd = (md: string): Md => ({ month: Number(md.slice(0, 2)), day: Number(md.slice(3, 5)) })
-const fromMd = (v: Md) => `${pad(v.month)}-${pad(v.day)}`
-
-/** 月と日の選択。日の選択肢は選んだ月の末日まで（2 月は 29 日まで） */
-function MonthDayPicker({ label, value, onChange }: { label: string; value: Md; onChange: (v: Md) => void }) {
-  return (
-    <fieldset>
-      <legend className="text-sm text-sub">{label}</legend>
-      <div className="flex items-center gap-2">
-        <select
-          aria-label={`${label} ${T.monthUnit}`}
-          value={value.month}
-          onChange={(e) => {
-            const month = Number(e.target.value)
-            onChange({ month, day: clampMonthDay(month, value.day) })
-          }}
-          className={`${FIELD_CLASS} w-20`}
-        >
-          {MONTHS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        {T.monthUnit}
-        <select aria-label={`${label} ${T.dayUnit}`} value={value.day} onChange={(e) => onChange({ ...value, day: Number(e.target.value) })} className={`${FIELD_CLASS} w-20`}>
-          {monthDayChoices(value.month).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        {T.dayUnit}
-      </div>
-    </fieldset>
-  )
 }
 
 /** §5.4 の中身。入力欄の値だけを状態に持つ。検証は domain の checkCompanyHoliday を呼ぶだけ */
@@ -90,8 +50,8 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
         </fieldset>
         {kind === 'yearly' ? (
           <>
-            <MonthDayPicker label={T.startLabel} value={yStart} onChange={setYStart} />
-            <MonthDayPicker label={T.endLabel} value={yEnd} onChange={setYEnd} />
+            <MonthDayPicker label={T.startLabel} value={yStart} onChange={setYStart} dayChoices={monthDayChoices} />
+            <MonthDayPicker label={T.endLabel} value={yEnd} onChange={setYEnd} dayChoices={monthDayChoices} />
           </>
         ) : (
           <>

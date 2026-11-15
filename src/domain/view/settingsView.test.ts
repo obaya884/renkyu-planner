@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from './fixture'
-import { buildGrantSection, companyHolidayRows } from './settingsView'
+import { buildGrantSection, companyHolidayRows, leaveTypeRows } from './settingsView'
 
 test('F-405・§6: 今の付与年と次の付与年の行。次は前の年の付与日数で計算', () => {
   expect(buildGrantSection(SHEET)).toEqual({
@@ -35,4 +35,17 @@ test('§6: 会社の休日の行は、毎年を月日の順、そのあとその
     { kind: 'yearly', start: '08-13', end: '08-16' },
   ] as const
   expect(companyHolidayRows({ ...SHEET.settings, companyHolidays }).map((r) => r.index)).toEqual([3, 1, 2, 0])
+})
+
+test('F-104・§6: 休暇の種類の行は設定の並びのまま。日程が 1 件でもあれば hasEntries（取得済みかと日付は問わない）', () => {
+  const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }
+  const winter = { id: 'winter', name: '冬季休暇', days: 3, usable: null, grantDay: null, together: false }
+  const settings = { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer, winter] }
+  const entries = [...SHEET.entries, { id: 's', date: '2030-01-01', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: false } as const]
+  const rows = leaveTypeRows({ settings, entries })
+  expect(rows.map((r) => [r.type.id, r.paid, r.hasEntries])).toEqual([
+    ['paid', true, true],
+    ['summer', false, true],
+    ['winter', false, false],
+  ])
 })

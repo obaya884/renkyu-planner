@@ -233,3 +233,25 @@ test('F-103: 範囲の外の位置は何もしない', () => {
   s.removeCompanyHoliday(0)
   expect(s.getState().data.settings.companyHolidays).toEqual([])
 })
+
+test('F-104・§5.5: 休暇の種類を足す・直す。有休と、日程が残っている種類は消せない', () => {
+  const m = memory()
+  const s = createPlannerStore(m, ids())
+  s.load()
+  const d = (patch: object = {}) => ({ name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false, ...patch }) as const
+  s.saveLeaveType(null, d())
+  s.saveLeaveType('id-1', d({ days: 5, usable: null, grantDay: '01-01', together: true }))
+  s.saveLeaveType('paid', d({ name: 'x' }))
+  s.addEntries([{ date: '2027-08-02', leaveTypeId: 'id-1', amount: { unit: 'day' }, title: '', done: false }])
+  s.removeLeaveType('paid')
+  s.removeLeaveType('id-1')
+  const saved = JSON.parse(m.dump()[STORAGE_KEY])
+  expect(saved.settings.leaveTypes).toEqual([
+    { id: 'paid', name: '有休', days: 0, usable: null, grantDay: null, together: false },
+    { id: 'id-1', name: '夏季休暇', days: 5, usable: null, grantDay: '01-01', together: true },
+  ])
+  expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
+  s.removeEntry('id-2')
+  s.removeLeaveType('id-1')
+  expect(s.getState().data.settings.leaveTypes.map((t) => t.id)).toEqual(['paid'])
+})

@@ -5,6 +5,8 @@ import { CompanyHolidaySection } from '@/app/components/CompanyHolidaySection'
 import { CompanyHolidaySheet } from '@/app/components/CompanyHolidaySheet'
 import { GrantSection } from '@/app/components/GrantSection'
 import { GrantSheet } from '@/app/components/GrantSheet'
+import { LeaveTypeSection } from '@/app/components/LeaveTypeSection'
+import { LeaveTypeSheet } from '@/app/components/LeaveTypeSheet'
 import { Notices } from '@/app/components/Notices'
 import { WeekStartRow } from '@/app/components/WeekStartRow'
 import { WorkMinutesRow } from '@/app/components/WorkMinutesRow'
@@ -13,10 +15,10 @@ import { T } from '@/app/texts'
 import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
-import { buildGrantSection, companyHolidayRows } from '@/domain/view/settingsView'
+import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 
 /** 開いているモーダル（1 つだけ）。節を足すタスクで種類を足す */
-type SettingsSheet = null | { kind: 'grant'; grantYearStart: IsoDate | null } | { kind: 'companyHoliday'; index: number | null }
+type SettingsSheet = null | { kind: 'grant'; grantYearStart: IsoDate | null } | { kind: 'companyHoliday'; index: number | null } | { kind: 'leaveType'; id: string | null }
 
 /**
  * 設定画面（画面定義書 §6）。記録を読み終え、今日がそろうまでは何も描かない。
@@ -59,6 +61,14 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         />
       </section>
       <section className="space-y-2">
+        <h2 className="text-sm font-bold text-sub">{T.leaveTypeSection}</h2>
+        <LeaveTypeSection
+          rows={leaveTypeRows(input)}
+          onOpen={(id) => setSheet({ kind: 'leaveType', id })}
+          onAdd={() => setSheet({ kind: 'leaveType', id: null })}
+        />
+      </section>
+      <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.workMinutesLabel}</h2>
         <WorkMinutesRow workMinutes={data.settings.workMinutes} onChange={plannerStore.setWorkMinutes} />
       </section>
@@ -78,6 +88,22 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
           }}
           onRemove={() => {
             if (sheet.index !== null) plannerStore.removeCompanyHoliday(sheet.index)
+            setSheet(null)
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet?.kind === 'leaveType' && (
+        <LeaveTypeSheet
+          key={sheet.id ?? 'new'}
+          type={sheet.id === null ? null : (data.settings.leaveTypes.find((t) => t.id === sheet.id) ?? null)}
+          hasEntries={sheet.id !== null && data.entries.some((e) => e.leaveTypeId === sheet.id)}
+          onSubmit={(d) => {
+            plannerStore.saveLeaveType(sheet.id, d)
+            setSheet(null)
+          }}
+          onRemove={() => {
+            if (sheet.id !== null) plannerStore.removeLeaveType(sheet.id)
             setSheet(null)
           }}
           onClose={() => setSheet(null)}

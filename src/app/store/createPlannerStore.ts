@@ -1,6 +1,7 @@
 import type { EntryDraft, GrantDraft } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
-import type { CompanyHoliday, WeekStart } from '@/domain/types'
+import type { LeaveTypeDraft } from '@/domain/entries/settingsInput'
+import { type CompanyHoliday, PAID_LEAVE_TYPE_ID, type WeekStart } from '@/domain/types'
 import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVersion, parseStored, serializeStored } from '@/domain/storage/stored'
 
 export type KeyValueStore = Readonly<{
@@ -28,6 +29,10 @@ export type PlannerStore = Readonly<{
   saveCompanyHoliday(index: number | null, holiday: CompanyHoliday): void
   /** F-103 */
   removeCompanyHoliday(index: number): void
+  /** F-104。id が null なら newId() で末尾に足す。有休と、無い id は何もしない */
+  saveLeaveType(id: string | null, draft: LeaveTypeDraft): void
+  /** F-104。有休と、日程が残っている種類は何もしない */
+  removeLeaveType(id: string): void
 }>
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
@@ -120,6 +125,20 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       const { settings } = state.data
       if (!(Number.isInteger(index) && index >= 0 && index < settings.companyHolidays.length)) return
       change({ ...state.data, settings: { ...settings, companyHolidays: settings.companyHolidays.filter((_, i) => i !== index) } })
+    },
+    saveLeaveType(id, draft) {
+      const { settings } = state.data
+      if (id === PAID_LEAVE_TYPE_ID) return
+      if (id !== null && !settings.leaveTypes.some((t) => t.id === id)) return
+      const leaveTypes =
+        id === null ? [...settings.leaveTypes, { id: newId(), ...draft }] : settings.leaveTypes.map((t) => (t.id === id ? { id, ...draft } : t))
+      change({ ...state.data, settings: { ...settings, leaveTypes } })
+    },
+    removeLeaveType(id) {
+      const { settings, entries } = state.data
+      if (id === PAID_LEAVE_TYPE_ID || entries.some((e) => e.leaveTypeId === id)) return
+      if (!settings.leaveTypes.some((t) => t.id === id)) return
+      change({ ...state.data, settings: { ...settings, leaveTypes: settings.leaveTypes.filter((t) => t.id !== id) } })
     },
   }
 }

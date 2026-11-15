@@ -2,7 +2,7 @@ import { addDays } from '../shared/date'
 import type { IsoDate, MonthDay } from '../shared/date'
 import { balanceOf, grantDaysOf } from '../leave/balance'
 import { grantYearOf } from '../leave/grantYear'
-import { type CompanyHoliday, PAID_LEAVE_TYPE_ID, type Settings } from '../types'
+import { type CompanyHoliday, type LeaveType, PAID_LEAVE_TYPE_ID, type Settings } from '../types'
 import { type PlannerInput, currentGrantYear } from './input'
 
 /** 設定画面の付与年の 1 行（§6）。entered は、その付与年の設定を入れてあるか */
@@ -61,4 +61,16 @@ export function companyHolidayRows(settings: Settings): readonly CompanyHolidayR
       if (a.holiday.kind !== b.holiday.kind) return a.holiday.kind === 'yearly' ? -1 : 1
       return a.holiday.start < b.holiday.start ? -1 : a.holiday.start > b.holiday.start ? 1 : a.index - b.index
     })
+}
+
+/** 設定画面の休暇の種類の 1 行（§6）。hasEntries は、その種類の日程が 1 件でもあるか（取得済みかと日付は問わない） */
+export type LeaveTypeRow = Readonly<{ type: LeaveType; paid: boolean; hasEntries: boolean }>
+
+/** §6: 休暇の種類の並び。設定の並びのまま */
+export function leaveTypeRows(input: Pick<PlannerInput, 'settings' | 'entries'>): readonly LeaveTypeRow[] {
+  return input.settings.leaveTypes.map((type) => ({
+    type,
+    paid: type.id === PAID_LEAVE_TYPE_ID,
+    hasEntries: input.entries.some((e) => e.leaveTypeId === type.id),
+  }))
 }

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from '@/domain/view/fixture'
-import { T } from '@/app/texts'
+import { T, errorText } from '@/app/texts'
 import { AddSheetBody } from './AddSheet'
 import { EntrySheetBody } from './EntrySheet'
 import { GrantSheetBody } from './GrantSheet'
@@ -130,4 +130,22 @@ test('§5.1・R-13: 引く休暇の残りは種類ごとの付与年で数える
   const h = html(<AddSheetBody input={input} leaveDays={['2026-12-28', '2027-01-04']} onSubmit={noop} onClose={noop} />)
   expect(h).toContain('>有休（残り 9 日と 2 時間）</option>')
   expect(h).toContain('>フリーバカンス</option>')
+})
+test('R-13・§5.1: 引く休暇の付与される日が 01-01 で、休む日が付与年をまたぐと、未割り当ては付与年ごとの 2 行になる', () => {
+  // 引く休暇の初期値は有休（無ければ先頭）。有休を置かず、付与される日が 01-01 の休暇の種類だけにして、その種類を引く休暇にする
+  const free = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true }
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [free] } }
+  const h = html(<AddSheetBody input={input} leaveDays={['2026-12-28', '2027-01-04']} onSubmit={noop} onClose={noop} />)
+  // 付与年は 2026-01-01〜12-31（今日が入る、今の付与年）と 2027-01-01〜（次の付与年）。12/28 は前者、1/4 は後者に入る
+  // どちらの付与年も、持ち分は日数 5 × 所定労働時間 480 分 = 2400 分、取得済みと予定は 0 なので、足す前の未割り当ては 2400 分（5 日）
+  // 1 日分を足すと 2400 - 480 = 1920 分（4 日）
+  expect(h).toContain(`${T.thisGrantYear} 5 日 → 4 日`)
+  expect(h).toContain(`${T.nextGrantYearLabel} 5 日 → 4 日`)
+  expect(h).not.toContain(`${T.unassigned} `)
+})
+test('F-104: 日程の種類が設定に無いときは、休暇の種類が有休だけでも理由を出す', () => {
+  const entry = { id: 'x', date: '2026-12-28', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: false } as const
+  const h = html(<EntrySheetBody input={{ ...SHEET, entries: [...SHEET.entries, entry] }} entry={entry} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(h).toContain(errorText('unknownLeaveType'))
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>保存する/)
 })

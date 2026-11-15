@@ -20,7 +20,7 @@ export const PAID_LEAVE_TYPE_ID = 'paid'
 
 /**
  * 有休の `id` は PAID_LEAVE_TYPE_ID。有休の `days` は使わず、付与年ごとの値（GrantYearSetting）を使う。
- * `grantDay` は付与される日（R-13）。null は有休の付与日と同じ。有休自身はいつも null。
+ * `grantDay` は付与される日（R-13）。null は有休の付与日と同じ。有休の値は使わない（記録は読むが、計算では有休の付与日を使う）。
  * `together` はまとめて取る休暇の印（F-104）
  */
 export type LeaveType = Readonly<{

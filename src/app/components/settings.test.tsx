@@ -1,13 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { T } from '@/app/texts'
-import { buildGrantSection, companyHolidayRows } from '@/domain/view/settingsView'
+import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 import { SHEET } from '@/domain/view/fixture'
 import { CompanyHolidaySection } from './CompanyHolidaySection'
 import { CompanyHolidaySheetBody } from './CompanyHolidaySheet'
 import { GrantSection } from './GrantSection'
 import { Header } from './Header'
 import { HolidayAbout } from './HolidayAbout'
+import { LeaveTypeSection } from './LeaveTypeSection'
+import { LeaveTypeSheetBody } from './LeaveTypeSheet'
 import { HolidayNote } from './StaticCandidates'
 import { WeekStartRow } from './WeekStartRow'
 import { WorkMinutesRow } from './WorkMinutesRow'
@@ -74,4 +76,18 @@ test('§6・§5.4: 会社の休日の行とモーダル', () => {
   expect(added).toMatch(/<input[^>]*checked=""[^>]*value="yearly"/)
   expect(added.match(/<option value="11" selected="">/g)).toHaveLength(2) // 開始・終了の月
   expect(added.match(/<option value="15" selected="">/g)).toHaveLength(2) // 開始・終了の日
+})
+
+const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+test('§6・§5.5: 休暇の種類の行とモーダル', () => {
+  const input = { settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: SHEET.entries }
+  const h = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)
+  expect(h).toContain('有休　消せません')
+  expect(h).toContain('夏季休暇　3日・7/1〜9/30')
+  const used = html(<LeaveTypeSheetBody type={summer} hasEntries onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(used).toContain('この種類の日程が残っています。先に日程を消してください')
+  expect(used).toMatch(/<button[^>]*disabled[^>]*>この種類を消す/)
+  expect(used).toContain(T.sameAsPaid)
+  expect(used).toContain(T.togetherHint)
+  expect(html(<LeaveTypeSheetBody type={null} hasEntries={false} onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)).not.toContain(T.removeLeaveType)
 })

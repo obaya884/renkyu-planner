@@ -1,5 +1,6 @@
 import { MAX_COMPANY_HOLIDAY_DAYS, companyHolidayDays, isValidMonthDay } from '../calendar/companyHoliday'
-import { isValidIsoDate } from '../shared/date'
+import { isValidGrantDay } from '../leave/grantYear'
+import { type MonthDay, isValidIsoDate } from '../shared/date'
 import type { CompanyHoliday } from '../types'
 
 /** F-102: 時間（0〜24 の整数）と分（0〜59 の整数）の文字から、所定労働時間（分）に直す。どちらかが空・小数・範囲の外なら NaN */
@@ -36,4 +37,26 @@ export function monthDayChoices(month: number): readonly number[] {
 /** M-4: 月を変えたとき、日がその月にないなら末日にする */
 export function clampMonthDay(month: number, day: number): number {
   return Math.min(day, monthDayChoices(month).length)
+}
+
+/** F-104・§5.5: 休暇の種類の入力。usable は使える期間（無ければ null）、grantDay は null なら有休と同じ */
+export type LeaveTypeDraft = Readonly<{
+  name: string
+  days: number
+  usable: { start: MonthDay; end: MonthDay } | null
+  grantDay: MonthDay | null
+  together: boolean
+}>
+
+export type LeaveTypeError = 'emptyName' | 'invalidDays' | 'invalidUsable' | 'invalidGrantDay'
+
+/** §5.5: 休暇の種類の検証。年をまたぐ使える期間（開始が終了より後）は入れられない */
+export function checkLeaveTypeDraft(draft: LeaveTypeDraft): readonly LeaveTypeError[] {
+  const errors: LeaveTypeError[] = []
+  if (draft.name.trim() === '') errors.push('emptyName')
+  if (!(Number.isFinite(draft.days) && draft.days >= 0 && draft.days <= 366 && Number.isInteger(draft.days * 2))) errors.push('invalidDays')
+  const { usable } = draft
+  if (usable !== null && !(isValidMonthDay(usable.start) && isValidMonthDay(usable.end) && usable.start <= usable.end)) errors.push('invalidUsable')
+  if (draft.grantDay !== null && !isValidGrantDay(draft.grantDay)) errors.push('invalidGrantDay')
+  return errors
 }

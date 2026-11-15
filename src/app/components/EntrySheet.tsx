@@ -140,7 +140,10 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
             <ErrorLines errors={typeErrors} lastAddable={lastAddable} />
           </div>
         ) : (
-          <Line label={T.leaveTypeLabel}>{leaveTypes[0].name}</Line>
+          <div>
+            <Line label={T.leaveTypeLabel}>{leaveTypes[0].name}</Line>
+            <ErrorLines errors={typeErrors} lastAddable={lastAddable} />
+          </div>
         )}
         <Field label={T.entryTitleLabel}>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
