@@ -18,7 +18,7 @@ export default function SettingsPage() {
       </header>
       <main className="mx-auto max-w-[640px] space-y-6 px-4 py-4">
         <SettingsScreen holidays={holidays} />
-        <HolidayAbout confirmedUntil={holidays.confirmedUntil} updatedAt={holidays.updatedAt} />
+        <HolidayAbout confirmedUntil={holidays.confirmedUntil} />
       </main>
     </>
   )

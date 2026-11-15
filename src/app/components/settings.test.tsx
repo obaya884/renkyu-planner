@@ -25,11 +25,12 @@ test('F-605・§3.10: 祝日の 1 行の「くわしく」は、設定画面の�
   expect(h).toContain('祝日は内閣府の公表データです。2027年12月31日まで確定。')
   expect(h).toMatch(/<a[^>]*href="\/settings#holidays"[^>]*>くわしく</)
 })
-test('F-605・§6: 「祝日について」の節。最終更新は updatedAt', () => {
-  const h = html(<HolidayAbout confirmedUntil="2027-12-31" updatedAt="2026-11-15" />)
+test('F-605・§6: 「祝日について」の節。最終更新の日は出さない', () => {
+  const h = html(<HolidayAbout confirmedUntil="2027-12-31" />)
   expect(h).toContain('id="holidays"')
   expect(h).toContain(T.aboutHolidays)
-  expect(h.replace(/<[^>]+>/g, '')).toContain('祝日は内閣府の公表データです。2027年12月31日まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: 2026年11月15日')
+  expect(h.replace(/<[^>]+>/g, '')).toBe('祝日について祝日は内閣府の公表データです。2027年12月31日まで確定しています。それより先は未確定で、候補が変わることがあります。')
+  expect(h).not.toContain('最終更新')
   // §6: 出所は内閣府の HTML のページへのリンクで、別のタブで開く
   expect(h).toMatch(/<a[^>]*>内閣府の公表データ<\/a>/)
   const link = h.match(/<a[^>]*>内閣府の公表データ<\/a>/)?.[0] ?? ''

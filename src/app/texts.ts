@@ -232,16 +232,15 @@ export function holidayNote(confirmedUntil: IsoDate): string {
   return `祝日は内閣府の公表データです。${formatJapaneseDate(confirmedUntil)}まで確定。`
 }
 
-/** §6 の「祝日について」の文。最終更新は祝日の内容が最後に変わった日（updatedAt） */
 /** §6: 祝日の出所。内閣府の「国民の祝日について」のページ（CSV ではなく HTML） */
 export const HOLIDAY_SOURCE_URL = 'https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html'
 
 /** §6 の「祝日について」の文。link の部分を出所へのリンクにする。3 つをつなぐと 1 つの文になる */
-export function holidayAboutParts(confirmedUntil: IsoDate, updatedAt: IsoDate): { before: string; link: string; after: string } {
+export function holidayAboutParts(confirmedUntil: IsoDate): { before: string; link: string; after: string } {
   return {
     before: '祝日は',
     link: '内閣府の公表データ',
-    after: `です。${formatJapaneseDate(confirmedUntil)}まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: ${formatJapaneseDate(updatedAt)}`,
+    after: `です。${formatJapaneseDate(confirmedUntil)}まで確定しています。それより先は未確定で、候補が変わることがあります。`,
   }
 }
 

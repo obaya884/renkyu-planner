@@ -2,8 +2,8 @@ import { HOLIDAY_SOURCE_URL, T, holidayAboutParts } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
 
 /** §6 の「祝日について」。設定画面のいちばん下。サーバーで描き、最初の HTML に入れる */
-export function HolidayAbout({ confirmedUntil, updatedAt }: { confirmedUntil: IsoDate; updatedAt: IsoDate }) {
-  const text = holidayAboutParts(confirmedUntil, updatedAt)
+export function HolidayAbout({ confirmedUntil }: { confirmedUntil: IsoDate }) {
+  const text = holidayAboutParts(confirmedUntil)
   return (
     <section id="holidays" className="space-y-1">
       <h2 className="font-bold">{T.aboutHolidays}</h2>
