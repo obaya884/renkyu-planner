@@ -43,3 +43,11 @@ test('N-08・D-5: 保存できない・読めなかったときの 1 行', () =>
   expect(html(<Notices canSave unreadable />)).toContain(T.unreadable)
   expect(html(<Notices canSave unreadable={false} />)).toBe('')
 })
+
+test('F-102・R-11: 所定労働時間が 7 時間 45 分なら、持ち分も 465 分を 1 日として出す', () => {
+  const s = buildSummary({ ...SHEET, settings: { ...SHEET.settings, workMinutes: 465 } })
+  const h = html(<BalanceCards summary={s} workMinutes={465} />)
+  expect(h).toContain('9 日と 1 時間 45 分') // 残り 4290 分
+  expect(h).toContain('4 日と 1 時間 45 分') // 未割り当て 1965 分
+  expect(h).not.toContain(T.short)
+})

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { EMPTY_STORED, STORAGE_KEY, UNREADABLE_KEY } from '@/domain/storage/stored'
+import { EMPTY_STORED, STORAGE_KEY, UNREADABLE_KEY, parseStored } from '@/domain/storage/stored'
 import { createPlannerStore } from './createPlannerStore'
 
 const memory = (init: Record<string, string> = {}) => {
@@ -205,4 +205,16 @@ test('D-8: reload は、読み込む前には何もしない', () => {
   const before = s.getState()
   s.reload()
   expect(s.getState()).toBe(before)
+})
+
+test('F-102・F-108: 所定労働時間と週の始まりを保存する。上書きと時間単位の日程は書き換えない', () => {
+  const m = memory(); const s = createPlannerStore(m, ids()); s.load()
+  s.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: 8640 }, '2026-05-01')
+  s.addEntries([{ date: '2026-11-16', leaveTypeId: 'paid', amount: { unit: 'minutes', minutes: 480 }, title: '', done: false }])
+  s.setWorkMinutes(465)
+  s.setWeekStart('sunday')
+  const saved = JSON.parse(m.dump()[STORAGE_KEY])
+  expect(saved.settings).toMatchObject({ workMinutes: 465, weekStart: 'sunday', grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: 8640 } } })
+  expect(saved.entries[0].amount).toEqual({ unit: 'minutes', minutes: 480 }) // 新しい所定労働時間より長くても残す
+  expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
 })

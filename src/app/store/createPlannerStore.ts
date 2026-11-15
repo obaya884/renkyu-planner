@@ -1,5 +1,6 @@
 import type { EntryDraft, GrantDraft } from '@/domain/entries/checkDraft'
 import type { IsoDate } from '@/domain/shared/date'
+import type { WeekStart } from '@/domain/types'
 import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVersion, parseStored, serializeStored } from '@/domain/storage/stored'
 
 export type KeyValueStore = Readonly<{
@@ -19,6 +20,10 @@ export type PlannerStore = Readonly<{
   updateEntry(id: string, draft: EntryDraft): void
   removeEntry(id: string): void
   setGrant(draft: GrantDraft, grantYearStart: IsoDate): void
+  /** F-102。持ち分の上書きと時間単位の日程は分のまま触らない（12 §5.1） */
+  setWorkMinutes(minutes: number): void
+  /** F-108 */
+  setWeekStart(weekStart: WeekStart): void
 }>
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
@@ -94,6 +99,12 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       const kept = draft.grantDay === settings.grantDay ? settings.grantYears : {}
       const grantYears = { ...kept, [grantYearStart]: { grantDays: draft.grantDays, entitlementMinutes: draft.entitlementMinutes } }
       change({ ...state.data, settings: { ...settings, grantDay: draft.grantDay, grantYears } })
+    },
+    setWorkMinutes(minutes) {
+      change({ ...state.data, settings: { ...state.data.settings, workMinutes: minutes } })
+    },
+    setWeekStart(weekStart) {
+      change({ ...state.data, settings: { ...state.data.settings, weekStart } })
     },
   }
 }

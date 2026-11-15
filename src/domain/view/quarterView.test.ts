@@ -145,3 +145,10 @@ test('F-108: 週の始まりを日曜にすると、日曜から並ぶ。初期�
   expect(sunday.weeks.at(-1)?.map((c) => c?.day ?? null)).toEqual([29, 30, null, null, null, null, null])
   expect(q4.months[1].weeks.at(-1)?.map((c) => c?.day ?? null)).toEqual([30, null, null, null, null, null, null])
 })
+
+test('F-108: 週の始まりで、月カレンダーの先頭の週が変わる', () => {
+  const sunday = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, weekStart: 'sunday' } }, qs)[0]
+  expect(sunday.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([1, 2, 3, 4, 5, 6, 7]) // 2026-11-01 は日曜
+  const monday = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, weekStart: 'monday' } }, qs)[0]
+  expect(monday.months[1].weeks[0].map((c) => c?.day ?? null)).toEqual([null, null, null, null, null, null, 1])
+})
