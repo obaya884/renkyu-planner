@@ -1,5 +1,6 @@
 import { type IsoDate, addDays } from '@/domain/shared/date'
 import type { Entry } from '@/domain/types'
+import { ICS_REMOVED_CHARS, toWellFormed } from './eventText'
 
 /** カレンダー用のファイル（.ics）の予定 1 件。summary は無害化する前の題 */
 export type CalendarEvent = Readonly<{ uid: string; date: IsoDate; summary: string }>
@@ -28,14 +29,17 @@ export function icsStamp(utcIso: string): string {
   return `${utcIso.slice(0, 19).replace(/[-:]/g, '')}Z`
 }
 
-/** E-4: RFC 5545 の TEXT（3.3.11）の無害化。\ → \\、; → \;、, → \,、改行 → \n、タブを除く制御文字は除く。この順で行う */
+/**
+ * E-4: RFC 5545 の TEXT（3.3.11）の無害化。対になっていないサロゲート → U+FFFD、\ → \\、; → \;、, → \,、改行 → \n、
+ * タブを除く制御文字と U+0085・U+2028・U+2029 は除く。この順で行う
+ */
 export function escapeIcsText(s: string): string {
-  return s
+  return toWellFormed(s)
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
     .replace(/\r\n|\r|\n/g, '\\n')
-    .replace(/[\u0000-\u0008\u000a-\u001f\u007f]/g, '')
+    .replace(ICS_REMOVED_CHARS, '')
 }
 
 function utf8Octets(codePoint: number): number {

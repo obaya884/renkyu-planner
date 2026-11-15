@@ -17,3 +17,20 @@ test('N-05・悪意のある題: & # 改行 + を入れても、行き先とパ�
   expect(u.searchParams.get('text')).toBe(summary)
   expect(u.searchParams.get('dates')).toBe('20261228/20261229')
 })
+test('N-05・悪意のある題: ? % javascript: //evil.example を入れても、行き先のホストとパスが変わらない', () => {
+  for (const summary of ['?a=b', '100%', '%E5%', 'javascript:alert(1)', '//evil.example/x', 'https://evil.example', '?&#%\n']) {
+    const u = new URL(googleCalendarUrl({ date: '2026-12-28', summary }))
+    expect([u.origin, u.pathname, u.hash]).toEqual(['https://calendar.google.com', '/calendar/render', ''])
+    expect([...u.searchParams.keys()]).toEqual(['action', 'text', 'dates'])
+    expect(u.searchParams.get('text')).toBe(summary)
+    expect(u.searchParams.get('dates')).toBe('20261228/20261229')
+  }
+})
+test('§5.2・壊れた文字: 対になっていないサロゲートは U+FFFD に置き換え、例外を投げない', () => {
+  for (const [summary, expected] of [['\ud800', '\ufffd'], ['a\udc00b', 'a\ufffdb'], ['😀\ud83d', '😀\ufffd']]) {
+    const u = new URL(googleCalendarUrl({ date: '2026-12-28', summary }))
+    expect([u.origin, u.pathname, u.hash]).toEqual(['https://calendar.google.com', '/calendar/render', ''])
+    expect([...u.searchParams.keys()]).toEqual(['action', 'text', 'dates'])
+    expect(u.searchParams.get('text')).toBe(expected)
+  }
+})

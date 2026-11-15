@@ -6,6 +6,7 @@ import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/setti
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, Entry, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import { isBlankEventName } from '@/domain/transfer/eventText'
 import type { ImportCounts } from '@/domain/transfer/importCounts'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
 import type { CandidateRow, CoreHead, TogetherRow } from '@/domain/view/quarterView'
@@ -424,8 +425,8 @@ export function transferNoteText(note: TransferNote): string {
 
 /** §6・F-506: カレンダーの予定の題。名前があれば名前、無ければ休暇の種類の名前。半日と時間単位は量を括弧で添える。例: 有休（2 時間） */
 export function calendarEventTitle(entry: Entry, leaveTypeName: string, workMinutes: number): string {
-  const name = entry.title.trim()
-  const head = name === '' ? leaveTypeName : name
+  // 除く文字（要件定義書 E-4）と空白だけの名前は、名前なしとして扱う
+  const head = isBlankEventName(entry.title) ? leaveTypeName : entry.title.trim()
   switch (entry.amount.unit) {
     case 'day':
       return head

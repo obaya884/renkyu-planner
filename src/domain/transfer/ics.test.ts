@@ -47,6 +47,29 @@ test('E-3・E-4: UID に改行や区切りの文字が入っても、行の構�
   expect(lines.some((l) => l.startsWith('BEGIN:VALARM'))).toBe(false)
   expect(text.replaceAll(CRLF, '')).not.toMatch(/[\r\n]/)
 })
+test('E-4: U+0085・U+2028・U+2029 は SUMMARY に残らない', () => {
+  expect(escapeIcsText('a\u0085b\u2028c\u2029d')).toBe('abcd')
+  const text = buildIcs([{ uid: 'x\u2028y', date: '2026-12-28', summary: 'a\u0085b\u2028c\u2029d' }], STAMP)
+  expect(text).toContain(`UID:xy${CRLF}`)
+  expect(text).toContain(`SUMMARY:abcd${CRLF}`)
+  expect(text).not.toMatch(/[\u0085\u2028\u2029]/)
+})
+test('E-4: 対になっていないサロゲートは U+FFFD に置き換える。どんな文字列でも例外を投げない', () => {
+  expect(escapeIcsText('a\ud800b\udc00')).toBe('a\ufffdb\ufffd')
+  const text = buildIcs([{ uid: 'x', date: '2026-12-28', summary: '\ud800'.repeat(30) }], STAMP)
+  expect(text).toContain(`SUMMARY:${'\ufffd'.repeat(22)}${CRLF} ${'\ufffd'.repeat(8)}${CRLF}`)
+})
+test('E-5: 折り返しがエスケープの 2 文字（\\,）の間で切れても、切れた行をつなぐと元の文字列に戻る', () => {
+  // SUMMARY: の 8 オクテットと a の 66 文字で 74。\ が 75 オクテット目で、, は次の行に送られる
+  const summary = `${'a'.repeat(66)},;b`
+  const text = buildIcs([{ uid: 'x', date: '2026-12-28', summary }], STAMP)
+  const lines = text.split(CRLF)
+  const i = lines.findIndex((l) => l.startsWith('SUMMARY:'))
+  expect(lines[i]).toBe(`SUMMARY:${'a'.repeat(66)}\\`)
+  expect(lines[i + 1]).toBe(' ,\\;b')
+  expect(text.replaceAll(`${CRLF} `, '')).toContain(`SUMMARY:${escapeIcsText(summary)}${CRLF}`)
+  expect(escapeIcsText(summary)).toBe(`${'a'.repeat(66)}\\,\\;b`)
+})
 test('E-5: 75 オクテットを超える行は、文字の途中で切らずに折り返す', () => {
   const text = buildIcs([{ uid: 'x', date: '2026-12-28', summary: 'あいうえおかきくけこ'.repeat(3) }], STAMP)
   expect(text).toContain(`SUMMARY:あいうえおかきくけこあいうえおかきくけこあい${CRLF} うえおかきくけこ${CRLF}`)

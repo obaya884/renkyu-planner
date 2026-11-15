@@ -20,9 +20,7 @@ import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { type Quarter, canGoBack as canGoBackFrom, quartersBetween } from '@/domain/quarters/quarters'
-import { calendarEventOf } from '@/app/transfer/calendarEvents'
-import { googleCalendarUrl } from '@/domain/transfer/googleCalendar'
-import { isUpcoming } from '@/domain/transfer/ics'
+import { calendarUrlOf } from '@/app/transfer/calendarEvents'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
@@ -193,7 +191,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           input={input}
           entry={openedEntry ?? null}
           defaultDate={sheet.defaultDate}
-          calendarUrl={openedEntry && isUpcoming(openedEntry, today) ? googleCalendarUrl(calendarEventOf(openedEntry, settings)) : null}
+          calendarUrl={calendarUrlOf(openedEntry, settings, today)}
           onSubmit={(drafts) => {
             if (openedEntry) plannerStore.updateEntry(openedEntry.id, drafts[0])
             else plannerStore.addEntries(drafts)
