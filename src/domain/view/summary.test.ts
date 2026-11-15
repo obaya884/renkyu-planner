@@ -64,3 +64,13 @@ test('§3.2: 使える期間があり、残りが 0 なら使い切り', () => {
   expect(buildSummary(withSummer(SHEET.entries)).cards[1]).toMatchObject({ remaining: 480, usedUp: false })
   expect(buildSummary(SHEET).cards[0].usedUp).toBe(false) // 使える期間が無い
 })
+
+test('§3.2・F-211: paid は有休の 1 件、extras は足した休暇。使い切りは不足でないときだけ真', () => {
+  const s = buildSummary(SHEET)
+  expect(s.paid?.leaveTypeId).toBe('paid')
+  expect(s.extras).toEqual([])
+  const summer = { id: 'summer', name: '夏季休暇', days: 1, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false } as const
+  const e = (id: string, date: string) => ({ id, date, leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true }) as const
+  const over = buildSummary({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, summer] }, entries: [...SHEET.entries, e('a', '2026-07-15'), e('b', '2026-07-16')] })
+  expect(over.extras[0]).toMatchObject({ leaveTypeId: 'summer', short: true, usedUp: false })
+})

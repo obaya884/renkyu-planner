@@ -80,7 +80,16 @@ const withTypes = (types: ReturnType<typeof extra>[], entries: typeof SHEET.entr
   entries,
 })
 const cardsHtml = (input: typeof SHEET) => html(<BalanceCards summary={buildSummary(input)} workMinutes={480} onConfirmNewYear={() => {}} />)
-const paidCard = (h: string) => h.slice(h.indexOf('data-testid="paid-card"'), h.indexOf('<ul', h.indexOf('data-testid="paid-card"')) === -1 ? undefined : h.indexOf('<ul'))
+/** カードの要素を、<div の入れ子を数えて閉じタグまで切り出す */
+const paidCard = (h: string) => {
+  const start = h.indexOf('<div data-testid="paid-card"')
+  let depth = 0
+  for (const m of h.slice(start).matchAll(/<div\b|<\/div>/g)) {
+    depth += m[0] === '</div>' ? -1 : 1
+    if (depth === 0) return h.slice(start, start + m.index + m[0].length)
+  }
+  throw new Error('カードが閉じていない')
+}
 
 test('§3.2: 有休だけなら、カードは 1 枚で足した休暇の行は出ない', () => {
   const h = cardsHtml(SHEET)
@@ -131,4 +140,14 @@ test('§3.2: 足した休暇に使える期間があれば行の終わりに添�
   expect(li).not.toContain(T.remaining)
   expect(li).not.toContain(T.unassigned)
   expect(li.indexOf('7〜9月')).toBeGreaterThan(li.indexOf(T.usedUp))
+})
+
+test('§3.2・F-211: 使い切りと不足が重なるときは、不足を優先して出す', () => {
+  const plan = { id: 'p1', date: '2026-07-15', leaveTypeId: 'summer', amount: { unit: 'day' }, title: '', done: true } as const
+  const plan2 = { ...plan, id: 'p2', date: '2026-07-16' } as const
+  const h = cardsHtml(withTypes([extra('summer', '夏季休暇', 1, { start: '07-01', end: '09-30' })], [...SHEET.entries, plan, plan2]))
+  const li = h.slice(h.indexOf('<li'), h.indexOf('</li>'))
+  expect(li).toContain(`${T.short} 1 日`)
+  expect(li).toContain('text-warn-ink')
+  expect(li).not.toContain(T.usedUp)
 })

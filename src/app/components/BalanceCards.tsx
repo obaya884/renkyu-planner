@@ -1,11 +1,10 @@
 import { T, balanceDetail, extraLeaveLine, fiveDaysText, formatAmount, remainingLabel, usablePeriod } from '@/app/texts'
-import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { IsoDate } from '@/domain/shared/date'
 import type { BalanceCard, SummaryView } from '@/domain/view/summary'
 
 function ExtraLine({ card, workMinutes }: { card: BalanceCard; workMinutes: number }) {
   return (
-    <li className={`text-sm ${card.short && !card.usedUp ? 'font-bold text-warn-ink' : 'text-sub'}`}>
+    <li className={`text-sm ${card.short ? 'font-bold text-warn-ink' : 'text-sub'}`}>
       {extraLeaveLine(card.name, card.remaining, card.unassigned, card.short, card.usedUp, workMinutes)}
       {card.usable !== null && <span className="ml-2">{usablePeriod(card.usable.start, card.usable.end)}</span>}
     </li>
@@ -24,11 +23,10 @@ export function BalanceCards({
 }) {
   if (summary.state === 'unset') return null
   const { fiveDays } = summary
-  const paid = summary.cards.find((c) => c.leaveTypeId === PAID_LEAVE_TYPE_ID)
-  const extras = summary.cards.filter((c) => c.leaveTypeId !== PAID_LEAVE_TYPE_ID)
+  const { paid, extras } = summary
   return (
     <div>
-      {paid !== undefined && (
+      {paid !== null && (
         <div data-testid="paid-card" className="rounded-lg bg-card px-3 py-2">
           <div className="text-sm text-sub">{remainingLabel(paid.name)}</div>
           <div className="text-xl font-bold">{formatAmount(paid.remaining, workMinutes)}</div>

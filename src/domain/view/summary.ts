@@ -2,6 +2,7 @@ import { isShort } from '../leave/amount'
 import { balanceOf, grantYearOfType } from '../leave/balance'
 import { type FiveDayStatus, fiveDayStatus } from '../leave/fiveDays'
 import { type Quarter, longBreakOf, planningQuarters } from '../quarters/quarters'
+import { PAID_LEAVE_TYPE_ID } from '../types'
 import type { IsoDate, MonthDay } from '../shared/date'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
 
@@ -14,7 +15,7 @@ export type BalanceCard = Readonly<{
   unassigned: number
   short: boolean
   usable: { start: MonthDay; end: MonthDay } | null
-  /** §3.2: 使える期間があり、残りが 0 以下（使い切り） */
+  /** §3.2: 使える期間があり、残りが 0 以下で、不足でない（不足を優先して隠さない） */
   usedUp: boolean
 }>
 
@@ -23,6 +24,10 @@ export type LongBreakChip = Readonly<{ quarter: Quarter; has: boolean }>
 export type SummaryView = Readonly<{
   state: 'unset' | 'set'
   cards: readonly BalanceCard[]
+  /** §3.2: 有休のカード 1 枚。付与年が無ければ null */
+  paid: BalanceCard | null
+  /** §3.2: 足した休暇の 1 行ずつ。並びは設定画面と同じ */
+  extras: readonly BalanceCard[]
   fiveDays: FiveDayStatus | null
   longBreaks: readonly LongBreakChip[]
   holidaysOnly: boolean
@@ -38,7 +43,7 @@ export function buildSummary(input: PlannerInput): SummaryView {
   const longBreaks = planningQuarters(today).map((quarter) => ({ quarter, has: longBreakOf(cal, quarter) !== null }))
   const holidaysOnly = settings.companyHolidays.length === 0 && entries.length === 0
 
-  if (grantYear === null) return { state: 'unset', cards: [], fiveDays: null, longBreaks, holidaysOnly, newGrantYearStart: null }
+  if (grantYear === null) return { state: 'unset', cards: [], paid: null, extras: [], fiveDays: null, longBreaks, holidaysOnly, newGrantYearStart: null }
 
   const cards: BalanceCard[] = []
   for (const type of settings.leaveTypes) {
@@ -54,12 +59,12 @@ export function buildSummary(input: PlannerInput): SummaryView {
       unassigned: b.unassigned,
       short: isShort(b.unassigned),
       usable: type.usable,
-      usedUp: type.usable !== null && b.remaining <= 0,
+      usedUp: type.usable !== null && b.remaining <= 0 && !isShort(b.unassigned),
     })
   }
   const five = fiveDayStatus({ settings, entries, grantYearStart: grantYear.start, today })
   const fiveDays = five !== null && five.remainingDays > 0 ? five : null
   const keys = Object.keys(settings.grantYears)
   const newGrantYearStart = !keys.includes(grantYear.start) && keys.some((k) => k < grantYear.start) ? grantYear.start : null
-  return { state: 'set', cards, fiveDays, longBreaks, holidaysOnly, newGrantYearStart }
+  return { state: 'set', cards, paid: cards.find((c) => c.leaveTypeId === PAID_LEAVE_TYPE_ID) ?? null, extras: cards.filter((c) => c.leaveTypeId !== PAID_LEAVE_TYPE_ID), fiveDays, longBreaks, holidaysOnly, newGrantYearStart }
 }
