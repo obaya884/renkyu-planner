@@ -29,7 +29,13 @@ test('F-605・§6: 「祝日について」の節。最終更新は updatedAt', 
   const h = html(<HolidayAbout confirmedUntil="2027-12-31" updatedAt="2026-11-15" />)
   expect(h).toContain('id="holidays"')
   expect(h).toContain(T.aboutHolidays)
-  expect(h).toContain('祝日は内閣府の公表データです。2027年12月31日まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: 2026年11月15日')
+  expect(h.replace(/<[^>]+>/g, '')).toContain('祝日は内閣府の公表データです。2027年12月31日まで確定しています。それより先は未確定で、候補が変わることがあります。祝日データの最終更新: 2026年11月15日')
+  // §6: 出所は内閣府の HTML のページへのリンクで、別のタブで開く
+  expect(h).toMatch(/<a[^>]*>内閣府の公表データ<\/a>/)
+  const link = h.match(/<a[^>]*>内閣府の公表データ<\/a>/)?.[0] ?? ''
+  expect(link).toContain('href="https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html"')
+  expect(link).toContain('target="_blank"')
+  expect(link).toContain('rel="noopener noreferrer"')
 })
 
 test('§6: 設定画面の節は、有休、1 日の所定労働時間、カレンダー、会社の休日、休暇の種類の順', () => {
