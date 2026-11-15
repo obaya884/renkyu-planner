@@ -8,8 +8,8 @@ import {
   clampGrantDay,
   computedEntitlement,
   enteredEntitlement,
-  entitlementToSave,
   grantDayChoices,
+  grantEntitlementToSave,
   grantSheetMode,
   losesOtherGrantYears,
   splitDaysHours,
@@ -77,7 +77,7 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
   const entered = followed ? computed : enteredEntitlement(entDays, entHours, workMinutes)
   // 次の付与年のモーダルには欄が無く、触ることがないので、すでにある上書きがそのまま残る。付与日を直すときは新しい付与年の開始日の上書き
   const existing = first ? null : (settings.grantYears[start]?.entitlementMinutes ?? null)
-  const entitlementMinutes = entitlementToSave(touched, entered, computed, existing)
+  const entitlementMinutes = grantEntitlementToSave({ mode, settings, grantDay, touched, enteredMinutes: entered, computedMinutes: computed, existing })
 
   const draft: GrantDraft = { grantDay, grantDays: grantDaysNumber, entitlementMinutes }
   const allErrors = checkGrantDraft(draft)

@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED, STORAGE_KEY, UNREADABLE_KEY, parseStored, serializeStored } from '@/domain/storage/stored'
+import { grantEntitlementToSave } from '@/domain/entries/grantInput'
 import { balanceOf } from '@/domain/leave/balance'
 import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { SHEET } from '@/domain/view/fixture'
@@ -172,6 +173,18 @@ test('§5.3・F-101: 付与日を 05-01 から 04-01 に直すと、設定は新
   expect(b).toMatchObject({ entitlement: 14 * 480, taken: 4 * 480 + 3 * 120, planned: 4 * 480 })
   const next = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2027-04-01' })
   expect(next?.planned).toBe(480) // 2027/4/30 の 1 日
+})
+test('§5.3: いまの付与年に 18 日の上書きがあり、付与日だけ変えて保存すると、新しい付与年の設定に同じ分の上書きが入る', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: 18 * 480 } } }
+  const m = memory({ [STORAGE_KEY]: serializeStored({ version: 1, settings, entries: SHEET.entries }) })
+  const s = createPlannerStore(m, ids())
+  s.load()
+  // 欄に出ていた 18 × 480 を、保存後の計算 14 × 480（繰り越し 0）と比べて上書きにする
+  const entitlementMinutes = grantEntitlementToSave({ mode: 'changeDay', settings, grantDay: '04-01', touched: false, enteredMinutes: 18 * 480, computedMinutes: 14 * 480, existing: null })
+  s.setGrant({ grantDay: '04-01', grantDays: 14, entitlementMinutes }, '2026-04-01')
+  const saved = s.getState().data
+  expect(saved.settings.grantYears).toEqual({ '2026-04-01': { grantDays: 14, entitlementMinutes: 18 * 480 } })
+  expect(balanceOf({ settings: saved.settings, entries: saved.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01' })?.entitlement).toBe(18 * 480)
 })
 test('存在しない id の更新と削除は何もしない', () => {
   const m = memory()

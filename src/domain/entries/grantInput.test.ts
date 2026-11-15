@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
+import { balanceOf } from '@/domain/leave/balance'
+import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { SHEET, UNSET } from '@/domain/view/fixture'
-import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, joinDaysHours, losesOtherGrantYears, splitDaysHours } from './grantInput'
+import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, grantEntitlementToSave, joinDaysHours, losesOtherGrantYears, splitDaysHours } from './grantInput'
 
 test('R-12・§5.3: 付与日の「日」の選択肢は、選んだ月に合わせる。2 月は 1〜28', () => {
   expect(grantDayChoices(2)).toHaveLength(28)
@@ -62,4 +64,29 @@ test('§5.3: 使える日数の日の欄が空なら数にしない。時間の�
   expect(enteredEntitlement('16', '', 480)).toBe(16 * 480)
   expect(enteredEntitlement('16', '2', 480)).toBe(16 * 480 + 120)
   expect(enteredEntitlement('0', '0', 480)).toBe(0)
+})
+
+test('§5.3: 付与日を変えて保存するときは、欄に出ている使える日数を、触らなくてもそのまま保存する。いまの付与年の上書きは新しい付与年に入る', () => {
+  // いまの付与年（2026-05-01〜）に 18 日の上書きがある
+  const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: 18 * 480 } } }
+  // 欄に出る値は、いまの付与年の持ち分 = 上書きの 18 × 480
+  const shown = balanceOf({ settings, entries: SHEET.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-05-01' })?.entitlement
+  expect(shown).toBe(18 * 480)
+  // 保存後はほかの付与年の設定が無く繰り越しが 0 なので、計算した持ち分 = 14 × 480。新しい付与年 2026-04-01 にはまだ上書きが無い（null）
+  const toSave = { mode: 'changeDay', settings, grantDay: '04-01', touched: false, enteredMinutes: 18 * 480, computedMinutes: 14 * 480, existing: null } as const
+  expect(grantEntitlementToSave(toSave)).toBe(18 * 480)
+})
+test('§5.3: 上書きも繰り越しも無ければ、付与日だけ変えて保存しても上書きは持たない', () => {
+  // SHEET のいまの付与年は上書きが無く、いちばん古い設定なので繰り越しも 0。欄の値 = 14 × 480、保存後の計算 = 14 × 480 + 0
+  const toSave = { mode: 'changeDay', settings: SHEET.settings, grantDay: '04-01', touched: false, enteredMinutes: 14 * 480, computedMinutes: 14 * 480, existing: null } as const
+  expect(grantEntitlementToSave(toSave)).toBeNull()
+})
+test('§5.3: 付与日を変えないで保存するときは、始まった付与年と同じく、触らなければすでにある上書きを保つ', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: 18 * 480 } } }
+  const same = { mode: 'changeDay', settings, grantDay: '05-01', touched: false, enteredMinutes: 18 * 480, computedMinutes: 14 * 480, existing: 18 * 480 } as const
+  expect(grantEntitlementToSave(same)).toBe(18 * 480)
+  // 始まった付与年のモーダルは、触らなければ欄の値に関係なく、すでにある上書き（ここでは null）を保つ
+  expect(grantEntitlementToSave({ ...same, mode: 'started', enteredMinutes: 16 * 480, existing: null })).toBeNull()
+  // 触ったときは、計算した値と同じなら上書きを持たない
+  expect(grantEntitlementToSave({ ...same, touched: true, enteredMinutes: 14 * 480 })).toBeNull()
 })

@@ -58,6 +58,18 @@ export function entitlementToSave(touched: boolean, enteredMinutes: number, comp
 }
 
 /**
+ * §5.3: モーダルで保存する持ち分の上書き。付与日を変えて保存するときは、欄に出ている数を、触らなくても入れた値として扱う
+ * （計算した数と同じなら上書きにしない）。それ以外は entitlementToSave のまま（触らなければ、すでにある上書きを保つ）
+ */
+export function grantEntitlementToSave(
+  input: Readonly<{ mode: GrantSheetMode; settings: Settings; grantDay: MonthDay; touched: boolean; enteredMinutes: number; computedMinutes: number; existing: number | null }>,
+): number | null {
+  const { mode, settings, grantDay, touched, enteredMinutes, computedMinutes, existing } = input
+  const dayChanged = mode === 'changeDay' && grantDay !== settings.grantDay
+  return entitlementToSave(touched || dayChanged, enteredMinutes, computedMinutes, existing)
+}
+
+/**
  * §5.3: 付与日を grantDay に直して保存すると消える設定があるか。付与日が今と違い、grantYears に currentStart でも newStart でもないキーがあるとき true。
  * currentStart（いまの付与日で今日が入る付与年の開始日）の値は、モーダルの欄に出ていて、保存すると newStart のキーに入るので数えない
  */
