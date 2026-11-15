@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ClearSheet } from '@/app/components/ClearSheet'
 import { CompanyHolidaySheet } from '@/app/components/CompanyHolidaySheet'
 import { GrantSheet } from '@/app/components/GrantSheet'
@@ -15,16 +15,16 @@ import { calendarEventsOf } from '@/app/transfer/calendarEvents'
 import { downloadText, readFileText } from '@/app/transfer/download'
 import {
   TRANSFER_IDLE,
-  type TransferState,
   afterClear,
   afterImport,
   afterNoCalendarEntries,
   afterRestore,
   afterUnreadable,
   canRestore,
+  keptAcrossScreens,
   readPickedFile,
-  withCurrentData,
 } from '@/app/transfer/transferState'
+import { transferStore, useTransfer } from '@/app/transfer/useTransfer'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
@@ -52,12 +52,22 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   const { ready, canSave, unreadable, data } = usePlanner()
   const today = useToday()
   const [sheet, setSheet] = useState<SettingsSheet>(null)
-  const [transfer, setTransfer] = useState<TransferState>(TRANSFER_IDLE)
+  // §6: 節の状態は画面をまたいで残す（設定画面を離れても「読み込む前に戻す」を出すため）。記録が変わったら transferStore が戻す先を捨てる
+  const transfer = useTransfer()
+  const setTransfer = transferStore.set
   // 入力欄（所定労働時間など）は props を初期値にだけ使う。記録が外から変わったら、この番号を増やして作り直す（§6）
   const [fieldsKey, setFieldsKey] = useState(0)
   // 所定労働時間の欄が出している値。欄が自分で変えた値と違う値が記録に入ったら（D-8 の読み直しなど）、欄を作り直す
   const [fieldWorkMinutes, setFieldWorkMinutes] = useState<number | null>(null)
   const shown = ready && today !== null
+
+  // §6: 設定画面に入るときと離れるときに、節の 1 行を消す（戻せるあいだの「読み込みました」と「読み込む前に戻す」は残す）。
+  // 描く前に整えるので useLayoutEffect にする
+  useLayoutEffect(() => {
+    const settle = () => transferStore.set(keptAcrossScreens(transferStore.getState()))
+    settle()
+    return settle
+  }, [])
 
   // 記録を読み終えると上の節の高さが増える。#holidays で開いたときは、描き終えたあとに 1 回だけ動かす
   const scrolled = useRef(false)
@@ -68,9 +78,6 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   }, [shown])
 
   if (!shown) return null
-  // §6: 記録が置き換えたあとの中身から変わったら、戻すための記録を捨てる（描画の途中で状態を合わせる）
-  const synced = withCurrentData(transfer, data)
-  if (synced !== transfer) setTransfer(synced)
   if (fieldWorkMinutes !== data.settings.workMinutes) {
     if (fieldWorkMinutes !== null) setFieldsKey((k) => k + 1)
     setFieldWorkMinutes(data.settings.workMinutes)

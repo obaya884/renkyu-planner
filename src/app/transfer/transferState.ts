@@ -49,3 +49,11 @@ export function withCurrentData(s: TransferState, data: StoredData): TransferSta
 export function canRestore(s: TransferState): boolean {
   return s.undo !== null
 }
+
+/**
+ * §6: 画面をまたいで残すものだけにする。設定画面を離れたら節の 1 行を消すが、戻せるあいだは「読み込みました」と「読み込む前に戻す」を残す。
+ * 設定画面に入るときにも通す（主な画面で記録が変わって戻せなくなったときに、「読み込みました」だけが残らないように）
+ */
+export function keptAcrossScreens(s: TransferState): TransferState {
+  return s.undo === null ? TRANSFER_IDLE : s
+}
