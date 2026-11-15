@@ -138,9 +138,12 @@ test('F-212・§3.7: まとめて取る休暇の組。見出し、先頭の 1 �
   expect(n).toContain('1/4(月)〜1/8(金) の 5日を休むと 17連休')
   expect(n).toContain('12/26〜1/11・次の付与年から引く')
 })
-test('§3.7: まとめて取る休暇の組は、ふつうの候補の上。種類が無ければ出さない', () => {
+test('§3.7: まとめて取る休暇の組は、ふつうの候補と祝日のない月の候補の下。種類が無ければ出さない', () => {
   const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={f4} {...props} />)
-  expect(h.indexOf('フリーバカンス（5日）をまとめて取る')).toBeLessThan(h.indexOf('11/20(金) を休むと 4連休'))
+  const heading = h.indexOf('フリーバカンス（5日）をまとめて取る')
+  expect(heading).toBeGreaterThan(h.indexOf('11/20(金) を休むと 4連休'))
+  expect(heading).toBeGreaterThan(h.lastIndexOf('もっと多く休む取り方'))
+  // 祝日のない月の候補は CandidateList の中の最後に出るので、組はその下になる（この fixture の 12 月には 1 日分の日程があり、祝日のない月の行は出ない）
   expect(html(<QuarterSection view={q4} {...props} />)).not.toContain('をまとめて取る')
 })

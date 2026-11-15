@@ -74,8 +74,8 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
                 <p className="text-sm text-sub">{T.noCandidates}</p>
               ) : (
                 <div className="space-y-3">
-                  <TogetherList blocks={together} onAdd={onAddTogether} />
                   <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
+                  <TogetherList blocks={together} onAdd={onAddTogether} />
                 </div>
               )}
             </div>
