@@ -18,6 +18,8 @@ type Props = {
   input: PlannerInput
   entry: Entry | null
   defaultDate: IsoDate
+  /** F-506: 「Google カレンダーに追加」の行き先。出さないときは null（足すとき、取得済み、過ぎた日程） */
+  calendarUrl: string | null
   /** 1 件を足す・直すときは [draft]、期間で足すときは足す日ごとの 1 日の日程（F-307） */
   onSubmit: (drafts: readonly EntryDraft[]) => void
   onRemove: () => void
@@ -74,7 +76,7 @@ export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview
 }
 
 /** §5.2 の中身。入力欄の値だけを状態に持つ。検証は checkEntryDraft、連休は runContaining を呼ぶだけ */
-export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, onClose }: Props) {
+export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmit, onRemove, onClose }: Props) {
   const { leaveTypes } = input.settings
   const adding = entry === null
   const [date, setDate] = useState(entry?.date ?? defaultDate)
@@ -193,6 +195,13 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
           <Choice name="status" label={T.planned} checked={!done} onChange={() => setDone(false)} />
           <Choice name="status" label={T.done} checked={done} onChange={() => setDone(true)} />
         </fieldset>
+        {calendarUrl !== null && (
+          <Line label={T.calendarRowLabel}>
+            <a href={calendarUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary underline">
+              {T.addToGoogleCalendar}
+            </a>
+          </Line>
+        )}
         {!ranged && run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
         <ErrorLines errors={limitErrors} lastAddable={lastAddable} />
       </div>

@@ -119,6 +119,8 @@ export const T = {
   submitAdd: '予定に入れる',
   restDays: '休む日',
   runLabel: '連休',
+  calendarRowLabel: 'カレンダー',
+  addToGoogleCalendar: 'Google カレンダーに追加',
   leaveTypeLabel: '引く休暇',
   entryTitleLabel: '予定の名前',
   thisGrantYear: '今の付与年',
