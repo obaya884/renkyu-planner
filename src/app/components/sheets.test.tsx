@@ -181,3 +181,15 @@ test('F-208・§5.1: 引く休暇の初期値は、使える期間に入り、�
   const two = html(<AddSheetBody input={input} leaveDays={['2027-09-21', '2027-09-22']} onSubmit={noop} onClose={noop} />)
   expect(two).toMatch(/<option value="paid" selected="">/)
 })
+
+test('F-212・§3.7・§5.1: まとめて取る休暇の候補から開くと、引く休暇の初期値はその種類。ふつうの経路では有休のまま', () => {
+  const free = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true } as const
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, free] } }
+  const days = ['2027-01-04', '2027-01-05', '2027-01-06', '2027-01-07', '2027-01-08']
+  const h = html(<AddSheetBody input={input} leaveDays={days} initialLeaveTypeId="free" onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('<option value="free" selected="">フリーバカンス（残り 5 日）</option>')
+  expect(h).toContain('未割り当て 5 日 → 0 日') // 2027 年の付与年。持ち分 2400 分、日程なし
+  expect(h).toContain('12/26〜1/11 の 17連休')
+  const plain = html(<AddSheetBody input={input} leaveDays={days} onSubmit={noop} onClose={noop} />)
+  expect(plain).toContain('<option value="paid" selected="">有休（残り 9 日と 2 時間）</option>') // 4440 分
+})

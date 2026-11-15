@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, joinNotes, longBreakChip, quarterHeading, unassignedText, usablePeriod } from './texts'
+import { T, candidateText, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, joinNotes, longBreakChip, quarterHeading, togetherHeading, togetherRest, togetherText, unassignedText, usablePeriod } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -44,4 +44,11 @@ test('§3.7・§3.8: 2 行目の語句は「・」でつなぐ', () => {
   expect(joinNotes(['11/20〜11/23', '2日使う'])).toBe('11/20〜11/23・2日使う')
   expect(joinNotes(['予定'])).toBe('予定')
   expect(joinNotes([])).toBe('')
+})
+
+test('§3.7: まとめて取る休暇の文言', () => {
+  expect(togetherHeading('フリーバカンス', 5)).toBe('フリーバカンス（5日）をまとめて取る')
+  expect(togetherText({ leaveDays: ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-25'], run: { start: '2026-12-19', end: '2027-01-03', days: 16 } })).toBe('12/21(月)〜12/25(金) の 5日を休むと 16連休')
+  expect(togetherText({ leaveDays: ['2026-11-20'], run: { start: '2026-11-20', end: '2026-11-23', days: 4 } })).toBe('11/20(金) の 1日を休むと 4連休')
+  expect(togetherRest(4)).toBe('ほかの取り方（4）')
 })

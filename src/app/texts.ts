@@ -5,6 +5,7 @@ import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/setti
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
+import type { TogetherRow } from '@/domain/view/quarterView'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
 
@@ -418,4 +419,25 @@ export function leaveTypeRowText(t: LeaveType): string {
   const md = (m: MonthDay) => `${Number(m.slice(0, 2))}/${Number(m.slice(3, 5))}`
   const period = t.usable === null ? '' : `・${md(t.usable.start)}〜${md(t.usable.end)}`
   return `${t.name}　${t.days}日${period}`
+}
+
+type TogetherLike = Pick<TogetherRow, 'leaveDays' | 'run'>
+
+/** §3.7 の組の見出し。例: フリーバカンス（5日）をまとめて取る */
+export function togetherHeading(leaveTypeName: string, days: number): string {
+  return `${leaveTypeName}（${days}日）をまとめて取る`
+}
+
+/** §3.7 の 1 行目。休む日が 2 日以上なら期間、1 日ならその日。例: 12/21(月)〜12/25(金) の 5日を休むと 16連休 */
+export function togetherText(row: TogetherLike): string {
+  const { leaveDays, run } = row
+  const first = leaveDays[0]
+  const last = leaveDays[leaveDays.length - 1]
+  const when = leaveDays.length === 1 ? formatDay(first) : `${formatDay(first)}〜${formatDay(last)}`
+  return `${when} の ${leaveDays.length}日を休むと ${run.days}連休`
+}
+
+/** §3.7 の残りをまとめる行。例: ほかの取り方（4） */
+export function togetherRest(count: number): string {
+  return `ほかの取り方（${count}）`
 }

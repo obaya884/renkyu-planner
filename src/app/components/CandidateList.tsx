@@ -40,7 +40,7 @@ const SUMMARY_CLASS = 'flex min-h-11 cursor-pointer items-center rounded-lg bg-c
 
 /** §3.7。まとめた行と祝日のない月の行は標準の <details> で開閉する（状態は持たない） */
 export function CandidateList({ blocks, workMinutes, onAdd }: { blocks: readonly CandidateBlock[] } & Props) {
-  if (blocks.length === 0) return <p className="text-sm text-sub">{T.noCandidates}</p>
+  if (blocks.length === 0) return null
   return (
     <div className="space-y-2">
       {blocks.map((block) => {

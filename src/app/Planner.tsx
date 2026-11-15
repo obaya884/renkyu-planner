@@ -26,7 +26,7 @@ import { buildSummary } from '@/domain/view/summary'
 
 /** 開いているモーダル（1 つだけ）。entry の id が null なら「日を足す」で、その初期の日付を持つ */
 type OpenSheet =
-  | { kind: 'add'; leaveDays: readonly IsoDate[] }
+  | { kind: 'add'; leaveDays: readonly IsoDate[]; leaveTypeId: string | null }
   | { kind: 'entry'; id: string | null; defaultDate: IsoDate }
   | { kind: 'grant'; grantYearStart: IsoDate | null }
   | null
@@ -146,7 +146,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
             <QuarterSection
               view={view}
               workMinutes={settings.workMinutes}
-              onAdd={(leaveDays) => setSheet({ kind: 'add', leaveDays })}
+              onAdd={(leaveDays) => setSheet({ kind: 'add', leaveDays, leaveTypeId: null })}
+              onAddTogether={(leaveDays, leaveTypeId) => setSheet({ kind: 'add', leaveDays, leaveTypeId })}
               onOpen={(id) => setSheet({ kind: 'entry', id, defaultDate: today })}
               onMarkDone={markDone}
               onAddDay={() => openAddDay(view.quarter)}
@@ -175,6 +176,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
         <AddSheet
           input={input}
           leaveDays={sheet.leaveDays}
+          initialLeaveTypeId={sheet.leaveTypeId ?? undefined}
           onSubmit={(drafts) => {
             plannerStore.addEntries(drafts)
             closeSheet()

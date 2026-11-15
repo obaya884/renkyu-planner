@@ -11,6 +11,7 @@ import { MonthCalendar } from './MonthCalendar'
 import { QuarterSection } from './QuarterSection'
 import { QuarterTabs } from './QuarterTabs'
 import { StickySummary } from './StickySummary'
+import { TogetherList } from './TogetherList'
 
 const qs = planningQuarters('2026-11-15')
 const [q4, , q2] = buildQuarterViews(SHEET, qs)
@@ -64,7 +65,7 @@ test('F-304・F-305・R-17: 日程の行。連休の見出し、過ぎた予定�
   expect(h2).toContain(T.overlap)
 })
 test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は候補の欄を描かない', () => {
-  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   const h = html(<QuarterSection view={q4} {...props} />)
   expect(h).toContain('2026年 10〜12月')
   expect(h).toContain('12/26〜1/3（9連休）')
@@ -75,7 +76,7 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
   expect(html(<QuarterSection view={q2} {...props} />)).toContain('前の年と同じ 14日で計算中')
 })
 test('§3.6: 付与日の 1 行。入力済みなら有休の日数を出す', () => {
-  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q2} {...props} />)).toContain(T.enterGrant)
   const entered = { ...SHEET, settings: { ...SHEET.settings, grantYears: { ...SHEET.settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } } }
   const [, , e2] = buildQuarterViews(entered, qs)
@@ -111,9 +112,35 @@ test('§3.4・§4・F-401: 持ち分の 1 行は PC でも隠さず、流れの�
   expect(line).not.toContain('lg:hidden')
   expect(line).toContain('fixed')
   expect(line).toContain('h-7')
-  const props = { workMinutes: 480, onAdd: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q4} {...props} belowSummary />)).toContain('lg:top-7')
   const top = html(<QuarterSection view={q4} {...props} belowSummary={false} />)
   expect(top).toContain('lg:top-0')
   expect(top).not.toContain('lg:top-7')
+})
+
+const freeType = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true } as const
+const withFree = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, freeType] } }
+const [f4, f1] = buildQuarterViews(withFree, qs)
+
+test('F-212・§3.7: まとめて取る休暇の組。見出し、先頭の 1 件、残りの 1 行', () => {
+  const h = html(<TogetherList blocks={f4.together} onAdd={noop} />)
+  expect(h).toContain('フリーバカンス（5日）をまとめて取る')
+  expect(h).toContain('12/21(月)〜12/25(金) の 5日を休むと 16連休')
+  expect(h).toContain('12/19〜1/3')
+  expect(h).toContain('ほかの取り方（4）')
+  expect(h).toContain('<details')
+  expect(h).toContain(T.long)
+  expect(h).not.toContain(T.nextGrantYear)
+  expect(h.indexOf('12/21(月)〜12/25(金)')).toBeLessThan(h.indexOf('ほかの取り方（4）'))
+  expect(h.indexOf('ほかの取り方（4）')).toBeLessThan(h.indexOf('11/16(月)〜11/20(金) の 5日を休むと 10連休'))
+  const n = html(<TogetherList blocks={f1.together} onAdd={noop} />)
+  expect(n).toContain('1/4(月)〜1/8(金) の 5日を休むと 17連休')
+  expect(n).toContain('12/26〜1/11・次の付与年から引く')
+})
+test('§3.7: まとめて取る休暇の組は、ふつうの候補の上。種類が無ければ出さない', () => {
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onMarkDone: noop, onAddDay: noop, onEnterGrant: noop }
+  const h = html(<QuarterSection view={f4} {...props} />)
+  expect(h.indexOf('フリーバカンス（5日）をまとめて取る')).toBeLessThan(h.indexOf('11/20(金) を休むと 4連休'))
+  expect(html(<QuarterSection view={q4} {...props} />)).not.toContain('をまとめて取る')
 })

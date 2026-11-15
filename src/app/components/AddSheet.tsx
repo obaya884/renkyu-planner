@@ -14,15 +14,17 @@ import { defaultLeaveTypeId } from '@/domain/view/defaultLeaveType'
 type Props = {
   input: PlannerInput
   leaveDays: readonly IsoDate[]
+  /** まとめて取る休暇の候補から開くとき、その種類を引く休暇の初期値にする（§5.1） */
+  initialLeaveTypeId?: string
   onSubmit: (drafts: readonly EntryDraft[]) => void
   onClose: () => void
 }
 
 /** §5.1 の中身。入力欄の値（引く休暇と予定の名前）だけを状態に持つ。テストはこちらを直接描く */
-export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
+export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, onClose }: Props) {
   const { leaveTypes, workMinutes } = input.settings
   // F-208: 使える期間のある休暇に足りる未割り当てがあればその休暇、無ければ有休。利用者はいつでも選び直せる
-  const [leaveTypeId, setLeaveTypeId] = useState(() => defaultLeaveTypeId(input, leaveDays))
+  const [leaveTypeId, setLeaveTypeId] = useState(() => initialLeaveTypeId ?? defaultLeaveTypeId(input, leaveDays))
   const [title, setTitle] = useState('')
 
   const deltas = previewAdd(input, leaveDays, leaveTypeId)

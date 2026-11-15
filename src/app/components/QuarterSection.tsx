@@ -2,6 +2,7 @@ import { CandidateList } from '@/app/components/CandidateList'
 import { EntryList } from '@/app/components/EntryList'
 import { MARK_CLASS, MonthCalendar } from '@/app/components/MonthCalendar'
 import { BELOW_SUMMARY_TOP_LG } from '@/app/components/StickySummary'
+import { TogetherList } from '@/app/components/TogetherList'
 import { T, grantNoteText, longBreakLine, quarterHeading } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
 import type { DayMark, QuarterView } from '@/domain/view/quarterView'
@@ -10,6 +11,7 @@ type Props = {
   view: QuarterView
   workMinutes: number
   onAdd: (leaveDays: readonly IsoDate[]) => void
+  onAddTogether: (leaveDays: readonly IsoDate[], leaveTypeId: string) => void
   onOpen: (id: string) => void
   onMarkDone: (id: string) => void
   onAddDay: () => void
@@ -28,8 +30,8 @@ const LEGEND: Readonly<Record<DayMark, string>> = {
 const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', 'candidate']
 
 /** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
-export function QuarterSection({ view, workMinutes, onAdd, onOpen, onMarkDone, onAddDay, onEnterGrant, belowSummary = false }: Props) {
-  const { quarter, past, longBreak, months, marks, grantNote, candidates, entries } = view
+export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onMarkDone, onAddDay, onEnterGrant, belowSummary = false }: Props) {
+  const { quarter, past, longBreak, months, marks, grantNote, candidates, together, noCandidates, entries } = view
   return (
     <section className="space-y-3">
       <h2 className={`bg-white py-1 text-lg font-bold lg:sticky lg:z-10 ${belowSummary ? BELOW_SUMMARY_TOP_LG : 'lg:top-0'}`}>{quarterHeading(quarter.start)}</h2>
@@ -68,7 +70,14 @@ export function QuarterSection({ view, workMinutes, onAdd, onOpen, onMarkDone, o
           {!past && (
             <div>
               <h3 className="font-bold">{T.candidates}</h3>
-              <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
+              {noCandidates ? (
+                <p className="text-sm text-sub">{T.noCandidates}</p>
+              ) : (
+                <div className="space-y-3">
+                  <TogetherList blocks={together} onAdd={onAddTogether} />
+                  <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
+                </div>
+              )}
             </div>
           )}
           <EntryList blocks={entries} workMinutes={workMinutes} onOpen={onOpen} onMarkDone={onMarkDone} onAddDay={onAddDay} />
