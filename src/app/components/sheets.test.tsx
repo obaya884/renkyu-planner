@@ -268,7 +268,7 @@ test('D-10: M-1 も、予定の名前は 100 文字まで。日程が上限の�
   expect(h).toMatch(/<button[^>]*disabled=""[^>]*>予定に入れる/)
 })
 
-test('F-506・§5.2: これからの予定を直すときだけ「Google カレンダーに追加」を出し、別のタブで開く', () => {
+test('F-506・§5.2: 直すときは、これからの予定にだけ「Google カレンダーに追加」を出し、別のタブで開く', () => {
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=%E5%B9%B4%E6%9C%AB%E5%B9%B4%E5%A7%8B&dates=20261228/20261229'
   const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={url} onSubmit={noop} onRemove={noop} onClose={noop} />)
@@ -278,7 +278,6 @@ test('F-506・§5.2: これからの予定を直すときだけ「Google カレ�
   expect(h).toContain(T.addToGoogleCalendar)
   const past = SHEET.entries.find((e) => e.date === '2026-11-02')! // 取得済み
   expect(html(<EntrySheetBody input={SHEET} entry={past} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
-  expect(html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
 })
 
 const tagsOf = (h: string, re: RegExp) => h.match(re) ?? []
@@ -341,4 +340,36 @@ test('画面定義書 §5: 日付の欄は右端にカレンダーの印を重�
     expect(classesOf(svg)).toEqual(expect.arrayContaining(['pointer-events-none', 'absolute']))
     expect(classesOf(f.match(/<input[^>]*>/)![0])).toContain('pr-10')
   }
+})
+
+const CAL = 'https://calendar.google.com/calendar/render'
+const linkTag = (h: string) => h.match(/<a [^>]*>Google カレンダーに追加<\/a>/)?.[0]
+test('F-506・§5.1: 候補から入れるモーダルにリンクを出す。最初の日から最後の日までの 1 件', () => {
+  const tag = linkTag(html(<AddSheetBody input={SHEET} leaveDays={['2026-12-28', '2026-12-29']} onSubmit={noop} onClose={noop} />))!
+  expect(tag).toContain(`href="${CAL}?action=TEMPLATE&amp;text=%E6%9C%89%E4%BC%91&amp;dates=20261228/20261230"`)
+  expect(tag).toContain('target="_blank"')
+  expect(tag).toContain('rel="noopener noreferrer"')
+  expect(tag).not.toContain('aria-disabled')
+})
+test('F-506・§5.1: 最後の日が今日より前なら、リンクは消さずに押せない見た目（aria-disabled、href と tabindex が無い）', () => {
+  const tag = linkTag(html(<AddSheetBody input={SHEET} leaveDays={['2026-11-10']} onSubmit={noop} onClose={noop} />))!
+  expect(tag).toContain('aria-disabled="true"')
+  expect(tag).not.toContain('href')
+  expect(tag).not.toContain('tabindex')
+})
+test('F-506・§5.2: 日を足すモーダルにもリンクを出す。保存できない状態のときは押せない見た目', () => {
+  const add = (date: string) => html(<EntrySheetBody input={SHEET} entry={null} defaultDate={date} calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const ok = linkTag(add('2026-11-20'))!
+  expect(ok).toContain(`href="${CAL}?action=TEMPLATE`)
+  expect(ok).toContain('dates=20261120/20261121')
+  expect(ok).not.toContain('aria-disabled')
+  const rest = linkTag(add('2026-11-21'))! // 土曜は休みの日で保存できない
+  expect(rest).toContain('aria-disabled="true"')
+  expect(rest).not.toContain('href')
+  expect(rest).not.toContain('tabindex')
+  expect(linkTag(add('2026-11-13'))).toContain('aria-disabled="true"') // 最後の日が今日より前
+})
+test('F-506・§5.2: 直すときの条件は変わらない（calendarUrl が null なら行を出さない）', () => {
+  const entry = SHEET.entries.find((e) => e.date === '2026-11-02')!
+  expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
 })

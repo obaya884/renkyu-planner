@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { CalendarLinkRow } from '@/app/components/CalendarLinkRow'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
+import { addCalendarUrlOf } from '@/app/transfer/calendarEvents'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type EntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
@@ -41,6 +43,9 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
   const added = leaveDays.map((date, i) => ({ id: `add-${i}`, date, leaveTypeId, amount: { unit: 'day' } as const, title: '' }))
   const run = runContaining(restCalendarOf({ ...input, entries: [...input.entries, ...added] }), leaveDays[0])
 
+  // F-506・§5.1: 入力中の内容から作る。最後の日が今日より前のときは null（押せない見た目）
+  const calendarUrl = addCalendarUrlOf(leaveDays, { leaveTypeId, amount: { unit: 'day' }, title }, input.settings, input.today)
+
   return (
     <>
       <SheetTitle>{T.addToPlan}</SheetTitle>
@@ -74,6 +79,7 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
           </p>
         ))}
         {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
+        <CalendarLinkRow url={calendarUrl} />
       </div>
       <SheetButtons>
         <button type="button" onClick={onClose} className={SECONDARY_BUTTON_CLASS}>

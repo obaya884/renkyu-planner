@@ -34,3 +34,10 @@ test('§5.2・壊れた文字: 対になっていないサロゲートは U+FFFD
     expect(u.searchParams.get('text')).toBe(expected)
   }
 })
+test('F-506・§5.1: 複数の日は最初の日から最後の日までの 1 件。終わりは最後の日の翌日（月末・年末・うるう年をまたぐ）', () => {
+  expect(googleCalendarUrl({ date: '2026-12-28', lastDate: '2027-01-04', summary: 'x' })).toContain('&dates=20261228/20270105')
+  expect(googleCalendarUrl({ date: '2026-11-27', lastDate: '2026-11-30', summary: 'x' })).toContain('&dates=20261127/20261201')
+  expect(googleCalendarUrl({ date: '2027-12-30', lastDate: '2027-12-31', summary: 'x' })).toContain('&dates=20271230/20280101')
+  expect(googleCalendarUrl({ date: '2028-02-28', lastDate: '2028-02-29', summary: 'x' })).toContain('&dates=20280228/20280301')
+  expect(googleCalendarUrl({ date: '2026-12-28', lastDate: '2026-12-28', summary: 'x' })).toContain('&dates=20261228/20261229')
+})

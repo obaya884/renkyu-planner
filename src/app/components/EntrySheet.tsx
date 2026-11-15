@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { CalendarLinkRow } from '@/app/components/CalendarLinkRow'
 import { DateField } from '@/app/components/DateField'
 import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
+import { addCalendarUrlOf } from '@/app/transfer/calendarEvents'
 import { T, entrySheetTitle, errorText, rangeDaysText } from '@/app/texts'
 import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
@@ -19,7 +21,7 @@ type Props = {
   input: PlannerInput
   entry: Entry | null
   defaultDate: IsoDate
-  /** F-506: 「Google カレンダーに追加」の行き先。出さないときは null（足すとき、取得済み、過ぎた日程） */
+  /** F-506: 直すときの「Google カレンダーに追加」の行き先。出さないときは null（取得済み、過ぎた日程）。足すときは入力中の内容から部品の中で作るので使わない */
   calendarUrl: string | null
   /** 1 件を足す・直すときは [draft]、期間で足すときは足す日ごとの 1 日の日程（F-307） */
   onSubmit: (drafts: readonly EntryDraft[]) => void
@@ -105,6 +107,11 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
   const { drafts, errors: saveErrors, canSave } = planEntrySave(input, draft, entry?.id ?? null, range)
   const typeErrors = saveErrors.filter((e) => e === 'unknownLeaveType')
   const limitErrors = saveErrors.filter((e) => e === 'tooManyEntries')
+
+  // F-506・§5.2: 足すときは入力中の内容から作る。保存できない状態のときと、最後の日が今日より前のときは null（押せない見た目）
+  const addUrl = canSave
+    ? addCalendarUrlOf(range?.days ?? [date], { leaveTypeId, amount: ranged ? { unit: 'day' } : amount, title }, input.settings, input.today)
+    : null
 
   return (
     <>
@@ -204,14 +211,8 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         <Field label={T.entryTitleLabel}>
           <input type="text" maxLength={STORAGE_LIMITS.textLength} value={title} onChange={(e) => setTitle(e.target.value)} className={FIELD_CLASS} />
         </Field>
-        {calendarUrl !== null && (
-          <Line label={T.calendarRowLabel}>
-            <a href={calendarUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-primary underline">
-              {T.addToGoogleCalendar}
-            </a>
-          </Line>
-        )}
         <ErrorLines errors={limitErrors} lastAddable={lastAddable} />
+        {(adding || calendarUrl !== null) && <CalendarLinkRow url={adding ? addUrl : calendarUrl} />}
       </div>
       <SheetButtons
         left={
