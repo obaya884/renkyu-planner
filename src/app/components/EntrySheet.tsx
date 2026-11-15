@@ -4,14 +4,13 @@ import { useState } from 'react'
 import { DateField } from '@/app/components/DateField'
 import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
-import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
-import { runContaining } from '@/domain/calendar/restDays'
+import { T, entrySheetTitle, errorText, rangeDaysText } from '@/app/texts'
 import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
-import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
+import type { IsoDate } from '@/domain/shared/date'
 import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { STORAGE_LIMITS } from '@/domain/storage/limits'
-import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import type { PlannerInput } from '@/domain/view/input'
 import { type SaveError, planEntrySave } from '@/domain/view/entrySave'
 import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
 
@@ -57,11 +56,11 @@ function ErrorLines({ errors, lastAddable }: { errors: readonly (SaveError | Ran
 }
 
 /**
- * §5.2・F-307: 期間で足すときの、終わりの日の欄の下の行。理由か足す日、F-306 の知らせ、未割り当て、連休。
+ * §5.2・F-307: 期間で足すときの、終わりの日の欄の下の行。理由か足す日、F-306 の知らせ、未割り当て。
  * lastAddable は tooFar の文に入れる日付（R-19）
  */
 export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview: RangePreview; workMinutes: number; lastAddable: IsoDate }) {
-  const { days, errors, overOneDay, run, deltas } = preview
+  const { days, errors, overOneDay, deltas } = preview
   return (
     <>
       {errors.length > 0 ? (
@@ -71,12 +70,11 @@ export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview
       )}
       {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
       <UnassignedLines deltas={deltas} workMinutes={workMinutes} />
-      {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
     </>
   )
 }
 
-/** §5.2 の中身。入力欄の値だけを状態に持つ。検証は checkEntryDraft、連休は runContaining を呼ぶだけ */
+/** §5.2 の中身。入力欄の値だけを状態に持つ。検証は checkEntryDraft を呼ぶだけ。連休は出さない（一覧の行に出る。F-304） */
 export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmit, onRemove, onClose }: Props) {
   const { leaveTypes } = input.settings
   const adding = entry === null
@@ -96,15 +94,6 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
     kind === 'minutes' ? { unit: 'minutes', minutes: Number(hours) * 60 + Number(mins) } : { unit: kind }
   const draft: EntryDraft = { date, leaveTypeId, amount, title, done }
   const { errors, overOneDay } = checkEntryDraft(input, draft, entry?.id ?? null)
-
-  // 1 日分のときだけ、その日が作る連休を出す。直しているときは、自分を除いた記録に今の入力を足して求める
-  const run =
-    kind === 'day' && isValidIsoDate(date)
-      ? runContaining(
-          restCalendarOf({ ...input, entries: [...input.entries.filter((e) => e.id !== entry?.id), { id: 'draft', ...draft }] }),
-          date,
-        )
-      : null
 
   const lastAddable = lastAddableDate(input.today)
   const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate' || e === 'tooFar')
@@ -205,7 +194,6 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
             </a>
           </Line>
         )}
-        {!ranged && run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
         <ErrorLines errors={limitErrors} lastAddable={lastAddable} />
       </div>
       <SheetButtons

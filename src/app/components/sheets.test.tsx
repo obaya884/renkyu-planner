@@ -40,7 +40,7 @@ test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル',
   const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
   expect(h).toContain('12/28(月) の日程')
   expect(h).toContain('年末年始')
-  expect(h).toContain('12/26〜1/3 の 9連休')
+  expect(h).not.toContain('連休') // §5.2: 連休はモーダルに出さない（一覧の行に出る。F-304）
   expect(h).toContain(T.remove)
   expect(h).not.toContain('type="date"')
   const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
@@ -48,6 +48,7 @@ test('F-301〜F-303: 日程を直すモーダルと、日を足すモーダル',
   expect(add).toContain('type="date"')
   expect(add).toContain('value="2026-11-16"')
   expect(add).not.toContain(T.remove)
+  expect(add).not.toContain('連休')
 })
 test('R-19: 日を足すモーダルの日付は 4 つ目の四半期の末日まで。先の日付は理由を出して保存できない', () => {
   const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
@@ -202,15 +203,14 @@ test('F-307・§5.2: 日を足すモーダルの終わりの日。直すとき�
   const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
   expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.endDateLabel)
 })
-test('F-307・F-306・§5.2: 期間で足すときの行。足す日、知らせ、未割り当て、連休', () => {
+test('F-307・F-306・§5.2: 期間で足すときの行。足す日、知らせ、未割り当て。連休は出さない', () => {
   const h = html(<EntryRangeLines preview={previewRange(SHEET, '2026-12-28', '2027-01-04', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
   expect(h).toContain('12/28(月)・12/29(火)・1/4(月) の 3日ぶんを足します')
   expect(h).toContain(T.overOneDay)
   expect(h).toContain('未割り当て 4 日と 2 時間 → 1 日と 2 時間')
-  expect(h).toContain('12/26〜1/4 の 10連休')
+  expect(h).not.toContain('連休')
   const big = html(<EntryRangeLines preview={previewRange(SHEET, '2026-12-21', '2027-01-08', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
   expect(big).toContain('不足 7 日と 6 時間') // 12 日 = 5760 分。2040 − 5760 = −3720 分
-  expect(big).toContain('12/19〜1/11 の 24連休')
   const far = html(<EntryRangeLines preview={previewRange(SHEET, '2027-09-27', '2027-10-01', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
   expect(far).toContain('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
   expect(far).not.toContain('ぶんを足します')
