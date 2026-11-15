@@ -31,10 +31,11 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   useEffect(() => {
     const dialog = ref.current
     const content = dialog?.firstElementChild
-    if (!dialog || !content) return
+    if (!dialog || !content || typeof ResizeObserver === 'undefined') return
     // 中身がモーダルに収まらないかを data 属性で示す。下端に残るボタンの並びの上の線は、収まらないときだけ引く（§5）。
+    // 大きさの小数の丸めで 1px ずれても線を引かないよう、1px の差は収まっているとみなす。
     // スマホでは、ブラウザのバーが縮むと dvh でモーダルの高さが変わるので、モーダルと中身の両方の大きさを見る
-    const mark = () => dialog.toggleAttribute(SHEET_OVERFLOWING_ATTR, dialog.scrollHeight > dialog.clientHeight)
+    const mark = () => dialog.toggleAttribute(SHEET_OVERFLOWING_ATTR, dialog.scrollHeight > dialog.clientHeight + 1)
     const observer = new ResizeObserver(mark)
     observer.observe(dialog)
     observer.observe(content)
@@ -60,7 +61,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         pressedOutside.current = false
         releasedOutside.current = false
       }}
-      className="group m-0 mx-auto mt-auto max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-xl bg-white text-ink backdrop:bg-black/50 lg:m-auto lg:max-w-md lg:rounded-xl"
+      className="group m-0 mx-auto mt-auto max-h-[90dvh] scroll-pb-20 w-full max-w-none overflow-y-auto rounded-t-xl bg-white text-ink backdrop:bg-black/50 lg:m-auto lg:max-w-md lg:rounded-xl"
     >
       <div className="space-y-4 p-4">{children}</div>
     </dialog>

@@ -6,7 +6,7 @@ import { previewRange } from '@/domain/view/rangePreview'
 import { AddSheetBody } from './AddSheet'
 import { EntryRangeLines, EntrySheetBody } from './EntrySheet'
 import { GrantSheetBody } from './GrantSheet'
-import { SHEET_TITLE_ATTR } from './Sheet'
+import { SHEET_TITLE_ATTR, Sheet } from './Sheet'
 import { UnassignedLines } from './UnassignedLines'
 
 const noop = () => {}
@@ -300,4 +300,13 @@ test('画面定義書 §7: 短い数の欄は決めた幅で出し、w-full を�
     expect(classesOf(n)).not.toContain('w-full')
     expect(classesOf(n).some((c) => c === 'w-20' || c === 'w-24')).toBe(true)
   }
+})
+test('画面定義書 §5: 焦点が下の欄に移っても、張り付けたボタンの並びの下に潜らないよう、モーダルに scroll-padding-bottom を付ける', () => {
+  const h = html(
+    <Sheet title="t" onClose={noop}>
+      <p />
+    </Sheet>,
+  )
+  const dialog = h.match(/<dialog[^>]*>/)![0]
+  expect(classesOf(dialog)).toContain('scroll-pb-20')
 })
