@@ -184,3 +184,13 @@ test('F-208・F-209: 「次の付与年から引く」は、初期値の種類�
   const paid = rowsOf(buildQuarterViews(SHEET, qs)[1]).find((r) => r.leaveDays.join() === '2027-01-08')
   expect(paid).toMatchObject({ leaveTypeId: 'paid', nextGrantYear: false })
 })
+test('F-208・R-8: 祝日のない月の候補でも、使える期間のある休暇に足りれば初期値はその休暇', () => {
+  // 2027 年 6 月は祝日が無く、SHEET に 6 月の日程も無いので、金曜か月曜を 1 日休む候補になる（R-8）。
+  // 6 月の休暇（付与される日は有休と同じ 05-01）の 2027-05-01 の付与年の未割り当ては 1 × 480 = 480 分で、1 日分（480 分）以上ある
+  const june = { id: 'june', name: '6月休暇', days: 1, usable: { start: '06-01', end: '06-30' }, grantDay: null, together: false } as const
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, june] } }
+  const gap = buildQuarterViews(input, qs)[2].candidates.find((b) => b.kind === 'monthGap' && b.month === '2027-06-01')
+  if (gap?.kind !== 'monthGap') throw new Error('6 月の候補が無い')
+  expect(gap.rows.length).toBeGreaterThan(0)
+  expect(gap.rows.every((r) => r.leaveTypeId === 'june' && r.leaveTypeName === '6月休暇' && r.shortMinutes === null)).toBe(true)
+})

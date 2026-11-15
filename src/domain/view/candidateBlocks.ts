@@ -58,7 +58,7 @@ function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean,
     long,
     unconfirmed,
     leaveTypeId,
-    // 有休は保存の検証で必ず先頭にあるので、名前は見つかる
+    // defaultLeaveTypeId は leaveTypes の中の id を返すので、名前は見つかる（leaveTypes が空のときだけ ''）
     leaveTypeName: input.settings.leaveTypes.find((t) => t.id === leaveTypeId)?.name ?? '',
     nextGrantYear: inNextGrantYear(input, leaveDays, leaveTypeId),
     shortMinutes: shortMinutesOf(input, leaveDays, leaveTypeId),
