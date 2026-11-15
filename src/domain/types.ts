@@ -1,7 +1,8 @@
 import type { IsoDate, MonthDay } from './shared/date'
 
+/** `name` は任意の名前（F-103）。名前なしのときは項目を持たない */
 export type CompanyHoliday = Readonly<
-  { kind: 'yearly'; start: MonthDay; end: MonthDay } | { kind: 'once'; start: IsoDate; end: IsoDate }
+  { kind: 'yearly'; start: MonthDay; end: MonthDay; name?: string } | { kind: 'once'; start: IsoDate; end: IsoDate; name?: string }
 >
 
 export type Amount = Readonly<{ unit: 'day' } | { unit: 'half' } | { unit: 'minutes'; minutes: number }>

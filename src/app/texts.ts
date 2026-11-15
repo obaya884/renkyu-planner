@@ -39,6 +39,7 @@ export const T = {
   addLeaveType: '＋ 休暇の種類を足す',
   leaveTypeTitle: '休暇の種類',
   nameLabel: '名前',
+  companyHolidayNameLabel: '名前（任意）',
   leaveDaysLabel: '日数',
   usableLabel: '使える期間',
   setUsable: '使える期間を決める',
@@ -398,12 +399,11 @@ export function errorText(e: DraftError | GrantError | CompanyHolidayError | Lea
 
 /** §6 の会社の休日の行（仮の文）。例: 12/30〜1/3　毎年、2026/8/13〜2026/8/16　その年だけ */
 export function companyHolidayText(h: CompanyHoliday): string {
-  if (h.kind === 'yearly') {
-    const md = (m: MonthDay) => `${Number(m.slice(0, 2))}/${Number(m.slice(3, 5))}`
-    return `${md(h.start)}〜${md(h.end)}　${T.yearly}`
-  }
+  const md = (m: MonthDay) => `${Number(m.slice(0, 2))}/${Number(m.slice(3, 5))}`
   const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
-  return `${ymd(h.start)}〜${ymd(h.end)}　${T.once}`
+  const period = h.kind === 'yearly' ? `${md(h.start)}〜${md(h.end)}　${T.yearly}` : `${ymd(h.start)}〜${ymd(h.end)}　${T.once}`
+  // §6: 名前があれば行の先頭に出す
+  return h.name === undefined ? period : `${h.name}　${period}`
 }
 
 /** §6 の休暇の種類の行（仮の文）。例: 夏季休暇　3日・7/1〜9/30。期間が無ければ 夏季休暇　3日。付与される日とまとめて取る印は添えない */

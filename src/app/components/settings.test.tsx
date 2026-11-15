@@ -160,3 +160,15 @@ test('§6: 押すとモーダルが開く行にだけ「›」を出す', () => 
   const leave = html(<LeaveTypeSection rows={leaveTypeRows(input)} onOpen={() => {}} onAdd={() => {}} />)
   expect(leave.match(/›/g)).toHaveLength(1) // 夏季休暇の行だけ。有休の行には出さない
 })
+
+test('F-103・§6・§5.4: 会社の休日の名前は、行の先頭に出し、モーダルに名前の欄がある', () => {
+  const rows = companyHolidayRows({ ...SHEET.settings, companyHolidays: [{ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }, { kind: 'once', start: '2027-08-13', end: '2027-08-13' }] })
+  const h = html(<CompanyHolidaySection rows={rows} onOpen={() => {}} onAdd={() => {}} />)
+  expect(h).toContain('年末年始　12/30〜1/3　毎年')
+  expect(h).toContain('<span>2027/8/13〜2027/8/13　その年だけ</span>')
+  const edit = html(<CompanyHolidaySheetBody holiday={{ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(edit).toMatch(/<input[^>]*type="text"[^>]*value="年末年始"/)
+  const add = html(<CompanyHolidaySheetBody holiday={null} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  expect(add).toMatch(/<input[^>]*type="text"[^>]*value=""/)
+  expect(add).not.toMatch(/<button[^>]* disabled=""[^>]*>保存する/) // 名前が空でも保存できる（class の中の disabled: は数えない）
+})

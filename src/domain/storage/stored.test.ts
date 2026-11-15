@@ -90,4 +90,12 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, weekStart: 'tuesday' } }).ok).toBe(false)
     expect(parse({ ...ok, settings: { ...DEFAULT_SETTINGS, weekStart: null } }).ok).toBe(false)
   })
+  test('F-103・D-4: 会社の休日の name は任意。前後の空白を除き、空と項目なしは名前なし', () => {
+    const withH = (h: unknown) => parse({ ...ok, settings: { ...DEFAULT_SETTINGS, companyHolidays: [h] } })
+    const holidaysOf = (r: ReturnType<typeof parse>) => (r.ok ? r.value.settings.companyHolidays : null)
+    expect(holidaysOf(withH({ kind: 'yearly', start: '12-30', end: '01-03', name: ' 年末年始 ' }))).toEqual([{ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }])
+    expect(holidaysOf(withH({ kind: 'yearly', start: '12-30', end: '01-03' }))).toEqual([{ kind: 'yearly', start: '12-30', end: '01-03' }])
+    expect(holidaysOf(withH({ kind: 'once', start: '2027-08-13', end: '2027-08-13', name: '  ' }))).toEqual([{ kind: 'once', start: '2027-08-13', end: '2027-08-13' }])
+    expect(withH({ kind: 'yearly', start: '12-30', end: '01-03', name: 5 }).ok).toBe(false)
+  })
 })

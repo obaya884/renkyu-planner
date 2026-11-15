@@ -1,3 +1,4 @@
+import { withHolidayName } from '@/domain/entries/settingsInput'
 import { isValidCompanyHoliday } from '@/domain/calendar/companyHoliday'
 import { isValidGrantDay } from '@/domain/leave/grantYear'
 import { isValidIsoDate } from '@/domain/shared/date'
@@ -149,16 +150,23 @@ function formOf(v: unknown, re: RegExp, what: string): string {
   return s
 }
 
+/** D-4: 会社の休日の名前。項目が無ければ名前なし。文字列でなければ失敗 */
+function holidayName(v: unknown): string {
+  if (v === undefined) return ''
+  if (typeof v !== 'string') return fail('会社の休日の name')
+  return v
+}
+
 /** 形だけを確かめる。R-15 に合うかは readSettings が確かめる */
 function readCompanyHoliday(v: unknown): CompanyHoliday {
   const o = obj(v, '会社の休日')
   if (o.kind === 'yearly') {
     const re = /^\d{2}-\d{2}$/
-    return { kind: 'yearly', start: formOf(o.start, re, '会社の休日の start'), end: formOf(o.end, re, '会社の休日の end') }
+    return withHolidayName({ kind: 'yearly', start: formOf(o.start, re, '会社の休日の start'), end: formOf(o.end, re, '会社の休日の end') }, holidayName(o.name))
   }
   if (o.kind === 'once') {
     const re = /^\d{4}-\d{2}-\d{2}$/
-    return { kind: 'once', start: formOf(o.start, re, '会社の休日の start'), end: formOf(o.end, re, '会社の休日の end') }
+    return withHolidayName({ kind: 'once', start: formOf(o.start, re, '会社の休日の start'), end: formOf(o.end, re, '会社の休日の end') }, holidayName(o.name))
   }
   return fail('会社の休日の kind')
 }

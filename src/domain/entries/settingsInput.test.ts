@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { checkCompanyHoliday, checkLeaveTypeDraft, isValidWorkMinutes, normalizeLeaveTypeDraft, workMinutesFrom } from './settingsInput'
+import { checkCompanyHoliday, checkLeaveTypeDraft, isValidWorkMinutes, normalizeLeaveTypeDraft, withHolidayName, workMinutesFrom } from './settingsInput'
 
 test('F-102・D-4: 時間と分から所定労働時間（分）', () => {
   expect(workMinutesFrom('7', '45')).toBe(465)
@@ -40,4 +40,10 @@ test('F-104・§5.5: 休暇の種類の検証', () => {
 test('§5.5: 休暇の種類の名前は、前後の空白を除いて保存する', () => {
   const d = { name: '　 夏季休暇 \t', days: 3, usable: null, grantDay: null, together: false }
   expect(normalizeLeaveTypeDraft(d)).toEqual({ ...d, name: '夏季休暇' })
+})
+
+test('F-103・§5.4: 会社の休日の名前は、前後の空白を除く。空なら名前を持たない', () => {
+  expect(withHolidayName({ kind: 'yearly', start: '12-30', end: '01-03' }, ' 年末年始　')).toEqual({ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' })
+  expect(withHolidayName({ kind: 'yearly', start: '12-30', end: '01-03', name: '年末年始' }, '  ')).toEqual({ kind: 'yearly', start: '12-30', end: '01-03' })
+  expect(withHolidayName({ kind: 'once', start: '2027-08-13', end: '2027-08-13' }, '')).toEqual({ kind: 'once', start: '2027-08-13', end: '2027-08-13' })
 })

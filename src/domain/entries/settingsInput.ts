@@ -17,6 +17,13 @@ export function isValidWorkMinutes(m: number): boolean {
   return Number.isInteger(m) && m >= 1 && m <= 1440
 }
 
+/** F-103・D-4: 会社の休日に名前を入れる。前後の空白を除き、空なら名前の項目を持たない */
+export function withHolidayName(h: CompanyHoliday, name: string): CompanyHoliday {
+  const { name: _old, ...rest } = h
+  const trimmed = name.trim()
+  return trimmed === '' ? rest : { ...rest, name: trimmed }
+}
+
 export type CompanyHolidayError = 'invalidDate' | 'reversed' | 'tooLong'
 
 /** R-15: 会社の休日の検証。空になるのは isValidCompanyHoliday が true のときだけ */

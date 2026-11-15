@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FIELD_CLASS, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
 import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
-import { checkCompanyHoliday, monthDayChoices } from '@/domain/entries/settingsInput'
+import { checkCompanyHoliday, monthDayChoices, withHolidayName } from '@/domain/entries/settingsInput'
 import type { IsoDate } from '@/domain/shared/date'
 import type { CompanyHoliday } from '@/domain/types'
 
@@ -19,6 +19,7 @@ type Props = {
 /** §5.4 の中身。入力欄の値だけを状態に持つ。検証は domain の checkCompanyHoliday を呼ぶだけ */
 export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, onClose }: Props) {
   const todayMd = toMd(today.slice(5))
+  const [name, setName] = useState(holiday?.name ?? '')
   const [kind, setKind] = useState<'yearly' | 'once'>(holiday?.kind ?? 'yearly')
   // 切り替えても、もう一方の入力が消えないよう、種類ごとに値を持つ
   const [yStart, setYStart] = useState<Md>(holiday?.kind === 'yearly' ? toMd(holiday.start) : todayMd)
@@ -26,8 +27,10 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
   const [oStart, setOStart] = useState(holiday?.kind === 'once' ? holiday.start : today)
   const [oEnd, setOEnd] = useState(holiday?.kind === 'once' ? holiday.end : today)
 
-  const draft: CompanyHoliday =
-    kind === 'yearly' ? { kind, start: fromMd(yStart), end: fromMd(yEnd) } : { kind, start: oStart, end: oEnd }
+  const draft: CompanyHoliday = withHolidayName(
+    kind === 'yearly' ? { kind, start: fromMd(yStart), end: fromMd(yEnd) } : { kind, start: oStart, end: oEnd },
+    name,
+  )
   const errors = checkCompanyHoliday(draft)
   const canSubmit = errors.length === 0
   // 欄が空のあいだは誤りの文を出さず、ボタンを押せなくするだけにする
@@ -37,6 +40,10 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
     <>
       <SheetTitle>{T.companyHolidayTitle}</SheetTitle>
       <div className="space-y-3">
+        <label className="block">
+          <span className="block text-sm text-sub">{T.companyHolidayNameLabel}</span>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={FIELD_CLASS} />
+        </label>
         <fieldset>
           <legend className="text-sm text-sub">{T.repeatLabel}</legend>
           <div className="flex gap-4">
