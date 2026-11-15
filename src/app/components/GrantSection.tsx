@@ -19,11 +19,13 @@ export function GrantSection({
   workMinutes,
   onOpen,
   onFirst,
+  onChangeDay,
 }: {
   view: GrantSectionView | null
   workMinutes: number
   onOpen: (grantYearStart: IsoDate) => void
   onFirst: () => void
+  onChangeDay: () => void
 }) {
   if (view === null) {
     return (
@@ -37,11 +39,10 @@ export function GrantSection({
   }
   return (
     <div className="space-y-1">
-      {/* 付与日の行を押したときの動きは、別のタスクで足す */}
-      <div className={ROW_CLASS}>
+      <button type="button" onClick={onChangeDay} className={ROW_CLASS}>
         <span>{T.grantDayRowLabel}</span>
         <span>{grantDayText(view.grantDay)}</span>
-      </div>
+      </button>
       {[view.current, view.next].map((row, i) => (
         <button key={row.start} type="button" onClick={() => onOpen(row.start)} className={ROW_CLASS}>
           <RowBody row={row} isNext={i === 1} workMinutes={workMinutes} />

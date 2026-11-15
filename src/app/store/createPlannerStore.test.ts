@@ -1,5 +1,8 @@
 import { expect, test } from 'vitest'
-import { EMPTY_STORED, STORAGE_KEY, UNREADABLE_KEY, parseStored } from '@/domain/storage/stored'
+import { EMPTY_STORED, STORAGE_KEY, UNREADABLE_KEY, parseStored, serializeStored } from '@/domain/storage/stored'
+import { balanceOf } from '@/domain/leave/balance'
+import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
+import { SHEET } from '@/domain/view/fixture'
 import { createPlannerStore } from './createPlannerStore'
 
 const memory = (init: Record<string, string> = {}) => {
@@ -152,6 +155,23 @@ test('F-101・F-405: 付与日と日数を入れる。付与日を変えると�
   })
   s.setGrant({ grantDay: '04-01', grantDays: 14, entitlementMinutes: null }, '2026-04-01')
   expect(s.getState().data.settings.grantYears).toEqual({ '2026-04-01': { grantDays: 14, entitlementMinutes: null } })
+})
+test('§5.3・F-101: 付与日を 05-01 から 04-01 に直すと、設定は新しい付与年の 1 つだけになり、日程は消さずに新しい区切りで数え直す', () => {
+  const m = memory({ [STORAGE_KEY]: serializeStored({ version: 1, settings: SHEET.settings, entries: SHEET.entries }) })
+  const s = createPlannerStore(m, ids())
+  s.load()
+  // 付与日を直すモーダルが作る下書き（付与日数はいまの 14 日、使える日数は触らない）
+  s.setGrant({ grantDay: '04-01', grantDays: 14, entitlementMinutes: null }, '2026-04-01')
+  const { settings, entries } = s.getState().data
+  expect(Object.keys(settings.grantYears)).toEqual(['2026-04-01'])
+  expect(entries).toHaveLength(12)
+  const b = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2026-04-01' })
+  // 2026-04-01〜2027-03-31 の SHEET の日程（所定労働時間 480 分、時間単位の日程は 120 分）
+  // 取得済み: 1 日の 5/15・6/22・8/10・11/2 と、2 時間の 5/21・9/4・10/7 → 4 × 480 + 3 × 120 = 2280
+  // 予定: 12/28・12/29・2027/2/12・2027/2/22 の 4 日 → 4 × 480 = 1920（2027/4/30 は次の付与年へ移る）
+  expect(b).toMatchObject({ entitlement: 14 * 480, taken: 4 * 480 + 3 * 120, planned: 4 * 480 })
+  const next = balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: '2027-04-01' })
+  expect(next?.planned).toBe(480) // 2027/4/30 の 1 日
 })
 test('存在しない id の更新と削除は何もしない', () => {
   const m = memory()

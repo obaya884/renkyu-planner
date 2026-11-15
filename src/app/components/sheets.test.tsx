@@ -89,6 +89,21 @@ test('§5.3: 始まった付与年のモーダルは、付与日数と、計算�
   expect(started).toContain('value="14"')
   expect(started).not.toContain(T.entitlementHint)
 })
+test('§5.3: 付与日を直すモーダルは、初めての入力と同じ欄を、いまの値を入れて出す。ボタンは「保存する」', () => {
+  const h = html(<GrantSheetBody input={SHEET} grantYearStart="2026-05-01" changeDay onSubmit={noop} onClose={noop} />)
+  expect(h).toContain(`<select aria-label="${T.monthUnit}"`)
+  expect(h).toContain(`<select aria-label="${T.dayUnit}"`)
+  expect(h).toContain('<option value="5" selected="">5</option>') // いまの付与日 05-01
+  expect(h).toContain('<option value="1" selected="">1</option>')
+  expect(h.match(/type="number"/g)).toHaveLength(3) // 付与日数、使える日数の日と時間
+  expect(h).toContain('value="14"') // 付与日数はいまの 14 日。使える日数も 14 日（繰り越し無し）
+  expect(h).toContain('value="0"')
+  expect(h).toContain('2026/5/1〜2027/4/30 の分')
+  expect(h).toContain(T.save)
+  expect(h).not.toContain(T.submitGrantFirst)
+  // 付与日がいまと同じなので、警告は出さない
+  expect(h).not.toContain(T.grantDayChangeNote)
+})
 
 test('R-17・F-306: 休む日が会社の休日と重なったら、理由を出して入れられない（日程に入れるモーダル）', () => {
   const input = { ...SHEET, settings: { ...SHEET.settings, companyHolidays: [...SHEET.settings.companyHolidays, { kind: 'once', start: '2026-11-20', end: '2026-11-20' } as const] } }

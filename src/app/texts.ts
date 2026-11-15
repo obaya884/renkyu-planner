@@ -127,6 +127,7 @@ export const T = {
   entitlementLabel: 'この年に使える日数',
   entitlementHint: '前の年から繰り越した分があれば、足した数に直してください',
   submitGrantFirst: '残りを出す',
+  grantDayChangeNote: '付与日を変えると、ほかの年に入れた日数は消えます。日程は消えません',
   // §8.3
   overOneDay: 'この日の合計が 1日を超えています',
 } as const

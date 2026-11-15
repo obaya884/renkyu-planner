@@ -44,20 +44,24 @@ test('F-108: 週の始まりの行。選んでいる方に印', () => {
 })
 
 test('§6: 付与年の行の文', () => {
-  const h = html(<GrantSection view={buildGrantSection(SHEET)} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)
+  const h = html(<GrantSection view={buildGrantSection(SHEET)} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
   expect(h).toContain('5月1日')
   expect(h).toContain('2026/5/1〜2027/4/30')
   expect(h).toContain('付与 14日・使える日数 14 日')
   expect(h).toContain('2027/5/1〜2028/4/30')
   expect(h).toContain('日数を入れる（いまは 14日で計算）')
   expect(h).not.toContain(T.viewPastGrantYears)
-  expect(html(<GrantSection view={null} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)).toContain(T.grantDayUnset)
+  expect(html(<GrantSection view={null} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)).toContain(T.grantDayUnset)
 })
 test('F-405・§6: 過ぎた付与年は <details> に入り、押せない', () => {
   const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
-  const h = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} />)
+  const h = html(<GrantSection view={buildGrantSection({ ...SHEET, settings })} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
   expect(h).toMatch(/<details>.*過ぎた付与年を見る.*2025\/5\/1〜2026\/4\/30.*付与 12日・使える日数 12 日.*<\/details>/)
-  expect(h.match(/<button/g)).toHaveLength(2)
+  expect(h.match(/<button/g)).toHaveLength(3) // 付与日の行、今の付与年、次の付与年
+})
+test('§5.3・§6: 付与日の行は押せる', () => {
+  const h = html(<GrantSection view={buildGrantSection(SHEET)} workMinutes={480} onOpen={() => {}} onFirst={() => {}} onChangeDay={() => {}} />)
+  expect(h).toMatch(/<button[^>]*><span>付与日<\/span><span>5月1日<\/span><\/button>/)
 })
 
 test('§6・§5.4: 会社の休日の行とモーダル', () => {

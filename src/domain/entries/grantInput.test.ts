@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from '@/domain/view/fixture'
-import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, joinDaysHours, splitDaysHours } from './grantInput'
+import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, joinDaysHours, losesOtherGrantYears, splitDaysHours } from './grantInput'
 
 test('R-12・§5.3: 付与日の「日」の選択肢は、選んだ月に合わせる。2 月は 1〜28', () => {
   expect(grantDayChoices(2)).toHaveLength(28)
@@ -37,6 +37,23 @@ test('§5.3: 開き方。付与年の指定が無ければ初めて、始まっ�
   expect(grantSheetMode(SHEET, null)).toBe('first')
   expect(grantSheetMode(SHEET, '2026-05-01')).toBe('started')
   expect(grantSheetMode(SHEET, '2027-05-01')).toBe('next')
+  // 付与日を直すときは、今日が入る付与年を渡して changeDay
+  expect(grantSheetMode(SHEET, '2026-05-01', true)).toBe('changeDay')
+})
+test('§5.3: 付与日を変えて消える設定があるか。今日の付与年の設定は欄に出ていて新しい付与年に入るので数えない', () => {
+  const { settings } = SHEET
+  // 付与日が同じなら消えない
+  expect(losesOtherGrantYears(settings, '05-01', '2026-05-01', '2026-05-01')).toBe(false)
+  // 設定が今日の付与年の 1 つだけなら、付与日を変えても消えない
+  expect(losesOtherGrantYears(settings, '04-01', '2026-05-01', '2026-04-01')).toBe(false)
+  // 次の付与年の設定があれば消える
+  const withNext = { ...settings, grantYears: { ...settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } }
+  expect(losesOtherGrantYears(withNext, '04-01', '2026-05-01', '2026-04-01')).toBe(true)
+  // 過ぎた付与年の設定があっても消える
+  const withPast = { ...settings, grantYears: { ...settings.grantYears, '2025-05-01': { grantDays: 12, entitlementMinutes: null } } }
+  expect(losesOtherGrantYears(withPast, '04-01', '2026-05-01', '2026-04-01')).toBe(true)
+  // 設定が 1 つも無ければ消えない
+  expect(losesOtherGrantYears({ ...settings, grantYears: {} }, '04-01', '2026-05-01', '2026-04-01')).toBe(false)
 })
 
 test('§5.3: 使える日数の日の欄が空なら数にしない。時間の欄が空なら 0 時間', () => {

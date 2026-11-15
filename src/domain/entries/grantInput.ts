@@ -1,12 +1,17 @@
 import { carryOverOf } from '../leave/balance'
-import { type IsoDate, monthEnd } from '../shared/date'
+import { type IsoDate, type MonthDay, monthEnd } from '../shared/date'
+import type { Settings } from '../types'
 import type { PlannerInput } from '../view/input'
 
-/** §5.3 の開き方。初めての入力、次の付与年、始まった付与年 */
-export type GrantSheetMode = 'first' | 'next' | 'started'
+/** §5.3 の開き方。初めての入力、次の付与年、始まった付与年、付与日を直す */
+export type GrantSheetMode = 'first' | 'next' | 'started' | 'changeDay'
 
-/** §5.3: 付与年の指定が無ければ初めての入力。指定した付与年が今日までに始まっていれば started、まだなら next */
-export function grantSheetMode(input: PlannerInput, grantYearStart: IsoDate | null): GrantSheetMode {
+/**
+ * §5.3: 付与日を直すときは changeDay（grantYearStart には今日が入る付与年の開始日を渡す）。
+ * それ以外で付与年の指定が無ければ初めての入力。指定した付与年が今日までに始まっていれば started、まだなら next
+ */
+export function grantSheetMode(input: PlannerInput, grantYearStart: IsoDate | null, changeDay = false): GrantSheetMode {
+  if (changeDay) return 'changeDay'
   if (grantYearStart === null) return 'first'
   return grantYearStart <= input.today ? 'started' : 'next'
 }
@@ -50,4 +55,13 @@ export function computedEntitlement(input: PlannerInput, grantYearStart: IsoDate
 export function entitlementToSave(touched: boolean, enteredMinutes: number, computedMinutes: number, existing: number | null): number | null {
   if (!touched) return existing
   return enteredMinutes === computedMinutes ? null : enteredMinutes
+}
+
+/**
+ * §5.3: 付与日を grantDay に直して保存すると消える設定があるか。付与日が今と違い、grantYears に currentStart でも newStart でもないキーがあるとき true。
+ * currentStart（いまの付与日で今日が入る付与年の開始日）の値は、モーダルの欄に出ていて、保存すると newStart のキーに入るので数えない
+ */
+export function losesOtherGrantYears(settings: Settings, grantDay: MonthDay, currentStart: IsoDate, newStart: IsoDate): boolean {
+  if (grantDay === settings.grantDay) return false
+  return Object.keys(settings.grantYears).some((k) => k !== currentStart && k !== newStart)
 }

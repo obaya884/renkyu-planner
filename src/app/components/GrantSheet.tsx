@@ -11,6 +11,7 @@ import {
   entitlementToSave,
   grantDayChoices,
   grantSheetMode,
+  losesOtherGrantYears,
   splitDaysHours,
 } from '@/domain/entries/grantInput'
 import { balanceOf, carryOverOf, grantDaysOf } from '@/domain/leave/balance'
@@ -22,6 +23,8 @@ import type { PlannerInput } from '@/domain/view/input'
 type Props = {
   input: PlannerInput
   grantYearStart: IsoDate | null
+  /** 設定画面の付与日の行から開いたとき。grantYearStart には今日が入る付与年の開始日を渡す */
+  changeDay?: boolean
   onSubmit: (draft: GrantDraft, grantYearStart: IsoDate) => void
   onClose: () => void
 }
@@ -30,33 +33,40 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
 /** §5.3 の中身。入力欄の値だけを状態に持つ。検証・換算・上書きの判断は domain の関数を呼ぶだけ */
-export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Props) {
+export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSubmit, onClose }: Props) {
   const { settings } = input
   const { workMinutes } = settings
-  const mode = grantSheetMode(input, grantYearStart)
+  const mode = grantSheetMode(input, grantYearStart, changeDay)
   const first = mode === 'first'
+  // 初めての入力と付与日を直すときは、付与日を月と日で選ぶ
+  const picksDay = first || mode === 'changeDay'
 
-  // 始まった付与年の、この年に使える日数の初期値は、R-13 で計算した持ち分（上書きがあればその値）
+  // 始まった付与年と付与日を直すときの、この年に使える日数の初期値は、R-13 で計算した持ち分（上書きがあればその値）
   const startedEntitlement =
-    mode === 'started' && grantYearStart !== null
+    (mode === 'started' || mode === 'changeDay') && grantYearStart !== null
       ? (balanceOf({ settings, entries: input.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart })?.entitlement ?? 0)
       : 0
   const initialSplit = splitDaysHours(startedEntitlement, workMinutes)
-  const [month, setMonth] = useState(4)
-  const [day, setDay] = useState(1)
+  // 付与日を直すときの初期値は、いまの付与日
+  const initialDay = mode === 'changeDay' && settings.grantDay !== null ? settings.grantDay : '04-01'
+  const [month, setMonth] = useState(Number(initialDay.slice(0, 2)))
+  const [day, setDay] = useState(Number(initialDay.slice(3, 5)))
   const [grantDays, setGrantDays] = useState(grantYearStart === null ? '' : String(grantDaysOf(settings, grantYearStart)))
   const [touched, setTouched] = useState(false)
   const [entDays, setEntDays] = useState(String(initialSplit.days))
   const [entHours, setEntHours] = useState(String(initialSplit.hours))
 
   // 付与年を指定して開いたときの付与日は、設定の付与日（設定が無いことはないが、無ければ付与年の開始日から取る）
-  const grantDay = grantYearStart === null ? `${pad(month)}-${pad(day)}` : (settings.grantDay ?? grantYearStart.slice(5))
+  const grantDay = picksDay || grantYearStart === null ? `${pad(month)}-${pad(day)}` : (settings.grantDay ?? grantYearStart.slice(5))
   const grantDaysNumber = grantDays === '' ? Number.NaN : Number(grantDays)
-  // 初めての入力は、入れた付与日と今日から付与年が決まる
-  const year = first && !isValidGrantDay(grantDay) ? null : grantYearOf(grantYearStart ?? input.today, grantDay)
-  const start = grantYearStart ?? year?.start ?? input.today
+  // 初めての入力と付与日を直すときは、入れた付与日と今日から付与年が決まる
+  const year = picksDay && !isValidGrantDay(grantDay) ? null : grantYearOf(picksDay ? input.today : (grantYearStart ?? input.today), grantDay)
+  const start = picksDay ? (year?.start ?? input.today) : (grantYearStart ?? input.today)
+  // 付与日を変えると、保存したあとはほかの付与年の設定が消える。計算した持ち分は、その保存したあとの設定で数える
+  const savedInput = grantDay === settings.grantDay ? input : { ...input, settings: { ...settings, grantDay, grantYears: {} } }
+  const losesOthers = mode === 'changeDay' && year !== null && grantYearStart !== null && losesOtherGrantYears(settings, grantDay, grantYearStart, start)
 
-  const computed = computedEntitlement(input, start, grantDaysNumber)
+  const computed = computedEntitlement(savedInput, start, grantDaysNumber)
   // 初めての入力では、利用者が触るまで、付与日数に合わせて動く
   const followed = first && !touched
   const shown = followed
@@ -65,8 +75,8 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
       : null
     : { days: entDays, hours: entHours }
   const entered = followed ? computed : enteredEntitlement(entDays, entHours, workMinutes)
-  // 次の付与年のモーダルには欄が無く、触ることがないので、すでにある上書きがそのまま残る
-  const existing = grantYearStart === null ? null : (settings.grantYears[grantYearStart]?.entitlementMinutes ?? null)
+  // 次の付与年のモーダルには欄が無く、触ることがないので、すでにある上書きがそのまま残る。付与日を直すときは新しい付与年の開始日の上書き
+  const existing = first ? null : (settings.grantYears[start]?.entitlementMinutes ?? null)
   const entitlementMinutes = entitlementToSave(touched, entered, computed, existing)
 
   const draft: GrantDraft = { grantDay, grantDays: grantDaysNumber, entitlementMinutes }
@@ -97,7 +107,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
         {year !== null && <p className="text-sm text-sub">{grantPeriodText(year.start, year.end)}</p>}
       </div>
       <div className="space-y-3">
-        {first ? (
+        {picksDay ? (
           <fieldset>
             <legend className="text-sm text-sub">{T.grantDayLabel}</legend>
             <div className="flex items-center gap-2">
@@ -123,6 +133,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
                 {errorText('invalidGrantDay')}
               </p>
             )}
+            {losesOthers && <p className="text-sm text-warn-ink">{T.grantDayChangeNote}</p>}
           </fieldset>
         ) : (
           <Line label={T.grantDayLabel}>{grantDayText(grantDay)}</Line>

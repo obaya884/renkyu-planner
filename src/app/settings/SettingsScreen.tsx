@@ -18,7 +18,7 @@ import type { IsoDate } from '@/domain/shared/date'
 import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 
 /** 開いているモーダル（1 つだけ）。節を足すタスクで種類を足す */
-type SettingsSheet = null | { kind: 'grant'; grantYearStart: IsoDate | null } | { kind: 'companyHoliday'; index: number | null } | { kind: 'leaveType'; id: string | null }
+type SettingsSheet = null | { kind: 'grant'; grantYearStart: IsoDate | null } | { kind: 'grantDay' } | { kind: 'companyHoliday'; index: number | null } | { kind: 'leaveType'; id: string | null }
 
 /**
  * 設定画面（画面定義書 §6）。記録を読み終え、今日がそろうまでは何も描かない。
@@ -41,16 +41,18 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   if (!shown) return null
   const input = { holidays, settings: data.settings, entries: data.entries, today }
   const leaveRows = leaveTypeRows(input)
+  const grantView = buildGrantSection(input)
   return (
     <div className="space-y-6">
       <Notices canSave={canSave} unreadable={unreadable} />
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.paidSection}</h2>
         <GrantSection
-          view={buildGrantSection(input)}
+          view={grantView}
           workMinutes={data.settings.workMinutes}
           onOpen={(grantYearStart) => setSheet({ kind: 'grant', grantYearStart })}
           onFirst={() => setSheet({ kind: 'grant', grantYearStart: null })}
+          onChangeDay={() => setSheet({ kind: 'grantDay' })}
         />
       </section>
       <section className="space-y-2">
@@ -116,6 +118,19 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
           key={sheet.grantYearStart ?? 'first'}
           input={input}
           grantYearStart={sheet.grantYearStart}
+          onSubmit={(draft, grantYearStart) => {
+            plannerStore.setGrant(draft, grantYearStart)
+            setSheet(null)
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet?.kind === 'grantDay' && grantView !== null && (
+        <GrantSheet
+          key="grantDay"
+          input={input}
+          grantYearStart={grantView.current.start}
+          changeDay
           onSubmit={(draft, grantYearStart) => {
             plannerStore.setGrant(draft, grantYearStart)
             setSheet(null)
