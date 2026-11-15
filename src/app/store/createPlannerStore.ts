@@ -1,4 +1,5 @@
 import type { EntryDraft, GrantDraft } from '@/domain/entries/checkDraft'
+import { settingsAfterGrant } from '@/domain/entries/grantInput'
 import type { IsoDate } from '@/domain/shared/date'
 import type { LeaveTypeDraft } from '@/domain/entries/settingsInput'
 import { type CompanyHoliday, PAID_LEAVE_TYPE_ID, type WeekStart } from '@/domain/types'
@@ -103,11 +104,7 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
       change({ ...state.data, entries: state.data.entries.filter((e) => e.id !== id) })
     },
     setGrant(draft, grantYearStart) {
-      const { settings } = state.data
-      // 付与日が変わると、キー（付与年の開始日）が合わなくなるので、前の付与年の設定は消す
-      const kept = draft.grantDay === settings.grantDay ? settings.grantYears : {}
-      const grantYears = { ...kept, [grantYearStart]: { grantDays: draft.grantDays, entitlementMinutes: draft.entitlementMinutes } }
-      change({ ...state.data, settings: { ...settings, grantDay: draft.grantDay, grantYears } })
+      change({ ...state.data, settings: settingsAfterGrant(state.data.settings, draft, grantYearStart) })
     },
     setWorkMinutes(minutes) {
       change({ ...state.data, settings: { ...state.data.settings, workMinutes: minutes } })

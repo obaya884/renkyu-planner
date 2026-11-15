@@ -2,6 +2,7 @@ import { carryOverOf } from '../leave/balance'
 import { type IsoDate, type MonthDay, monthEnd } from '../shared/date'
 import type { Settings } from '../types'
 import type { PlannerInput } from '../view/input'
+import type { GrantDraft } from './checkDraft'
 
 /** §5.3 の開き方。初めての入力、次の付与年、始まった付与年、付与日を直す */
 export type GrantSheetMode = 'first' | 'next' | 'started' | 'changeDay'
@@ -69,11 +70,30 @@ export function grantEntitlementToSave(
   return entitlementToSave(touched || dayChanged, enteredMinutes, computedMinutes, existing)
 }
 
+/** §5.3: 付与日を grantDay にして保存したときに残る、ほかの付与年の設定。付与日が変わると、キー（付与年の開始日）が合わなくなるので全部消える */
+function keptGrantYears(settings: Settings, grantDay: MonthDay): Settings['grantYears'] {
+  return grantDay === settings.grantDay ? settings.grantYears : {}
+}
+
 /**
- * §5.3: 付与日を grantDay に直して保存すると消える設定があるか。付与日が今と違い、grantYears に currentStart でも newStart でもないキーがあるとき true。
- * currentStart（いまの付与日で今日が入る付与年の開始日）の値は、モーダルの欄に出ていて、保存すると newStart のキーに入るので数えない
+ * §5.3: M-3 で付与日と日数を保存したあとの設定。grantYearStart の付与年の設定を draft の値にする。
+ * 付与日が変わると、ほかの付与年（次の年、過ぎた年）の設定は消える。日程には触らない
  */
-export function losesOtherGrantYears(settings: Settings, grantDay: MonthDay, currentStart: IsoDate, newStart: IsoDate): boolean {
-  if (grantDay === settings.grantDay) return false
-  return Object.keys(settings.grantYears).some((k) => k !== currentStart && k !== newStart)
+export function settingsAfterGrant(settings: Settings, draft: GrantDraft, grantYearStart: IsoDate): Settings {
+  const grantYears = { ...keptGrantYears(settings, draft.grantDay), [grantYearStart]: { grantDays: draft.grantDays, entitlementMinutes: draft.entitlementMinutes } }
+  return { ...settings, grantDay: draft.grantDay, grantYears }
+}
+
+/**
+ * §5.3: 付与日を直すモーダルで、付与日を grantDay にして保存すると消える設定があるか（警告を出すか）。
+ * currentStart（いまの付与日で今日が入る付与年の開始日）の値は、モーダルの欄に出ていて、保存すると newStart のキーに入るので数えない。
+ * 付与日を直すモーダルでないとき、付与年が決まらないとき（null）は false
+ */
+export function losesOtherGrantYears(
+  input: Readonly<{ mode: GrantSheetMode; settings: Settings; grantDay: MonthDay; currentStart: IsoDate | null; newStart: IsoDate | null }>,
+): boolean {
+  const { mode, settings, grantDay, currentStart, newStart } = input
+  if (mode !== 'changeDay' || currentStart === null || newStart === null) return false
+  const kept = keptGrantYears(settings, grantDay)
+  return Object.keys(settings.grantYears).some((k) => k !== currentStart && k !== newStart && !(k in kept))
 }

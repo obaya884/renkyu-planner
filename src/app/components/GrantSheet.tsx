@@ -12,6 +12,7 @@ import {
   grantEntitlementToSave,
   grantSheetMode,
   losesOtherGrantYears,
+  settingsAfterGrant,
   splitDaysHours,
 } from '@/domain/entries/grantInput'
 import { balanceOf, carryOverOf, grantDaysOf } from '@/domain/leave/balance'
@@ -62,11 +63,11 @@ export function GrantSheetBody({ input, grantYearStart, changeDay = false, onSub
   // 初めての入力と付与日を直すときは、入れた付与日と今日から付与年が決まる
   const year = picksDay && !isValidGrantDay(grantDay) ? null : grantYearOf(picksDay ? input.today : (grantYearStart ?? input.today), grantDay)
   const start = picksDay ? (year?.start ?? input.today) : (grantYearStart ?? input.today)
-  // 付与日を変えると、保存したあとはほかの付与年の設定が消える。計算した持ち分は、その保存したあとの設定で数える
-  const savedInput = grantDay === settings.grantDay ? input : { ...input, settings: { ...settings, grantDay, grantYears: {} } }
-  const losesOthers = mode === 'changeDay' && year !== null && grantYearStart !== null && losesOtherGrantYears(settings, grantDay, grantYearStart, start)
+  // 計算した持ち分は、保存したあとの設定で数える（付与日を変えると、ほかの付与年の設定が消える）
+  const saved = settingsAfterGrant(settings, { grantDay, grantDays: grantDaysNumber, entitlementMinutes: null }, start)
+  const losesOthers = losesOtherGrantYears({ mode, settings, grantDay, currentStart: grantYearStart, newStart: year?.start ?? null })
 
-  const computed = computedEntitlement(savedInput, start, grantDaysNumber)
+  const computed = computedEntitlement({ ...input, settings: saved }, start, grantDaysNumber)
   // 初めての入力では、利用者が触るまで、付与日数に合わせて動く
   const followed = first && !touched
   const shown = followed

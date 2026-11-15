@@ -2,7 +2,19 @@ import { expect, test } from 'vitest'
 import { balanceOf } from '@/domain/leave/balance'
 import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { SHEET, UNSET } from '@/domain/view/fixture'
-import { clampGrantDay, computedEntitlement, entitlementToSave, grantDayChoices, grantSheetMode, enteredEntitlement, grantEntitlementToSave, joinDaysHours, losesOtherGrantYears, splitDaysHours } from './grantInput'
+import {
+  clampGrantDay,
+  computedEntitlement,
+  entitlementToSave,
+  grantDayChoices,
+  grantSheetMode,
+  enteredEntitlement,
+  grantEntitlementToSave,
+  joinDaysHours,
+  losesOtherGrantYears,
+  settingsAfterGrant,
+  splitDaysHours,
+} from './grantInput'
 
 test('R-12・§5.3: 付与日の「日」の選択肢は、選んだ月に合わせる。2 月は 1〜28', () => {
   expect(grantDayChoices(2)).toHaveLength(28)
@@ -44,18 +56,57 @@ test('§5.3: 開き方。付与年の指定が無ければ初めて、始まっ�
 })
 test('§5.3: 付与日を変えて消える設定があるか。今日の付与年の設定は欄に出ていて新しい付与年に入るので数えない', () => {
   const { settings } = SHEET
+  const loses = (s: typeof settings, grantDay: '05-01' | '04-01', newStart: '2026-05-01' | '2026-04-01') =>
+    losesOtherGrantYears({ mode: 'changeDay', settings: s, grantDay, currentStart: '2026-05-01', newStart })
   // 付与日が同じなら消えない
-  expect(losesOtherGrantYears(settings, '05-01', '2026-05-01', '2026-05-01')).toBe(false)
+  expect(loses(settings, '05-01', '2026-05-01')).toBe(false)
   // 設定が今日の付与年の 1 つだけなら、付与日を変えても消えない
-  expect(losesOtherGrantYears(settings, '04-01', '2026-05-01', '2026-04-01')).toBe(false)
+  expect(loses(settings, '04-01', '2026-04-01')).toBe(false)
   // 次の付与年の設定があれば消える
   const withNext = { ...settings, grantYears: { ...settings.grantYears, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } }
-  expect(losesOtherGrantYears(withNext, '04-01', '2026-05-01', '2026-04-01')).toBe(true)
+  expect(loses(withNext, '04-01', '2026-04-01')).toBe(true)
   // 過ぎた付与年の設定があっても消える
   const withPast = { ...settings, grantYears: { ...settings.grantYears, '2025-05-01': { grantDays: 12, entitlementMinutes: null } } }
-  expect(losesOtherGrantYears(withPast, '04-01', '2026-05-01', '2026-04-01')).toBe(true)
+  expect(loses(withPast, '04-01', '2026-04-01')).toBe(true)
   // 設定が 1 つも無ければ消えない
-  expect(losesOtherGrantYears({ ...settings, grantYears: {} }, '04-01', '2026-05-01', '2026-04-01')).toBe(false)
+  expect(loses({ ...settings, grantYears: {} }, '04-01', '2026-04-01')).toBe(false)
+  // 付与日を直すモーダルでないとき、付与日の欄が受け付けない値で新しい付与年が決まらないときは出さない
+  expect(losesOtherGrantYears({ mode: 'started', settings: withNext, grantDay: '04-01', currentStart: '2026-05-01', newStart: '2026-04-01' })).toBe(false)
+  expect(losesOtherGrantYears({ mode: 'changeDay', settings: withNext, grantDay: '04-01', currentStart: '2026-05-01', newStart: null })).toBe(false)
+  expect(losesOtherGrantYears({ mode: 'changeDay', settings: withNext, grantDay: '04-01', currentStart: null, newStart: '2026-04-01' })).toBe(false)
+})
+test('§5.3: 保存したあとの設定。付与日が同じなら、ほかの付与年の設定を残し、その付与年の設定を入れる', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2026-05-01': { grantDays: 14, entitlementMinutes: null }, '2027-05-01': { grantDays: 16, entitlementMinutes: null } } }
+  expect(settingsAfterGrant(settings, { grantDay: '05-01', grantDays: 15, entitlementMinutes: 7000 }, '2026-05-01')).toEqual({
+    ...settings,
+    grantYears: { '2026-05-01': { grantDays: 15, entitlementMinutes: 7000 }, '2027-05-01': { grantDays: 16, entitlementMinutes: null } },
+  })
+})
+test('§5.3: 保存したあとの設定。付与日を変えると、ほかの付与年の設定は消え、新しい付与年の 1 つだけになる', () => {
+  const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 12, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  expect(settingsAfterGrant(settings, { grantDay: '04-01', grantDays: 14, entitlementMinutes: null }, '2026-04-01')).toEqual({
+    ...settings,
+    grantDay: '04-01',
+    grantYears: { '2026-04-01': { grantDays: 14, entitlementMinutes: null } },
+  })
+  // 付与日が未設定のときの初めての入力
+  expect(settingsAfterGrant(UNSET.settings, { grantDay: '04-01', grantDays: 10, entitlementMinutes: null }, '2026-04-01').grantYears).toEqual({
+    '2026-04-01': { grantDays: 10, entitlementMinutes: null },
+  })
+})
+test('§5.3・R-13: 付与日を変えるとき、計算した持ち分は保存したあとの設定で数え、保存前の設定で数えた値とは違う', () => {
+  // 前の付与年（2025-05-01〜2026-04-30）に 10 日の設定と、取得済みの 1 日（2026-02-10）がある。今日は 2026-11-15
+  const settings = { ...SHEET.settings, grantYears: { '2025-05-01': { grantDays: 10, entitlementMinutes: null }, '2026-05-01': { grantDays: 14, entitlementMinutes: null } } }
+  const entries = [{ id: 'e1', date: '2026-02-10', leaveTypeId: PAID_LEAVE_TYPE_ID, amount: { unit: 'day' }, title: '', done: true }] as const
+  const input = { ...SHEET, settings, entries }
+  // 付与日を 06-01 に変えると、今日が入る新しい付与年は 2026-06-01〜
+  const after = settingsAfterGrant(settings, { grantDay: '06-01', grantDays: 14, entitlementMinutes: null }, '2026-06-01')
+  // 保存したあと: 設定は 2026-06-01 の 1 つだけで、いちばん古い付与年なので繰り越し 0 → 14 × 480 = 6720
+  expect(computedEntitlement({ ...input, settings: after }, '2026-06-01', 14)).toBe(14 * 480)
+  // 保存前の設定（付与日 05-01、2025-05-01 の設定が残る）で数えると、直前の付与年 2025-06-01 の持ち分は
+  // 付与日数 10 × 480 = 4800、取得済み 480（2026-02-10）で未割り当て 4320。繰り越し = min(4320, 10 × 480) = 4320
+  // → 14 × 480 + 4320 = 11040
+  expect(computedEntitlement(input, '2026-06-01', 14)).toBe(14 * 480 + 4320)
 })
 
 test('§5.3: 使える日数の日の欄が空なら数にしない。時間の欄が空なら 0 時間', () => {
