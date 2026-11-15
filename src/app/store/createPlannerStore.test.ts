@@ -11,6 +11,7 @@ const memory = (init: Record<string, string> = {}) => {
   return {
     getItem: (k: string) => m.get(k) ?? null,
     setItem: (k: string, v: string) => void m.set(k, v),
+    removeItem: (k: string) => void m.delete(k),
     dump: () => Object.fromEntries(m),
   }
 }
@@ -72,7 +73,7 @@ test('D-5: 壊れた記録（JSON でない）は、写しを取ったら保存�
 })
 test('D-5: 写しを書けなくても、空の記録で始める', () => {
   const m = memory({ [STORAGE_KEY]: 'x' })
-  const s = createPlannerStore({ getItem: m.getItem, setItem: () => { throw new Error('full') } }, ids())
+  const s = createPlannerStore({ getItem: m.getItem, removeItem: m.removeItem, setItem: () => { throw new Error('full') } }, ids())
   s.load()
   expect(s.getState()).toMatchObject({ ready: true, data: EMPTY_STORED, unreadable: true, canSave: false })
 })
@@ -81,6 +82,7 @@ test('D-5: 写しを書けなかったときは、元の記録を上書きしな
   const s = createPlannerStore(
     {
       getItem: m.getItem,
+      removeItem: m.removeItem,
       setItem: (k, v) => {
         if (k === UNREADABLE_KEY) throw new Error('full')
         m.setItem(k, v)
@@ -117,6 +119,9 @@ test('Review Focus 5・D-9: 保存領域が使えなくても、メモリの中�
     setItem: () => {
       throw new Error('denied')
     },
+    removeItem: () => {
+      throw new Error('denied')
+    },
   }
   for (const storage of [null, broken]) {
     const s = createPlannerStore(storage, ids())
@@ -131,6 +136,7 @@ test('D-9: 読めても書けないときは、書けなかった時点で canSa
   const s = createPlannerStore(
     {
       getItem: m.getItem,
+      removeItem: m.removeItem,
       setItem: () => {
         throw new Error('quota')
       },
@@ -392,4 +398,46 @@ test('D-10: 休暇の種類の 101 件目は断る', () => {
   expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
   s.saveLeaveType(null, { name: '多すぎ', days: 1, usable: null, grantDay: null, together: false })
   expect(s.getState().data.settings.leaveTypes).toHaveLength(100)
+})
+
+test('D-13: 記録をすべて消すと、記録と写しのキーが消え、初めて開いたときと同じになる', () => {
+  const m = memory({ [STORAGE_KEY]: '{oops' })
+  const s = createPlannerStore(m, ids()); s.load()
+  expect(m.dump()[UNREADABLE_KEY]).toBe('{oops')
+  s.clearAll()
+  expect(m.dump()).toEqual({})
+  expect(s.getState()).toEqual({ ready: true, data: EMPTY_STORED, canSave: true, unreadable: false })
+  const again = createPlannerStore(m, ids()); again.load()
+  expect(again.getState()).toEqual({ ready: true, data: EMPTY_STORED, canSave: true, unreadable: false })
+})
+test('D-3・D-13: 新しい版の記録で保存を止めているときも消せて、保存できる状態に戻る', () => {
+  const m = memory({ [STORAGE_KEY]: '{"version":2}' })
+  const s = createPlannerStore(m, ids()); s.load()
+  expect(s.getState().canSave).toBe(false)
+  s.clearAll()
+  expect(s.getState().canSave).toBe(true)
+  s.addEntries([draft('2026-11-20')])
+  expect(parseStored(m.dump()[STORAGE_KEY]).ok).toBe(true)
+})
+test('D-5・D-13: 写しを書けなくて保存を止めているときも消せる', () => {
+  const m = memory({ [STORAGE_KEY]: 'x' })
+  const s = createPlannerStore({ getItem: m.getItem, removeItem: m.removeItem, setItem: () => { throw new Error('full') } }, ids())
+  s.load()
+  expect(s.getState().canSave).toBe(false)
+  s.clearAll()
+  expect(m.dump()).toEqual({})
+  expect(s.getState()).toEqual({ ready: true, data: EMPTY_STORED, canSave: true, unreadable: false })
+})
+test('N-08・D-13: 保存領域が使えないときは、メモリの記録だけを消す', () => {
+  const s = createPlannerStore(null, ids()); s.load()
+  s.addEntries([draft('2026-11-20')])
+  s.clearAll()
+  expect(s.getState()).toMatchObject({ data: EMPTY_STORED, canSave: false, unreadable: false })
+})
+test('D-13: 消すのが例外になったときは、メモリの記録だけを消し、保存は止める', () => {
+  const m = memory({ [STORAGE_KEY]: serializeStored({ version: 1, settings: SHEET.settings, entries: SHEET.entries }) })
+  const s = createPlannerStore({ getItem: m.getItem, setItem: m.setItem, removeItem: () => { throw new Error('denied') } }, ids())
+  s.load()
+  s.clearAll()
+  expect(s.getState()).toEqual({ ready: true, data: EMPTY_STORED, canSave: false, unreadable: false })
 })

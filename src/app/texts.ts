@@ -155,6 +155,10 @@ export const T = {
   importFile: 'ファイルを読み込む',
   exportIcs: 'カレンダー用のファイル（.ics）を書き出す',
   clearAll: '記録をすべて消す',
+  clearTitle: '記録をすべて消す',
+  clearConfirm: '記録と設定をすべて消します。元に戻せません',
+  clearHint: '消す前にファイルに書き出しておけば、あとで読み込んで戻せます',
+  clearSubmit: '消す',
   transferNote: '記録は、このブラウザの中にだけ保存しています。運営には送られません。機種を変えるときや、ほかの端末で使うときは、ファイルに書き出して読み込んでください。',
   importTitle: 'ファイルを読み込む',
   importConfirm: 'いまの記録は置き換わります',
@@ -399,7 +403,7 @@ export function formatAmount(minutes: number, workMinutes: number): string {
   return formatMinutes(minutes, workMinutes)
 }
 
-/** §6 の記録の持ち出しの節の 1 行。文は仮（G-6）。noCalendarEntries と cleared の文は、それを使うタスクで足す */
+/** §6 の記録の持ち出しの節の 1 行。文は仮（G-6）。noCalendarEntries の文は、それを使うタスクで足す */
 export function transferNoteText(note: TransferNote): string {
   switch (note) {
     case 'imported':
@@ -408,8 +412,9 @@ export function transferNoteText(note: TransferNote): string {
       return '読み込む前に戻しました'
     case 'unreadableFile':
       return errorText('unreadableFile')
-    case 'noCalendarEntries':
     case 'cleared':
+      return '記録を消しました'
+    case 'noCalendarEntries':
       return ''
   }
 }

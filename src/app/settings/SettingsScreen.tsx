@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ClearSheet } from '@/app/components/ClearSheet'
 import { CompanyHolidaySheet } from '@/app/components/CompanyHolidaySheet'
 import { GrantSheet } from '@/app/components/GrantSheet'
 import { ImportSheet } from '@/app/components/ImportSheet'
@@ -28,6 +29,7 @@ type SettingsSheet =
   | { kind: 'companyHoliday'; index: number | null }
   | { kind: 'leaveType'; id: string | null }
   | { kind: 'import'; data: StoredData }
+  | { kind: 'clear' }
 
 /** 読み込む前に戻すための記録（D-12）。after は置き換えたあとの記録の serializeStored で、記録がこれと違えば戻せない */
 type Undo = { before: StoredData; after: string }
@@ -107,8 +109,23 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
           setNote('restored')
         }}
         onExportIcs={resetTransfer}
-        onClear={resetTransfer}
+        onClear={() => {
+          resetTransfer()
+          setSheet({ kind: 'clear' })
+        }}
       />
+      {sheet?.kind === 'clear' && (
+        <ClearSheet
+          onSubmit={() => {
+            plannerStore.clearAll()
+            // 消したあとに戻せると、消した意味が無くなる
+            setUndo(null)
+            setSheet(null)
+            setNote('cleared')
+          }}
+          onClose={() => setSheet(null)}
+        />
+      )}
       {sheet?.kind === 'import' && (
         <ImportSheet
           counts={importCounts(sheet.data)}

@@ -9,6 +9,7 @@ import { EMPTY_STORED, STORAGE_KEY, type StoredData, UNREADABLE_KEY, isNewerVers
 export type KeyValueStore = Readonly<{
   getItem(key: string): string | null
   setItem(key: string, value: string): void
+  removeItem(key: string): void
 }>
 
 export type PlannerState = Readonly<{ ready: boolean; data: StoredData; canSave: boolean; unreadable: boolean }>
@@ -41,6 +42,11 @@ export type PlannerStore = Readonly<{
    * 読めなかった 1 行（D-5）は消す。値は検証しないので、parseStored を通した記録か、置き換える前に持っておいた記録だけを渡す
    */
   replaceAll(data: StoredData): void
+  /**
+   * D-13: このアプリが置いたキー（記録と、読めなかった記録の写し）を消し、初めて開いたときと同じ状態にする。
+   * 保存を止めているとき（D-3、D-5）も、消せたら保存できる状態に戻す。保存領域が使えないときと、消すのが例外になったときは、メモリの記録だけを空にして保存は止めたまま
+   */
+  clearAll(): void
 }>
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
@@ -157,6 +163,20 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
     },
     replaceAll(data) {
       change(data, { unreadable: false })
+    },
+    clearAll() {
+      // change は通さない。保存を止めている状態でも消す必要があり、空の記録は検証する意味が無い
+      let canSave = false
+      if (storage !== null) {
+        try {
+          storage.removeItem(STORAGE_KEY)
+          storage.removeItem(UNREADABLE_KEY)
+          canSave = true
+        } catch {
+          // 消せなかったら、書き込みも止める
+        }
+      }
+      publish({ ready: true, data: EMPTY_STORED, canSave, unreadable: false })
     },
   }
 }

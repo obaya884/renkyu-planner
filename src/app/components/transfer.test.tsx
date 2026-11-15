@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { T, errorText, importCountsText, transferNoteText } from '@/app/texts'
+import { ClearSheetBody } from './ClearSheet'
 import { ImportSheetBody } from './ImportSheet'
 import { TransferSection } from './TransferSection'
 
@@ -37,4 +38,15 @@ test('§5.6: 読み込む前に確かめるモーダル。件数と、置き換�
   expect(h).toContain('日程 12 件、会社の休日 1 件、休暇の種類 1 件を読み込みます')
   expect(h).toContain('いまの記録は置き換わります')
   expect(h.indexOf(T.cancel)).toBeLessThan(h.indexOf(T.importSubmit)) // 確定を右に置く（§4）
+})
+
+test('§5.7: 記録をすべて消すモーダル', () => {
+  const h = html(<ClearSheetBody onSubmit={noop} onClose={noop} />)
+  expect(h).toContain(T.clearTitle)
+  expect(h).toContain('記録と設定をすべて消します。元に戻せません')
+  expect(h).toContain('消す前にファイルに書き出しておけば、あとで読み込んで戻せます')
+  // 題の「記録をすべて消す」にも「消す」が入るので、ボタンの文字だけを探す
+  expect(h.indexOf(`>${T.cancel}<`)).toBeLessThan(h.indexOf(`>${T.clearSubmit}<`))
+  expect(h.indexOf(`>${T.clearSubmit}<`)).toBeGreaterThan(0)
+  expect(transferNoteText('cleared')).toBe('記録を消しました')
 })
