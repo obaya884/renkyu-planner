@@ -62,7 +62,7 @@ src/app/      Next.js の画面。site.ts にサービス名・題・説明文�
   Planner.tsx 端末で動く主な画面
   settings/   設定画面（`/settings`）。page.tsx は静的、SettingsScreen.tsx は端末で動く
   store/      記録のストア。localStorage に触るのはここだけ。useToday.ts は今日の日付を読むフック
-  transfer/   ブラウザでファイルを扱う（書き出しと、選んだファイルの読み取り）
+  transfer/   ブラウザでファイルを扱う（書き出しと、選んだファイルの読み取り）。記録の持ち出しの節の状態の判定（transferState.ts。純関数）、カレンダー用の予定の組み立てもここ
   components/ 表示だけの部品。計算をしない
   texts.ts    画面の文言は全部ここ
 scripts/      祝日の取り込み

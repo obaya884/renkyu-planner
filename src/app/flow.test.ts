@@ -4,6 +4,7 @@ import { rangeDays } from '@/domain/entries/entryRange'
 import { planningQuarters } from '@/domain/quarters/quarters'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
+import { parseStored, serializeStored } from '@/domain/storage/stored'
 import { createPlannerStore } from './store/createPlannerStore'
 
 const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) } }
@@ -108,4 +109,26 @@ test('F-307: 期間で足した日程が、日程の欄と持ち分に入る', (
   expect(v.quarters[1].entries.flatMap((b) => b.rows).map((r) => r.entry.date)).toEqual(['2027-01-04'])
   // 予定 3 日 = 3 × 480 分、未割り当て = 付与 14 日 - 3 日 = 11 日
   expect(v.summary.paid).toMatchObject({ planned: 3 * 480, unassigned: 11 * 480 })
+})
+
+test('F-505: 書き出したファイルを別の端末で読み込むと、同じ記録と同じ計算になる。戻すと元に戻る', () => {
+  let n = 0
+  const a = createPlannerStore(memory(), () => `a-${++n}`); a.load()
+  a.setGrant({ grantDay: '05-01', grantDays: 14, entitlementMinutes: null }, '2026-05-01')
+  a.saveCompanyHoliday(null, { kind: 'yearly', start: '12-30', end: '01-03' })
+  a.addEntries([{ date: '2026-12-28', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '年末年始', done: false }])
+  // 手で数えた式: 予定は 12/28 の 1 日 = 480 分、未割り当て = 付与 14 日 - 1 日 = 13 日
+  expect(view(a).summary.paid).toMatchObject({ planned: 480, unassigned: 13 * 480 })
+  const r = parseStored(serializeStored(a.getState().data))
+  const b = createPlannerStore(memory(), () => `b-${++n}`); b.load()
+  b.addEntries([{ date: '2026-11-20', leaveTypeId: 'paid', amount: { unit: 'day' }, title: '', done: false }])
+  const before = b.getState().data
+  if (!r.ok) throw new Error('読めない')
+  b.replaceAll(r.value)
+  expect(b.getState().data).toEqual(a.getState().data)
+  expect(view(b)).toEqual(view(a))
+  // 置き換えたあとの b は、11/20 の予定が消えて 12/28 の 1 日だけになる
+  expect(view(b).summary.paid).toMatchObject({ planned: 480, unassigned: 13 * 480 })
+  b.replaceAll(before)
+  expect(b.getState().data).toEqual(before)
 })
