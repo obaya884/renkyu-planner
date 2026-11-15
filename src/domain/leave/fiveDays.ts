@@ -1,6 +1,6 @@
 import { diffDays } from '@/domain/shared/date'
 import type { IsoDate } from '@/domain/shared/date'
-import type { Entry, Settings } from '@/domain/types'
+import { type Entry, PAID_LEAVE_TYPE_ID, type Settings } from '@/domain/types'
 import { grantDaysOf } from './balance'
 import { grantYearOf } from './grantYear'
 
@@ -23,7 +23,7 @@ export function fiveDayStatus(input: Input): FiveDayStatus | null {
   let doneDays = 0
   let plannedDays = 0
   for (const entry of entries) {
-    if (entry.leaveTypeId !== 'paid') continue
+    if (entry.leaveTypeId !== PAID_LEAVE_TYPE_ID) continue
     if (entry.date < grantYearStart || entry.date > end) continue
     const days = entry.amount.unit === 'day' ? 1 : entry.amount.unit === 'half' ? 0.5 : 0
     if (entry.done) doneDays += days

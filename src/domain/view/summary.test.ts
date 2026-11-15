@@ -40,3 +40,18 @@ test('F-407: 今の付与年に設定が無く、前の年にあれば知らせ�
   expect(buildSummary(only(['2025-05-01', '2026-05-01'])).newGrantYearStart).toBeNull()
   expect(buildSummary(UNSET).newGrantYearStart).toBeNull()
 })
+
+const free = (grantDay: string | null) => ({ id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay, together: true })
+const freeEntries = [
+  { id: 'f1', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: true },
+  { id: 'f2', date: '2027-02-03', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: false },
+] as const
+test('§3.2・R-13: 足した休暇のカードは、その種類の付与される日で区切った、今日が入る付与年で数える', () => {
+  const s = buildSummary({
+    ...SHEET,
+    settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, free('01-01')] },
+    entries: [...SHEET.entries, ...freeEntries],
+  })
+  expect(s.cards[0]).toEqual(buildSummary(SHEET).cards[0])
+  expect(s.cards[1]).toMatchObject({ leaveTypeId: 'free', remaining: 1920, planned: 0, unassigned: 1920 }) // 2026-01-01〜2026-12-31
+})

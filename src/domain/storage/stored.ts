@@ -3,7 +3,7 @@ import { isValidGrantDay } from '@/domain/leave/grantYear'
 import { isValidIsoDate } from '@/domain/shared/date'
 import type { MonthDay } from '@/domain/shared/date'
 import type { Result } from '@/domain/shared/result'
-import { DEFAULT_SETTINGS } from '@/domain/types'
+import { DEFAULT_SETTINGS, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { Amount, CompanyHoliday, Entry, GrantYearSetting, LeaveType, Settings, WeekStart } from '@/domain/types'
 
 export const STORAGE_KEY = 'renkyu-planner'
@@ -87,6 +87,13 @@ function monthDay(v: unknown, what: string): MonthDay {
   return s
 }
 
+/** R-12 を満たす付与日 */
+function grantDayValue(v: unknown, what: string): MonthDay {
+  const md = monthDay(v, what)
+  if (!isValidGrantDay(md)) fail(what)
+  return md
+}
+
 function isoDate(v: unknown, what: string): string {
   const s = str(v, what)
   if (!isValidIsoDate(s)) fail(what)
@@ -130,6 +137,9 @@ function readLeaveType(v: unknown): LeaveType {
     name: str(o.name, '休暇の種類の name'),
     days: num(o.days, '休暇の種類の days', 0),
     usable,
+    // D-4: 項目が無い記録は null・false として読む
+    grantDay: o.grantDay === undefined || o.grantDay === null ? null : grantDayValue(o.grantDay, '休暇の種類の grantDay'),
+    together: o.together === undefined ? false : bool(o.together, '休暇の種類の together'),
   }
 }
 
@@ -176,10 +186,9 @@ function readWeekStart(v: unknown): WeekStart {
 function readSettings(v: unknown): Settings {
   const o = obj(v, 'settings')
   const leaveTypes = arr(o.leaveTypes, 'leaveTypes').map(readLeaveType)
-  if (leaveTypes[0]?.id !== 'paid') fail('leaveTypes の先頭（有休）')
+  if (leaveTypes[0]?.id !== PAID_LEAVE_TYPE_ID) fail('leaveTypes の先頭（有休）')
   checkUniqueIds(leaveTypes.map((t) => t.id), '休暇の種類')
-  const grantDay = o.grantDay === null ? null : monthDay(o.grantDay, 'grantDay')
-  if (grantDay !== null && !isValidGrantDay(grantDay)) fail('grantDay')
+  const grantDay = o.grantDay === null ? null : grantDayValue(o.grantDay, 'grantDay')
   return {
     workMinutes: num(o.workMinutes, 'workMinutes', 1, 1440, true),
     grantDay,

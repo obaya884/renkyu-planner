@@ -16,6 +16,7 @@ import {
 import { balanceOf, carryOverOf, grantDaysOf } from '@/domain/leave/balance'
 import { grantYearOf, isValidGrantDay } from '@/domain/leave/grantYear'
 import type { IsoDate } from '@/domain/shared/date'
+import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { PlannerInput } from '@/domain/view/input'
 
 type Props = {
@@ -38,7 +39,7 @@ export function GrantSheetBody({ input, grantYearStart, onSubmit, onClose }: Pro
   // 始まった付与年の、この年に使える日数の初期値は、R-13 で計算した持ち分（上書きがあればその値）
   const startedEntitlement =
     mode === 'started' && grantYearStart !== null
-      ? (balanceOf({ settings, entries: input.entries, leaveTypeId: 'paid', grantYearStart })?.entitlement ?? 0)
+      ? (balanceOf({ settings, entries: input.entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart })?.entitlement ?? 0)
       : 0
   const initialSplit = splitDaysHours(startedEntitlement, workMinutes)
   const [month, setMonth] = useState(4)

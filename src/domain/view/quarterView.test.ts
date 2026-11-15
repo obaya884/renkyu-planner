@@ -95,7 +95,7 @@ test('F-304・R-14: 日程の塊と行に、長めかどうかと休暇の種類
   expect(q4.entries[1].rows[0]).toMatchObject({ long: false, leaveTypeName: null }) // 10/31〜11/3 の 4 連休、有休
   expect(q4.entries[2].rows[0].long).toBe(true)
   expect(q4.entries[0].rows[0].long).toBe(false) // 連休に入らない
-  const types = [...SHEET.settings.leaveTypes, { id: 'sum', name: '夏季休暇', days: 3, usable: null }]
+  const types = [...SHEET.settings.leaveTypes, { id: 'sum', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }]
   const entries = [...SHEET.entries, { id: 'z', date: '2026-11-30', leaveTypeId: 'sum', amount: { unit: 'half' }, title: '', done: false } as const]
   const [v] = buildQuarterViews({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: types }, entries }, qs)
   expect(v.entries.flatMap((b) => b.rows).find((r) => r.entry.id === 'z')?.leaveTypeName).toBe('夏季休暇')

@@ -1,9 +1,9 @@
 import data from '@/data/holidays.json'
-import { DEFAULT_SETTINGS, type Entry } from '@/domain/types'
+import { DEFAULT_SETTINGS, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { PlannerInput } from './input'
 
 const e = (date: string, unit: 'day' | 'hours', done: boolean, title = ''): Entry =>
-  ({ id: date, date, leaveTypeId: 'paid', amount: unit === 'day' ? { unit: 'day' } : { unit: 'minutes', minutes: 120 }, title, done })
+  ({ id: date, date, leaveTypeId: PAID_LEAVE_TYPE_ID, amount: unit === 'day' ? { unit: 'day' } : { unit: 'minutes', minutes: 120 }, title, done })
 
 /** オーナーのシートと同じ記録に、会社の休日 12/30〜1/3 を足したもの。今日は 2026-11-15 */
 export const SHEET: PlannerInput = {

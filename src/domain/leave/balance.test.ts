@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 import { DEFAULT_SETTINGS } from '@/domain/types'
-import { balanceOf, carryOverOf, grantDaysOf } from './balance'
+import { SHEET } from '@/domain/view/fixture'
+import { balanceOf, carryOverOf, grantDaysOf, grantYearOfType } from './balance'
 
 const e = (date: string, amount: object, done: boolean, leaveTypeId = 'paid') => ({ id: date, date, leaveTypeId, amount, title: '', done }) as never
 const D = { unit: 'day' }
@@ -32,7 +33,7 @@ test('Review Focus 4: 持ち分を超えると未割り当てが負になる', (
   expect(b?.unassigned).toBe(-480)
 })
 test('足した休暇の種類は 日数 × 所定労働時間。付与日が未設定なら null', () => {
-  const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' } }
+  const summer = { id: 'summer', name: '夏季休暇', days: 3, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: false }
   const s = { ...settings, leaveTypes: [...settings.leaveTypes, summer] }
   expect(balanceOf({ settings: s, entries: [e('2026-08-12', D, true, 'summer')], leaveTypeId: 'summer', grantYearStart: '2026-05-01' })?.remaining).toBe(2 * 480)
   expect(balanceOf({ settings: DEFAULT_SETTINGS, entries: [], leaveTypeId: 'paid', grantYearStart: '2026-05-01' })).toBeNull()
@@ -111,4 +112,20 @@ test('R-13: 設定のある付与年が 3 つあるとき、3 つ目の繰り越
   expect(carryOverOf({ settings: s, entries, grantYearStart: '2027-05-01' })).toBe(6720)
   expect(carryOverOf({ settings: s, entries, grantYearStart: '2028-05-01' })).toBe(7680)
   expect(balanceOf({ settings: s, entries, leaveTypeId: 'paid', grantYearStart: '2028-05-01' })?.entitlement).toBe(12480)
+})
+
+const free = (grantDay: string | null) => ({ id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay, together: true })
+const freeEntries = [
+  { id: 'f1', date: '2026-12-10', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: true },
+  { id: 'f2', date: '2027-02-03', leaveTypeId: 'free', amount: { unit: 'day' }, title: '', done: false },
+] as const
+const withFree = (grantDay: string | null) => ({ ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, free(grantDay)] })
+
+test('R-13・F-104: 足した休暇は、その種類の付与される日で区切った付与年で数える', () => {
+  const b = (gd: string | null, start: string) => balanceOf({ settings: withFree(gd), entries: freeEntries, leaveTypeId: 'free', grantYearStart: start })
+  expect(b('01-01', '2026-01-01')).toEqual({ entitlement: 2400, taken: 480, planned: 0, remaining: 1920, unassigned: 1920 })
+  expect(b('01-01', '2027-01-01')).toEqual({ entitlement: 2400, taken: 0, planned: 480, remaining: 2400, unassigned: 1920 })
+  expect(b(null, '2026-05-01')).toEqual({ entitlement: 2400, taken: 480, planned: 480, remaining: 1920, unassigned: 1440 }) // 有休と同じ 5/1 区切り
+  expect(grantYearOfType(withFree('01-01'), 'free', '2026-11-15')).toEqual({ start: '2026-01-01', end: '2026-12-31' })
+  expect(grantYearOfType({ ...withFree('01-01'), grantDay: null }, 'free', '2026-11-15')).toBeNull() // §2
 })

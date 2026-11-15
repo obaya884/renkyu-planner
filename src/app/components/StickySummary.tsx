@@ -1,4 +1,5 @@
 import { summaryLine } from '@/app/texts'
+import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import type { SummaryView } from '@/domain/view/summary'
 
 /**
@@ -7,7 +8,7 @@ import type { SummaryView } from '@/domain/view/summary'
  * その下に張り付くもの（スマホのタブ、PC の節の見出し）は、出ているあいだ BELOW_SUMMARY_* の分だけ下げる
  */
 export function StickySummary({ summary, workMinutes }: { summary: SummaryView; workMinutes: number }) {
-  const card = summary.cards.find((c) => c.leaveTypeId === 'paid')
+  const card = summary.cards.find((c) => c.leaveTypeId === PAID_LEAVE_TYPE_ID)
   if (summary.state === 'unset' || card === undefined) return null
   return (
     <div className="fixed inset-x-0 top-0 z-30 h-7 bg-white shadow-sm">

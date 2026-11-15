@@ -123,3 +123,11 @@ test('§5・P-1: 3 つのモーダルの題は、開いたときに焦点を受�
     expect(title).toContain(`${SHEET_TITLE_ATTR}=""`)
   }
 })
+
+test('§5.1・R-13: 引く休暇の残りは種類ごとの付与年で数える。休む日がその種類の付与年をまたぐ種類は名前だけ', () => {
+  const free = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true }
+  const input = { ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, free] } }
+  const h = html(<AddSheetBody input={input} leaveDays={['2026-12-28', '2027-01-04']} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('>有休（残り 9 日と 2 時間）</option>')
+  expect(h).toContain('>フリーバカンス</option>')
+})

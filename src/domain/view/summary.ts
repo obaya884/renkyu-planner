@@ -1,5 +1,5 @@
 import { isShort } from '../leave/amount'
-import { balanceOf } from '../leave/balance'
+import { balanceOf, grantYearOfType } from '../leave/balance'
 import { type FiveDayStatus, fiveDayStatus } from '../leave/fiveDays'
 import { type Quarter, longBreakOf, planningQuarters } from '../quarters/quarters'
 import type { IsoDate, MonthDay } from '../shared/date'
@@ -40,7 +40,9 @@ export function buildSummary(input: PlannerInput): SummaryView {
 
   const cards: BalanceCard[] = []
   for (const type of settings.leaveTypes) {
-    const b = balanceOf({ settings, entries, leaveTypeId: type.id, grantYearStart: grantYear.start })
+    // §3.2・R-13: その種類の付与される日で区切った、今日が入る付与年で数える
+    const year = grantYearOfType(settings, type.id, today)
+    const b = year === null ? null : balanceOf({ settings, entries, leaveTypeId: type.id, grantYearStart: year.start })
     if (b === null) continue
     cards.push({
       leaveTypeId: type.id,

@@ -6,7 +6,7 @@ import { isShort } from '../leave/amount'
 import { grantDaysOf } from '../leave/balance'
 import { type Quarter, longBreakOf } from '../quarters/quarters'
 import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
-import type { Entry, WeekStart } from '../types'
+import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
 import { previewAdd } from './addPreview'
 import { type PlannerInput, currentGrantYear, restCalendarOf } from './input'
 
@@ -73,7 +73,7 @@ type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; nextGrantYearStart
 function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[]): number | null {
   if (input.settings.grantDay === null) return null
   let short = 0
-  for (const { after } of previewAdd(input, leaveDays, 'paid')) if (isShort(after)) short += -after
+  for (const { after } of previewAdd(input, leaveDays, PAID_LEAVE_TYPE_ID)) if (isShort(after)) short += -after
   return short > 0 ? short : null
 }
 
@@ -208,7 +208,7 @@ function entryBlocks(ctx: Ctx, q: Quarter): EntryBlock[] {
         overlap: kind !== null && kind !== 'leave',
         run,
         long: isLongRun(run),
-        leaveTypeName: entry.leaveTypeId === 'paid' ? null : (input.settings.leaveTypes.find((t) => t.id === entry.leaveTypeId)?.name ?? null),
+        leaveTypeName: entry.leaveTypeId === PAID_LEAVE_TYPE_ID ? null : (input.settings.leaveTypes.find((t) => t.id === entry.leaveTypeId)?.name ?? null),
       }
     })
   const keyOf = (run: Run) => `${run.start}/${run.end}`

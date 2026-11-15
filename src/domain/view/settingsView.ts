@@ -2,7 +2,7 @@ import { addDays } from '../shared/date'
 import type { IsoDate, MonthDay } from '../shared/date'
 import { balanceOf, grantDaysOf } from '../leave/balance'
 import { grantYearOf } from '../leave/grantYear'
-import type { CompanyHoliday, Settings } from '../types'
+import { type CompanyHoliday, PAID_LEAVE_TYPE_ID, type Settings } from '../types'
 import { type PlannerInput, currentGrantYear } from './input'
 
 /** 設定画面の付与年の 1 行（§6）。entered は、その付与年の設定を入れてあるか */
@@ -22,7 +22,7 @@ function rowOf(input: PlannerInput, grantDay: MonthDay, start: IsoDate): GrantYe
     end,
     entered: settings.grantYears[start] !== undefined,
     grantDays: grantDaysOf(settings, start),
-    entitlement: balanceOf({ settings, entries, leaveTypeId: 'paid', grantYearStart: start })?.entitlement ?? 0,
+    entitlement: balanceOf({ settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: start })?.entitlement ?? 0,
   }
 }
 
@@ -36,7 +36,7 @@ export function buildGrantSection(input: PlannerInput): GrantSectionView | null 
   // 過ぎた付与年の出どころ: 設定のある付与年と、有休の日程の日付が入る付与年
   const starts = [
     ...Object.keys(settings.grantYears),
-    ...entries.filter((e) => e.leaveTypeId === 'paid').map((e) => e.date),
+    ...entries.filter((e) => e.leaveTypeId === PAID_LEAVE_TYPE_ID).map((e) => e.date),
   ].map((d) => grantYearOf(d, grantDay).start)
   const earliest = starts.sort()[0]
 

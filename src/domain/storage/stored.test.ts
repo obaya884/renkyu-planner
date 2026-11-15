@@ -49,7 +49,7 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(bad({ workMinutes: 1441 })).toBe(false)
     expect(bad({ grantDay: '02-29' })).toBe(false)
     expect(bad({ leaveTypes: [] })).toBe(false)
-    expect(bad({ leaveTypes: [{ id: 'summer', name: '夏季休暇', days: 3, usable: null }] })).toBe(false)
+    expect(bad({ leaveTypes: [{ id: 'summer', name: '夏季休暇', days: 3, usable: null, grantDay: null, together: false }] })).toBe(false)
     expect(bad({ grantYears: { '2026-05-01': { grantDays: -1, entitlementMinutes: null } } })).toBe(false)
     expect(bad({ companyHolidays: [{ kind: 'monthly' }] })).toBe(false)
     // 366 日の休日は R-15 に合わない。記録の全体は読めて、その休日だけが落ちる
@@ -71,6 +71,15 @@ describe('保存するデータ（N-02、D-2〜D-4）', () => {
     expect(grant({ grantDays: 14, entitlementMinutes: 1.5 })).toBe(false)
     expect(grant({ grantDays: 14 })).toBe(false)
     expect(grant({ grantDays: 14, carryOverMinutes: 0 })).toBe(false)
+  })
+  test('D-4: 休暇の種類の grantDay と together。項目が無い記録は null・false として読む', () => {
+    const old = { id: 'summer', name: '夏季休暇', days: 3, usable: null }
+    const r = parse({ ...ok, settings: { ...DEFAULT_SETTINGS, leaveTypes: [...DEFAULT_SETTINGS.leaveTypes, old] } })
+    expect(r.ok && r.value.settings.leaveTypes[1]).toEqual({ ...old, grantDay: null, together: false })
+    const bad = (patch: object) => parse({ ...ok, settings: { ...DEFAULT_SETTINGS, leaveTypes: [...DEFAULT_SETTINGS.leaveTypes, { ...old, ...patch }] } }).ok
+    expect(bad({ grantDay: '01-01', together: true })).toBe(true)
+    expect(bad({ grantDay: '02-29' })).toBe(false)
+    expect(bad({ together: 'yes' })).toBe(false)
   })
   test('F-108・D-4: weekStart は monday か sunday。項目が無ければ monday として読む', () => {
     const { weekStart: _omit, ...old } = DEFAULT_SETTINGS

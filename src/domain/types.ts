@@ -15,12 +15,21 @@ export type Entry = Readonly<{
   done: boolean
 }>
 
-/** 有休の `id` は 'paid'。有休の `days` は使わず、付与年ごとの値（GrantYearSetting）を使う */
+/** 有休の休暇の種類の `id` */
+export const PAID_LEAVE_TYPE_ID = 'paid'
+
+/**
+ * 有休の `id` は PAID_LEAVE_TYPE_ID。有休の `days` は使わず、付与年ごとの値（GrantYearSetting）を使う。
+ * `grantDay` は付与される日（R-13）。null は有休の付与日と同じ。有休自身はいつも null。
+ * `together` はまとめて取る休暇の印（F-104）
+ */
 export type LeaveType = Readonly<{
   id: string
   name: string
   days: number
   usable: { start: MonthDay; end: MonthDay } | null
+  grantDay: MonthDay | null
+  together: boolean
 }>
 
 /** `entitlementMinutes` は持ち分の上書き（分）。null は計算に任せる（R-13） */
@@ -44,6 +53,6 @@ export const DEFAULT_SETTINGS: Settings = {
   grantDay: null,
   grantYears: {},
   companyHolidays: [],
-  leaveTypes: [{ id: 'paid', name: '有休', days: 0, usable: null }],
+  leaveTypes: [{ id: PAID_LEAVE_TYPE_ID, name: '有休', days: 0, usable: null, grantDay: null, together: false }],
   weekStart: 'monday',
 }

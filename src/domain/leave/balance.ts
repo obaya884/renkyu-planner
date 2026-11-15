@@ -1,7 +1,7 @@
 import { grantYearOf } from './grantYear'
 import { toMinutes } from './amount'
-import type { Entry, Settings } from '@/domain/types'
-import type { IsoDate } from '@/domain/shared/date'
+import { type Entry, PAID_LEAVE_TYPE_ID, type Settings } from '@/domain/types'
+import type { IsoDate, MonthDay } from '@/domain/shared/date'
 
 export type Balance = Readonly<{
   entitlement: number
@@ -15,8 +15,25 @@ type Input = Readonly<{
   settings: Settings
   entries: readonly Entry[]
   leaveTypeId: string
+  /** その種類の付与年（grantYearOfType）の開始日 */
   grantYearStart: IsoDate
 }>
+
+/**
+ * R-13・§2: その休暇の種類の付与される日。有休の付与日が未設定なら null。
+ * 有休か、種類の grantDay が null なら有休の付与日。それ以外はその種類の grantDay
+ */
+export function grantDayOf(settings: Settings, leaveTypeId: string): MonthDay | null {
+  if (settings.grantDay === null) return null
+  if (leaveTypeId === PAID_LEAVE_TYPE_ID) return settings.grantDay
+  return settings.leaveTypes.find((t) => t.id === leaveTypeId)?.grantDay ?? settings.grantDay
+}
+
+/** R-12・R-13: d が入る、その休暇の種類の付与年。有休の付与日が未設定なら null */
+export function grantYearOfType(settings: Settings, leaveTypeId: string, d: IsoDate): { start: IsoDate; end: IsoDate } | null {
+  const grantDay = grantDayOf(settings, leaveTypeId)
+  return grantDay === null ? null : grantYearOf(d, grantDay)
+}
 
 function shiftYear(start: IsoDate, years: number): IsoDate {
   return `${String(Number(start.slice(0, 4)) + years).padStart(4, '0')}${start.slice(4)}`
@@ -85,7 +102,7 @@ export function carryOverOf(input: Readonly<{ settings: Settings; entries: reado
   for (const start of chain) {
     const prevStart = shiftYear(start, -1)
     const prev = withEntitlement(
-      { settings, entries, leaveTypeId: 'paid', grantYearStart: prevStart },
+      { settings, entries, leaveTypeId: PAID_LEAVE_TYPE_ID, grantYearStart: prevStart },
       grantDay,
       paidEntitlement(settings, prevStart, carryOver),
     )
@@ -94,14 +111,17 @@ export function carryOverOf(input: Readonly<{ settings: Settings; entries: reado
   return carryOver
 }
 
-/** R-13・F-405: 休暇の種類と付与年ごとの持ち分と、取得済み・予定・残り・未割り当て。付与日が未設定なら null */
+/**
+ * R-13・F-405: 休暇の種類と付与年ごとの持ち分と、取得済み・予定・残り・未割り当て。有休の付与日が未設定なら null。
+ * `grantYearStart` には、その種類の付与年（grantYearOfType）の開始日を渡す
+ */
 export function balanceOf(input: Input): Balance | null {
   const { settings, leaveTypeId, grantYearStart } = input
-  const grantDay = settings.grantDay
+  const grantDay = grantDayOf(settings, leaveTypeId)
   if (grantDay === null) return null
   const work = settings.workMinutes
 
-  if (leaveTypeId !== 'paid') {
+  if (leaveTypeId !== PAID_LEAVE_TYPE_ID) {
     const type = settings.leaveTypes.find((t) => t.id === leaveTypeId)
     return withEntitlement(input, grantDay, type ? type.days * work : 0)
   }

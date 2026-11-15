@@ -6,7 +6,7 @@ import { T, entrySheetTitle, errorText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
-import type { Amount, Entry } from '@/domain/types'
+import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
 
 type Props = {
@@ -56,7 +56,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   const initialMinutes = entry?.amount.unit === 'minutes' ? entry.amount.minutes : 0
   const [hours, setHours] = useState(String(Math.floor(initialMinutes / 60)))
   const [mins, setMins] = useState(String(initialMinutes % 60))
-  const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === 'paid')?.id ?? leaveTypes[0].id)
+  const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === PAID_LEAVE_TYPE_ID)?.id ?? leaveTypes[0].id)
   const [title, setTitle] = useState(entry?.title ?? '')
   const [done, setDone] = useState(entry?.done ?? false)
 

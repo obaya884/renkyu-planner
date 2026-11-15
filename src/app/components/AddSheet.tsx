@@ -6,10 +6,10 @@ import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading, unassig
 import { runContaining } from '@/domain/calendar/restDays'
 import { type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
 import { isShort } from '@/domain/leave/amount'
-import { balanceOf } from '@/domain/leave/balance'
 import type { IsoDate } from '@/domain/shared/date'
-import { type PlannerInput, currentGrantYear, restCalendarOf } from '@/domain/view/input'
-import { previewAdd } from '@/domain/view/addPreview'
+import { PAID_LEAVE_TYPE_ID } from '@/domain/types'
+import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import { previewAdd, remainingFor } from '@/domain/view/addPreview'
 
 type Props = {
   input: PlannerInput
@@ -21,7 +21,7 @@ type Props = {
 /** §5.1 の中身。入力欄の値（引く休暇と予定の名前）だけを状態に持つ。テストはこちらを直接描く */
 export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
   const { leaveTypes, workMinutes } = input.settings
-  const [leaveTypeId, setLeaveTypeId] = useState(leaveTypes.find((t) => t.id === 'paid')?.id ?? leaveTypes[0].id)
+  const [leaveTypeId, setLeaveTypeId] = useState(leaveTypes.find((t) => t.id === PAID_LEAVE_TYPE_ID)?.id ?? leaveTypes[0].id)
   const [title, setTitle] = useState('')
 
   const deltas = previewAdd(input, leaveDays, leaveTypeId)
@@ -30,14 +30,11 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
   const checks = drafts.map((d) => checkEntryDraft(input, d, null))
   const errors = [...new Set(checks.flatMap((c) => c.errors))]
   const overOneDay = checks.some((c) => c.overOneDay)
-  // 休む日が 1 つの付与年に入るときだけ、その付与年の残りを添える（§5.1）
-  const remainingOf = (typeId: string): number | null =>
-    deltas.length === 1 ? (balanceOf({ settings: input.settings, entries: input.entries, leaveTypeId: typeId, grantYearStart: deltas[0].grantYearStart })?.remaining ?? null) : null
+  // 休む日がその種類の 1 つの付与年に入るときだけ、その付与年の残りを添える（§5.1）
   const typeLabel = (t: { id: string; name: string }) => {
-    const remaining = remainingOf(t.id)
+    const remaining = remainingFor(input, t.id, leaveDays)
     return remaining === null ? t.name : leaveTypeWithRemaining(t.name, remaining, workMinutes)
   }
-  const thisStart = currentGrantYear(input)?.start
   // 休む日を休みに足したときの連休。候補の行の連休と同じ（F-203）
   const added = leaveDays.map((date, i) => ({ id: `add-${i}`, date, leaveTypeId, amount: { unit: 'day' } as const, title: '', done: false }))
   const run = runContaining(restCalendarOf({ ...input, entries: [...input.entries, ...added] }), leaveDays[0])
@@ -67,7 +64,7 @@ export function AddSheetBody({ input, leaveDays, onSubmit, onClose }: Props) {
           deltas.map((d) => (
             <p key={d.grantYearStart} className={isShort(d.after) ? 'font-bold text-warn-ink' : ''}>
               {unassignedChange(
-                deltas.length === 1 ? T.unassigned : d.grantYearStart === thisStart ? T.thisGrantYear : T.nextGrantYearLabel,
+                deltas.length === 1 ? T.unassigned : d.current ? T.thisGrantYear : T.nextGrantYearLabel,
                 d.before,
                 d.after,
                 workMinutes,
