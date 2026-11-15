@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { DATE_FIELD_CLASS, FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { DateField } from '@/app/components/DateField'
+import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, SHORT_FIELD_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
@@ -125,12 +126,12 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         {adding && (
           <div>
             <Field label={T.dateLabel}>
-              <input type="date" max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} className={DATE_FIELD_CLASS} />
+              <DateField max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
             {!ranged && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
             <div className="mt-3">
               <Field label={T.endDateLabel}>
-                <input type="date" max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={DATE_FIELD_CLASS} />
+                <DateField max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </Field>
             </div>
             {range !== null && <EntryRangeLines preview={range} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}

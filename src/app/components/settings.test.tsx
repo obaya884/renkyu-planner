@@ -214,3 +214,8 @@ test('ラジオボタンは主色で出す（accent-primary。日程のモーダ
   expect(radios).toHaveLength(4)
   for (const r of radios) expect(classesIn(r)).toEqual(expect.arrayContaining(['h-5', 'w-5', 'accent-primary']))
 })
+test('画面定義書 §5: 会社の休日の「その年だけ」の日付の欄にも、カレンダーの印を重ねる（aria-hidden）', () => {
+  const h = html(<CompanyHolidaySheetBody holiday={{ kind: 'once', start: '2026-08-13', end: '2026-08-14' }} today="2026-11-15" onSubmit={() => {}} onRemove={() => {}} onClose={() => {}} />)
+  const icons = h.match(/<input type="date"[^>]*><svg[^>]*aria-hidden="true"[^>]*>/g) ?? []
+  expect(icons).toHaveLength(2)
+})

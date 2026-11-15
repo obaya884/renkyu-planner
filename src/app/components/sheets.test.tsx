@@ -319,3 +319,14 @@ test('画面定義書 §5: 付与日の月・日の選択は w-20 で出し、w-
     expect(classesOf(s)).not.toContain('w-full')
   }
 })
+test('画面定義書 §5: 日付の欄は右端にカレンダーの印を重ねる。印は読み上げない（aria-hidden）', () => {
+  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const fields = h.match(/<span class="[^"]*date-field[^"]*"><input type="date"[^>]*>(<svg[^>]*>)/g) ?? []
+  expect(fields).toHaveLength(2)
+  for (const f of fields) {
+    const svg = f.match(/<svg[^>]*>/)![0]
+    expect(svg).toContain('aria-hidden="true"')
+    expect(classesOf(svg)).toEqual(expect.arrayContaining(['pointer-events-none', 'absolute']))
+    expect(classesOf(f.match(/<input[^>]*>/)![0])).toContain('pr-10')
+  }
+})

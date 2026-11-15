@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { DATE_FIELD_CLASS, FIELD_CLASS, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { DateField } from '@/app/components/DateField'
+import { FIELD_CLASS, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
 import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDayPicker'
@@ -65,11 +66,11 @@ export function CompanyHolidaySheetBody({ holiday, today, onSubmit, onRemove, on
           <>
             <label className="block">
               <span className="block text-sm text-sub">{T.startLabel}</span>
-              <input type="date" value={oStart} onChange={(e) => setOStart(e.target.value)} className={DATE_FIELD_CLASS} />
+              <DateField value={oStart} onChange={(e) => setOStart(e.target.value)} />
             </label>
             <label className="block">
               <span className="block text-sm text-sub">{T.endLabel}</span>
-              <input type="date" value={oEnd} onChange={(e) => setOEnd(e.target.value)} className={DATE_FIELD_CLASS} />
+              <DateField value={oEnd} onChange={(e) => setOEnd(e.target.value)} />
             </label>
           </>
         )}

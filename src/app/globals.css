@@ -35,3 +35,25 @@ body {
 body:has(dialog[open]) {
   overflow: hidden;
 }
+
+/*
+ * 日付の欄（DateField。画面定義書 §5）。PC の Chrome・Safari の自前のカレンダーの印は、透明にして欄の全面に広げる。
+ * 見える印は部品が重ねる 1 つだけになり、欄のどこを押しても日付の選択が開く
+ */
+.date-field input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Firefox は自前の印を消せないので、部品が重ねる印を出さない（二重にしない） */
+@supports (-moz-appearance: none) {
+  .date-field-icon {
+    display: none;
+  }
+}
