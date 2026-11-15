@@ -268,3 +268,25 @@ test('F-506・§5.2: これからの予定を直すときだけ「Google カレ�
   expect(html(<EntrySheetBody input={SHEET} entry={past} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
   expect(html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.addToGoogleCalendar)
 })
+
+const tagsOf = (h: string, re: RegExp) => h.match(re) ?? []
+const classesOf = (tag: string) => (tag.match(/class="([^"]*)"/)?.[1] ?? '').split(' ')
+test('画面定義書 §5: ボタンの並びは、中身が収まらないときもモーダルの下端に残る（sticky）。左に置くボタンも同じ並びに入る', () => {
+  const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
+  const h = html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const row = h.match(/<div class="([^"]*sticky[^"]*)"><div><button[^>]*>([^<]*)</)
+  expect(row).not.toBeNull()
+  expect(row![1]).toContain('bottom-0')
+  expect(row![1]).toContain('bg-white')
+  expect(row![2]).toBe(T.remove)
+})
+test('画面定義書 §5・§7: 日付の欄は幅に収まり（min-w-0・appearance-none）、高さ 44px 以上。選択の欄は高さを 44px に決める', () => {
+  const h = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" calendarUrl={null} onSubmit={noop} onRemove={noop} onClose={noop} />)
+  const dates = tagsOf(h, /<input type="date"[^>]*>/g)
+  expect(dates).toHaveLength(2)
+  for (const d of dates) for (const c of ['appearance-none', 'min-w-0', 'min-h-11']) expect(classesOf(d)).toContain(c)
+  const g = html(<GrantSheetBody input={UNSET} grantYearStart={null} onSubmit={noop} onClose={noop} />)
+  const selects = tagsOf(g, /<select[^>]*>/g)
+  expect(selects.length).toBeGreaterThan(0)
+  for (const s of selects) expect(classesOf(s)).toContain('h-11')
+})

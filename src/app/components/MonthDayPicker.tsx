@@ -1,4 +1,4 @@
-import { FIELD_CLASS } from '@/app/components/Sheet'
+import { SELECT_FIELD_CLASS } from '@/app/components/Sheet'
 import { T } from '@/app/texts'
 
 export type Md = { month: number; day: number }
@@ -30,7 +30,7 @@ export function MonthDayPicker({
             const month = Number(e.target.value)
             onChange({ month, day: Math.min(value.day, dayChoices(month).length) })
           }}
-          className={`${FIELD_CLASS} w-20`}
+          className={`${SELECT_FIELD_CLASS} w-20`}
         >
           {MONTHS.map((m) => (
             <option key={m} value={m}>
@@ -39,7 +39,7 @@ export function MonthDayPicker({
           ))}
         </select>
         {T.monthUnit}
-        <select aria-label={`${label} ${T.dayUnit}`} value={value.day} onChange={(e) => onChange({ ...value, day: Number(e.target.value) })} className={`${FIELD_CLASS} w-20`}>
+        <select aria-label={`${label} ${T.dayUnit}`} value={value.day} onChange={(e) => onChange({ ...value, day: Number(e.target.value) })} className={`${SELECT_FIELD_CLASS} w-20`}>
           {dayChoices(value.month).map((d) => (
             <option key={d} value={d}>
               {d}

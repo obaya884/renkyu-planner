@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { DATE_FIELD_CLASS, FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, entrySheetTitle, errorText, rangeDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
@@ -125,12 +125,14 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         {adding && (
           <div>
             <Field label={T.dateLabel}>
-              <input type="date" max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} className={FIELD_CLASS} />
+              <input type="date" max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} className={DATE_FIELD_CLASS} />
             </Field>
             {!ranged && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
-            <Field label={T.endDateLabel}>
-              <input type="date" max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={FIELD_CLASS} />
-            </Field>
+            <div className="mt-3">
+              <Field label={T.endDateLabel}>
+                <input type="date" max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={DATE_FIELD_CLASS} />
+              </Field>
+            </div>
             {range !== null && <EntryRangeLines preview={range} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}
           </div>
         )}
@@ -171,7 +173,7 @@ export function EntrySheetBody({ input, entry, defaultDate, calendarUrl, onSubmi
         {leaveTypes.length >= 2 ? (
           <div>
             <Field label={T.leaveTypeLabel}>
-              <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={FIELD_CLASS}>
+              <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={SELECT_FIELD_CLASS}>
                 {leaveTypes.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}

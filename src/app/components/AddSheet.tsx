@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
+import { FIELD_CLASS, SELECT_FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { UnassignedLines } from '@/app/components/UnassignedLines'
 import { T, errorText, leaveTypeWithRemaining, restDaysText, runHeading } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
@@ -49,7 +49,7 @@ export function AddSheetBody({ input, leaveDays, initialLeaveTypeId, onSubmit, o
         {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
         {leaveTypes.length >= 2 ? (
           <Field label={T.leaveTypeLabel}>
-            <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={FIELD_CLASS}>
+            <select value={leaveTypeId} onChange={(e) => setLeaveTypeId(e.target.value)} className={SELECT_FIELD_CLASS}>
               {leaveTypes.map((t) => (
                 <option key={t.id} value={t.id}>
                   {typeLabel(t)}
