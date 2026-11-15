@@ -5,39 +5,42 @@ import { MonthDayPicker, type Md, fromMd, toMd } from '@/app/components/MonthDay
 import { FIELD_CLASS, Field, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
 import { T, errorText } from '@/app/texts'
 import { grantDayChoices } from '@/domain/entries/grantInput'
-import { type LeaveTypeDraft, checkLeaveTypeDraft, monthDayChoices } from '@/domain/entries/settingsInput'
+import { type LeaveTypeDraft, checkLeaveTypeDraft, monthDayChoices, normalizeLeaveTypeDraft } from '@/domain/entries/settingsInput'
+import type { IsoDate } from '@/domain/shared/date'
 import type { LeaveType } from '@/domain/types'
 
 type Props = {
   type: LeaveType | null
   hasEntries: boolean
+  today: IsoDate
   onSubmit: (d: LeaveTypeDraft) => void
   onRemove: () => void
   onClose: () => void
 }
 
 /** §5.5 の中身。入力欄の値だけを状態に持つ。検証は domain の checkLeaveTypeDraft を呼ぶだけ */
-export function LeaveTypeSheetBody({ type, hasEntries, onSubmit, onRemove, onClose }: Props) {
+export function LeaveTypeSheetBody({ type, hasEntries, today, onSubmit, onRemove, onClose }: Props) {
+  const todayMd = toMd(today.slice(5))
   const [name, setName] = useState(type?.name ?? '')
-  const [days, setDays] = useState(String(type?.days ?? 0))
+  const [days, setDays] = useState(type === null ? '' : String(type.days))
   const [useUsable, setUseUsable] = useState(type?.usable != null)
   // チェックを外しても、入れた期間が消えないよう、値は別に持つ
-  const [start, setStart] = useState<Md>(type?.usable ? toMd(type.usable.start) : { month: 1, day: 1 })
-  const [end, setEnd] = useState<Md>(type?.usable ? toMd(type.usable.end) : { month: 12, day: 31 })
+  const [start, setStart] = useState<Md>(type?.usable ? toMd(type.usable.start) : todayMd)
+  const [end, setEnd] = useState<Md>(type?.usable ? toMd(type.usable.end) : todayMd)
   const [ownGrantDay, setOwnGrantDay] = useState(type?.grantDay != null)
   const [grantDay, setGrantDay] = useState<Md>(type?.grantDay ? toMd(type.grantDay) : { month: 4, day: 1 })
   const [together, setTogether] = useState(type?.together ?? false)
 
-  const draft: LeaveTypeDraft = {
+  const draft: LeaveTypeDraft = normalizeLeaveTypeDraft({
     name,
     days: days === '' ? Number.NaN : Number(days),
     usable: useUsable ? { start: fromMd(start), end: fromMd(end) } : null,
     grantDay: ownGrantDay ? fromMd(grantDay) : null,
     together,
-  }
+  })
   const errors = checkLeaveTypeDraft(draft)
   const canSubmit = errors.length === 0
-  // 名前が空のあいだ（emptyName）は誤りの文を出さず、ボタンを押せなくするだけにする（§5.5）
+  // 名前と日数が空のあいだは誤りの文を出さず、ボタンを押せなくするだけにする（§5.5）
 
   return (
     <>
@@ -50,7 +53,7 @@ export function LeaveTypeSheetBody({ type, hasEntries, onSubmit, onRemove, onClo
           <Field label={T.leaveDaysLabel}>
             <input type="number" min={0} max={366} step={0.5} inputMode="decimal" value={days} onChange={(e) => setDays(e.target.value)} className={`${FIELD_CLASS} w-28`} />
           </Field>
-          {errors.includes('invalidDays') && (
+          {days !== '' && errors.includes('invalidDays') && (
             <p role="alert" className="text-sm text-danger">
               {errorText('invalidDays')}
             </p>

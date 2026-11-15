@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { checkCompanyHoliday, checkLeaveTypeDraft, isValidWorkMinutes, workMinutesFrom } from './settingsInput'
+import { checkCompanyHoliday, checkLeaveTypeDraft, isValidWorkMinutes, normalizeLeaveTypeDraft, workMinutesFrom } from './settingsInput'
 
 test('F-102・D-4: 時間と分から所定労働時間（分）', () => {
   expect(workMinutesFrom('7', '45')).toBe(465)
@@ -35,4 +35,9 @@ test('F-104・§5.5: 休暇の種類の検証', () => {
   expect(checkLeaveTypeDraft({ ...ok, usable: { start: '02-29', end: '02-29' } })).toEqual([])
   expect(checkLeaveTypeDraft({ ...ok, usable: null, grantDay: '01-01', together: true })).toEqual([])
   expect(checkLeaveTypeDraft({ ...ok, grantDay: '02-29' })).toEqual(['invalidGrantDay'])
+})
+
+test('§5.5: 休暇の種類の名前は、前後の空白を除いて保存する', () => {
+  const d = { name: '　 夏季休暇 \t', days: 3, usable: null, grantDay: null, together: false }
+  expect(normalizeLeaveTypeDraft(d)).toEqual({ ...d, name: '夏季休暇' })
 })

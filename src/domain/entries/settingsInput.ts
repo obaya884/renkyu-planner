@@ -50,6 +50,11 @@ export type LeaveTypeDraft = Readonly<{
 
 export type LeaveTypeError = 'emptyName' | 'invalidDays' | 'invalidUsable' | 'invalidGrantDay'
 
+/** §5.5: 名前は前後の空白を除いて保存する。検証と保存に同じ値を使う */
+export function normalizeLeaveTypeDraft(draft: LeaveTypeDraft): LeaveTypeDraft {
+  return { ...draft, name: draft.name.trim() }
+}
+
 /** §5.5: 休暇の種類の検証。年をまたぐ使える期間（開始が終了より後）は入れられない */
 export function checkLeaveTypeDraft(draft: LeaveTypeDraft): readonly LeaveTypeError[] {
   const errors: LeaveTypeError[] = []

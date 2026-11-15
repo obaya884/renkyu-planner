@@ -40,6 +40,7 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
 
   if (!shown) return null
   const input = { holidays, settings: data.settings, entries: data.entries, today }
+  const leaveRows = leaveTypeRows(input)
   return (
     <div className="space-y-6">
       <Notices canSave={canSave} unreadable={unreadable} />
@@ -63,7 +64,7 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
       <section className="space-y-2">
         <h2 className="text-sm font-bold text-sub">{T.leaveTypeSection}</h2>
         <LeaveTypeSection
-          rows={leaveTypeRows(input)}
+          rows={leaveRows}
           onOpen={(id) => setSheet({ kind: 'leaveType', id })}
           onAdd={() => setSheet({ kind: 'leaveType', id: null })}
         />
@@ -97,7 +98,8 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
         <LeaveTypeSheet
           key={sheet.id ?? 'new'}
           type={sheet.id === null ? null : (data.settings.leaveTypes.find((t) => t.id === sheet.id) ?? null)}
-          hasEntries={sheet.id !== null && data.entries.some((e) => e.leaveTypeId === sheet.id)}
+          hasEntries={leaveRows.find((r) => r.type.id === sheet.id)?.hasEntries ?? false}
+          today={today}
           onSubmit={(d) => {
             plannerStore.saveLeaveType(sheet.id, d)
             setSheet(null)
