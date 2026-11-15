@@ -30,6 +30,11 @@ export function afterRestore(): TransferState {
   return { note: 'restored', undo: null }
 }
 
+/** §6・E-5: これからの予定が無く、カレンダー用のファイルを作らなかった */
+export function afterNoCalendarEntries(): TransferState {
+  return { note: 'noCalendarEntries', undo: null }
+}
+
 /** 消したあとに戻せると、消した意味が無くなる */
 export function afterClear(): TransferState {
   return { note: 'cleared', undo: null }

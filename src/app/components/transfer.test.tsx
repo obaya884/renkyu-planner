@@ -50,6 +50,7 @@ test('§5.7: 記録をすべて消すモーダル', () => {
   expect(h.indexOf(`>${T.clearSubmit}<`)).toBeGreaterThan(0)
   expect(transferNoteText('cleared')).toBe('記録を消しました')
 })
-test('§6: 文の無い 1 行（あとのタスクで文を足す種類）は、空の段落を描かない', () => {
-  expect(section({ note: 'noCalendarEntries' })).toBe(section())
+test('§6: .ics に入れる日程が無いときの 1 行', () => {
+  expect(transferNoteText('noCalendarEntries')).toBe('カレンダーに入れる日程がありません')
+  expect(section({ note: 'noCalendarEntries' })).toContain('<p class="text-sm">カレンダーに入れる日程がありません</p>')
 })

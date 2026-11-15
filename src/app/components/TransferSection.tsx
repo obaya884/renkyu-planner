@@ -21,8 +21,6 @@ const BUTTON_CLASS = `${SECONDARY_BUTTON_CLASS} w-full text-left`
 /** §6 の記録の持ち出しの節。状態は持たず、選んだファイルを onPickFile に渡すだけ */
 export function TransferSection({ note, canRestore, onExport, onStartImport, onPickFile, onRestore, onExportIcs, onClear }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
-  // 文をまだ持たない種類（あとのタスクで足す）は、空の段落を描かない
-  const noteText = note === null ? '' : transferNoteText(note)
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-bold text-sub">{T.transferSection}</h2>
@@ -55,13 +53,13 @@ export function TransferSection({ note, canRestore, onExport, onStartImport, onP
           {T.clearAll}
         </button>
       </div>
-      {noteText !== '' &&
+      {note !== null &&
         (note === 'unreadableFile' ? (
           <p role="alert" className="text-sm text-danger">
-            {noteText}
+            {transferNoteText(note)}
           </p>
         ) : (
-          <p className="text-sm">{noteText}</p>
+          <p className="text-sm">{transferNoteText(note)}</p>
         ))}
       {canRestore && (
         <button type="button" onClick={onRestore} className={SECONDARY_BUTTON_CLASS}>

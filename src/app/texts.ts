@@ -4,7 +4,7 @@ import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
 import type { RangeError } from '@/domain/entries/entryRange'
 import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/settingsInput'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
-import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
+import type { Amount, CompanyHoliday, Entry, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import type { ImportCounts } from '@/domain/transfer/importCounts'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
@@ -164,9 +164,10 @@ export const T = {
   importConfirm: 'いまの記録は置き換わります',
   importSubmit: '置き換える',
   restoreImport: '読み込む前に戻す',
+  noCalendarEntries: 'カレンダーに入れる日程がありません',
 } as const
 
-/** §6 の記録の持ち出しの節に出す 1 行の種類。noCalendarEntries と cleared は、書き出し（.ics）と消す操作で使う */
+/** §6 の記録の持ち出しの節に出す 1 行の種類 */
 export type TransferNote = 'imported' | 'restored' | 'unreadableFile' | 'noCalendarEntries' | 'cleared'
 
 /** 日曜始まり（曜日の番号の順）。月カレンダーの曜日の行は weekdayHeader を使う */
@@ -403,7 +404,7 @@ export function formatAmount(minutes: number, workMinutes: number): string {
   return formatMinutes(minutes, workMinutes)
 }
 
-/** §6 の記録の持ち出しの節の 1 行。文は仮（G-6）。noCalendarEntries の文は、それを使うタスクで足す */
+/** §6 の記録の持ち出しの節の 1 行。文は仮（G-6） */
 export function transferNoteText(note: TransferNote): string {
   switch (note) {
     case 'imported':
@@ -415,7 +416,21 @@ export function transferNoteText(note: TransferNote): string {
     case 'cleared':
       return '記録を消しました'
     case 'noCalendarEntries':
-      return ''
+      return T.noCalendarEntries
+  }
+}
+
+/** §6・F-506: カレンダーの予定の題。名前があれば名前、無ければ休暇の種類の名前。半日と時間単位は量を括弧で添える。例: 有休（2 時間） */
+export function calendarEventTitle(entry: Entry, leaveTypeName: string, workMinutes: number): string {
+  const name = entry.title.trim()
+  const head = name === '' ? leaveTypeName : name
+  switch (entry.amount.unit) {
+    case 'day':
+      return head
+    case 'half':
+      return `${head}（${T.amountHalf}）`
+    case 'minutes':
+      return `${head}（${amountText(entry.amount, workMinutes)}）`
   }
 }
 

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED, serializeStored } from '@/domain/storage/stored'
 import { SHEET } from '@/domain/view/fixture'
-import { TRANSFER_IDLE, afterClear, afterImport, afterRestore, afterUnreadable, canRestore, readPickedFile, withCurrentData } from './transferState'
+import { TRANSFER_IDLE, afterClear, afterImport, afterNoCalendarEntries, afterRestore, afterUnreadable, canRestore, readPickedFile, withCurrentData } from './transferState'
 
 const sheetData = { version: 1, settings: SHEET.settings, entries: SHEET.entries } as const
 const imported = afterImport(EMPTY_STORED, sheetData)
@@ -22,6 +22,7 @@ test('§6: 節のボタンを押すと、1 行と「読み込む前に戻す」�
   expect(TRANSFER_IDLE).toEqual({ note: null, undo: null })
   expect(afterUnreadable()).toEqual({ note: 'unreadableFile', undo: null })
   expect(afterClear()).toEqual({ note: 'cleared', undo: null })
+  expect(afterNoCalendarEntries()).toEqual({ note: 'noCalendarEntries', undo: null })
 })
 test('§6: 記録が変わったら戻す先を捨て、記録を元の中身に戻しても、もう出さない', () => {
   expect(withCurrentData(imported, sheetData)).toBe(imported)

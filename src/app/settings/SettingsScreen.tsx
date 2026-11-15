@@ -11,12 +11,14 @@ import { SettingsSections } from '@/app/components/SettingsSections'
 import { TransferSection } from '@/app/components/TransferSection'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import { useToday } from '@/app/store/useToday'
+import { calendarEventsOf } from '@/app/transfer/calendarEvents'
 import { downloadText, readFileText } from '@/app/transfer/download'
 import {
   TRANSFER_IDLE,
   type TransferState,
   afterClear,
   afterImport,
+  afterNoCalendarEntries,
   afterRestore,
   afterUnreadable,
   canRestore,
@@ -27,7 +29,8 @@ import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { STORAGE_LIMITS, canAdd } from '@/domain/storage/limits'
 import { type StoredData, serializeStored } from '@/domain/storage/stored'
-import { recordFileName } from '@/domain/transfer/fileName'
+import { icsFileName, recordFileName } from '@/domain/transfer/fileName'
+import { buildIcs, icsStamp } from '@/domain/transfer/ics'
 import { importCounts } from '@/domain/transfer/importCounts'
 import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 
@@ -124,7 +127,12 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
           setTransfer(afterRestore())
           rebuildFields()
         }}
-        onExportIcs={resetTransfer}
+        onExportIcs={() => {
+          resetTransfer()
+          const events = calendarEventsOf(data.entries, data.settings, today)
+          if (events.length === 0) return setTransfer(afterNoCalendarEntries())
+          downloadText(icsFileName(today), buildIcs(events, icsStamp(new Date().toISOString())), 'text/calendar')
+        }}
         onClear={() => {
           resetTransfer()
           setSheet({ kind: 'clear' })
