@@ -218,6 +218,13 @@ export function balanceDetail(planned: number, unassigned: number, short: boolea
   return `${T.planned} ${formatAmount(planned, workMinutes)}・${rest}`
 }
 
+/** §3.2 の足した休暇の 1 行（期間の前まで）。例: フリーバカンス　残り 5 日・未割り当て 5 日。使い切りなら「フリーバカンス　使い切り」 */
+export function extraLeaveLine(name: string, remaining: number, unassigned: number, short: boolean, usedUp: boolean, workMinutes: number): string {
+  if (usedUp) return `${name}　${T.usedUp}`
+  const rest = short ? `${T.short} ${formatAmount(unassigned, workMinutes)}` : `${T.unassigned} ${formatAmount(Math.max(0, unassigned), workMinutes)}`
+  return `${name}　${T.remaining} ${formatAmount(remaining, workMinutes)}・${rest}`
+}
+
 /** F-404。例: 年 5 日の取得まで あと 3日（取得済み 2日・予定 0日） */
 export function fiveDaysText(remainingDays: number, doneDays: number, plannedDays: number): string {
   return `${T.fiveDaysLabel} あと ${remainingDays}日（取得済み ${doneDays}日・${T.planned} ${plannedDays}日）`
