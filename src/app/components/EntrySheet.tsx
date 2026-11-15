@@ -2,18 +2,22 @@
 
 import { useState } from 'react'
 import { FIELD_CLASS, Field, Line, PRIMARY_BUTTON_CLASS, SECONDARY_BUTTON_CLASS, Sheet, SheetButtons, SheetTitle } from '@/app/components/Sheet'
-import { T, entrySheetTitle, errorText, runHeading } from '@/app/texts'
+import { T, entrySheetTitle, errorText, rangeDaysText, runHeading, unassignedChange } from '@/app/texts'
 import { runContaining } from '@/domain/calendar/restDays'
 import { type DraftError, type EntryDraft, checkEntryDraft, lastAddableDate } from '@/domain/entries/checkDraft'
+import type { RangeError } from '@/domain/entries/entryRange'
+import { isShort } from '@/domain/leave/amount'
 import { type IsoDate, isValidIsoDate } from '@/domain/shared/date'
 import { type Amount, type Entry, PAID_LEAVE_TYPE_ID } from '@/domain/types'
 import { type PlannerInput, restCalendarOf } from '@/domain/view/input'
+import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
 
 type Props = {
   input: PlannerInput
   entry: Entry | null
   defaultDate: IsoDate
-  onSubmit: (draft: EntryDraft) => void
+  /** 1 件を足す・直すときは [draft]、期間で足すときは足す日ごとの 1 日の日程（F-307） */
+  onSubmit: (drafts: readonly EntryDraft[]) => void
   onRemove: () => void
   onClose: () => void
 }
@@ -35,7 +39,7 @@ function Choice({ name, label, checked, onChange }: { name: string; label: strin
   )
 }
 
-function ErrorLines({ errors, lastAddable }: { errors: readonly DraftError[]; lastAddable: IsoDate }) {
+function ErrorLines({ errors, lastAddable }: { errors: readonly (DraftError | RangeError)[]; lastAddable: IsoDate }) {
   return (
     <>
       {errors.map((e) => (
@@ -43,6 +47,30 @@ function ErrorLines({ errors, lastAddable }: { errors: readonly DraftError[]; la
           {errorText(e, lastAddable)}
         </p>
       ))}
+    </>
+  )
+}
+
+/**
+ * §5.2・F-307: 期間で足すときの、終わりの日の欄の下の行。理由か足す日、F-306 の知らせ、未割り当て、連休。
+ * lastAddable は tooFar の文に入れる日付（R-19）
+ */
+export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview: RangePreview; workMinutes: number; lastAddable: IsoDate }) {
+  const { days, errors, overOneDay, run, deltas } = preview
+  return (
+    <>
+      {errors.length > 0 ? (
+        <ErrorLines errors={errors} lastAddable={lastAddable} />
+      ) : (
+        <p className="text-sm">{rangeDaysText(days)}</p>
+      )}
+      {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
+      {deltas.map((d) => (
+        <p key={d.grantYearStart} className={isShort(d.after) ? 'font-bold text-warn-ink' : ''}>
+          {unassignedChange(deltas.length === 1 ? T.unassigned : d.current ? T.thisGrantYear : T.nextGrantYearLabel, d.before, d.after, workMinutes)}
+        </p>
+      ))}
+      {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
     </>
   )
 }
@@ -59,6 +87,9 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   const [leaveTypeId, setLeaveTypeId] = useState(entry?.leaveTypeId ?? leaveTypes.find((t) => t.id === PAID_LEAVE_TYPE_ID)?.id ?? leaveTypes[0].id)
   const [title, setTitle] = useState(entry?.title ?? '')
   const [done, setDone] = useState(entry?.done ?? false)
+  // F-307: 足すときだけ。空なら日付の 1 日だけを足す
+  const [endDate, setEndDate] = useState('')
+  const ranged = adding && endDate !== ''
 
   const amount: Amount =
     kind === 'minutes' ? { unit: 'minutes', minutes: Number(hours) * 60 + Number(mins) } : { unit: kind }
@@ -77,7 +108,14 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
   const lastAddable = lastAddableDate(input.today)
   const dateErrors = errors.filter((e) => e === 'restDay' || e === 'invalidDate' || e === 'tooFar')
   const amountErrors = errors.filter((e) => e === 'invalidAmount')
-  const typeErrors = errors.filter((e) => e === 'unknownLeaveType')
+
+  // F-307: 終わりの日を入れたときは、足す日ごとに 1 日の日程を作り、1 日ずつ検証する
+  const range = ranged ? previewRange(input, date, endDate, leaveTypeId) : null
+  const rangeDrafts: readonly EntryDraft[] = (range?.days ?? []).map((d) => ({ date: d, leaveTypeId, amount: { unit: 'day' }, title, done }))
+  const rangeErrors = [...new Set(rangeDrafts.flatMap((d) => checkEntryDraft(input, d, null).errors))]
+  const typeErrors = (range === null ? errors : rangeErrors).filter((e) => e === 'unknownLeaveType')
+  const canSave = range === null ? errors.length === 0 : range.errors.length === 0 && rangeErrors.length === 0
+  const drafts: readonly EntryDraft[] = range === null ? [draft] : rangeDrafts
 
   return (
     <>
@@ -91,41 +129,47 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
             <Field label={T.dateLabel}>
               <input type="date" max={lastAddable} value={date} onChange={(e) => setDate(e.target.value)} className={FIELD_CLASS} />
             </Field>
-            <ErrorLines errors={dateErrors} lastAddable={lastAddable} />
+            {!ranged && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
+            <Field label={T.endDateLabel}>
+              <input type="date" max={lastAddable} value={endDate} onChange={(e) => setEndDate(e.target.value)} className={FIELD_CLASS} />
+            </Field>
+            {range !== null && <EntryRangeLines preview={range} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}
           </div>
         )}
-        <fieldset>
-          <legend className="text-sm text-sub">{T.amountLabel}</legend>
-          {AMOUNT_CHOICES.map((c) => (
-            <Choice key={c.kind} name="amount" label={c.label} checked={kind === c.kind} onChange={() => setKind(c.kind)} />
-          ))}
-          {kind === 'minutes' && (
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                inputMode="numeric"
-                aria-label={T.hoursUnit}
-                value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                className={`${FIELD_CLASS} w-20`}
-              />
-              {T.hoursUnit}
-              <input
-                type="number"
-                min={0}
-                inputMode="numeric"
-                aria-label={T.minutesUnit}
-                value={mins}
-                onChange={(e) => setMins(e.target.value)}
-                className={`${FIELD_CLASS} w-20`}
-              />
-              {T.minutesUnit}
-            </div>
-          )}
-          <ErrorLines errors={amountErrors} lastAddable={lastAddable} />
-          {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
-        </fieldset>
+        {!ranged && (
+          <fieldset>
+            <legend className="text-sm text-sub">{T.amountLabel}</legend>
+            {AMOUNT_CHOICES.map((c) => (
+              <Choice key={c.kind} name="amount" label={c.label} checked={kind === c.kind} onChange={() => setKind(c.kind)} />
+            ))}
+            {kind === 'minutes' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  aria-label={T.hoursUnit}
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  className={`${FIELD_CLASS} w-20`}
+                />
+                {T.hoursUnit}
+                <input
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  aria-label={T.minutesUnit}
+                  value={mins}
+                  onChange={(e) => setMins(e.target.value)}
+                  className={`${FIELD_CLASS} w-20`}
+                />
+                {T.minutesUnit}
+              </div>
+            )}
+            <ErrorLines errors={amountErrors} lastAddable={lastAddable} />
+            {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
+          </fieldset>
+        )}
         {leaveTypes.length >= 2 ? (
           <div>
             <Field label={T.leaveTypeLabel}>
@@ -153,7 +197,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
           <Choice name="status" label={T.planned} checked={!done} onChange={() => setDone(false)} />
           <Choice name="status" label={T.done} checked={done} onChange={() => setDone(true)} />
         </fieldset>
-        {run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
+        {!ranged && run !== null && <Line label={T.runLabel}>{runHeading(run)}</Line>}
       </div>
       <SheetButtons
         left={
@@ -167,7 +211,7 @@ export function EntrySheetBody({ input, entry, defaultDate, onSubmit, onRemove, 
         <button type="button" onClick={onClose} className={SECONDARY_BUTTON_CLASS}>
           {T.cancel}
         </button>
-        <button type="button" disabled={errors.length > 0} onClick={() => onSubmit(draft)} className={PRIMARY_BUTTON_CLASS}>
+        <button type="button" disabled={!canSave} onClick={() => onSubmit(drafts)} className={PRIMARY_BUTTON_CLASS}>
           {T.save}
         </button>
       </SheetButtons>

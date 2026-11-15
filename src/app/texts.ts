@@ -1,6 +1,7 @@
 import type { Run } from '@/domain/calendar/restDays'
 import type { Candidate } from '@/domain/candidates/findCandidates'
 import type { DraftError, GrantError } from '@/domain/entries/checkDraft'
+import type { RangeError } from '@/domain/entries/entryRange'
 import type { CompanyHolidayError, LeaveTypeError } from '@/domain/entries/settingsInput'
 import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
@@ -119,6 +120,7 @@ export const T = {
   // §5.2
   addDayTitle: '日を足す',
   dateLabel: '日付',
+  endDateLabel: '終わりの日',
   amountLabel: '量',
   amountDay: '1日',
   amountHalf: '半日',
@@ -342,6 +344,11 @@ export function entrySheetTitle(d: IsoDate): string {
   return `${formatDay(d)} の日程`
 }
 
+/** §5.2 の期間で足す日の行（F-307）。例: 12/28(月)・12/29(火)・1/4(月) の 3日ぶんを足します */
+export function rangeDaysText(days: readonly IsoDate[]): string {
+  return `${days.map(formatDay).join('・')} の ${days.length}日ぶんを足します`
+}
+
 /** §6 の付与年の期間。例: 2026/5/1〜2027/4/30 */
 export function grantYearPeriod(start: IsoDate, end: IsoDate): string {
   const ymd = (d: IsoDate) => `${d.slice(0, 4)}/${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`
@@ -369,8 +376,8 @@ export function formatAmount(minutes: number, workMinutes: number): string {
   return formatMinutes(minutes, workMinutes)
 }
 
-/** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
-export function errorText(e: DraftError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries', lastAddable?: IsoDate): string {
+/** 画面定義書 §8.3。restDay・tooFar・invalidGrantDay・endBeforeStart・noDays・tooManyDays 以外は §8.3 にない仮の文。lastAddable は tooFar の文に入れる日付（R-19） */
+export function errorText(e: DraftError | RangeError | GrantError | CompanyHolidayError | LeaveTypeError | 'invalidWorkMinutes' | 'hasEntries', lastAddable?: IsoDate): string {
   switch (e) {
     case 'tooFar':
       return `この日は、まだ入れられません。${lastAddable === undefined ? '' : formatJapaneseDate(lastAddable)}までの日を入れてください`
@@ -400,6 +407,12 @@ export function errorText(e: DraftError | GrantError | CompanyHolidayError | Lea
       return '名前を入れてください'
     case 'invalidDays':
       return '日数は、0日から366日まで、0.5日きざみで入れてください'
+    case 'endBeforeStart':
+      return '終わりの日を、日付と同じかそれより後にしてください'
+    case 'noDays':
+      return 'この期間には、足せる日（休みの日でない日）がありません'
+    case 'tooManyDays':
+      return '一度に足せるのは 31日までです。期間を分けて入れてください'
     case 'invalidUsable':
       return '使える期間は、終わりを始まりと同じかそれより後にしてください（年をまたげません）'
   }

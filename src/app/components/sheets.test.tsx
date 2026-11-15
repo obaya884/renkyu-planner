@@ -2,8 +2,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from '@/domain/view/fixture'
 import { T, errorText } from '@/app/texts'
+import { previewRange } from '@/domain/view/rangePreview'
 import { AddSheetBody } from './AddSheet'
-import { EntrySheetBody } from './EntrySheet'
+import { EntryRangeLines, EntrySheetBody } from './EntrySheet'
 import { GrantSheetBody } from './GrantSheet'
 import { SHEET_TITLE_ATTR } from './Sheet'
 
@@ -192,4 +193,25 @@ test('F-212・§3.7・§5.1: まとめて取る休暇の候補から開くと、
   expect(h).toContain('12/26〜1/11 の 17連休')
   const plain = html(<AddSheetBody input={input} leaveDays={days} onSubmit={noop} onClose={noop} />)
   expect(plain).toContain('<option value="paid" selected="">有休（残り 9 日と 2 時間）</option>') // 4440 分
+})
+test('F-307・§5.2: 日を足すモーダルの終わりの日。直すときは出さない', () => {
+  const add = html(<EntrySheetBody input={SHEET} entry={null} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)
+  expect(add).toContain(T.endDateLabel)
+  expect(add.match(/type="date"/g)).toHaveLength(2)
+  const entry = SHEET.entries.find((e) => e.date === '2026-12-28')!
+  expect(html(<EntrySheetBody input={SHEET} entry={entry} defaultDate="2026-11-16" onSubmit={noop} onRemove={noop} onClose={noop} />)).not.toContain(T.endDateLabel)
+})
+test('F-307・F-306・§5.2: 期間で足すときの行。足す日、知らせ、未割り当て、連休', () => {
+  const h = html(<EntryRangeLines preview={previewRange(SHEET, '2026-12-28', '2027-01-04', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
+  expect(h).toContain('12/28(月)・12/29(火)・1/4(月) の 3日ぶんを足します')
+  expect(h).toContain(T.overOneDay)
+  expect(h).toContain('未割り当て 4 日と 2 時間 → 1 日と 2 時間')
+  expect(h).toContain('12/26〜1/4 の 10連休')
+  const big = html(<EntryRangeLines preview={previewRange(SHEET, '2026-12-21', '2027-01-08', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
+  expect(big).toContain('不足 7 日と 6 時間') // 12 日 = 5760 分。2040 − 5760 = −3720 分
+  expect(big).toContain('12/19〜1/11 の 24連休')
+  const far = html(<EntryRangeLines preview={previewRange(SHEET, '2027-09-27', '2027-10-01', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)
+  expect(far).toContain('この日は、まだ入れられません。2027年9月30日までの日を入れてください')
+  expect(far).not.toContain('ぶんを足します')
+  expect(html(<EntryRangeLines preview={previewRange(SHEET, '2026-11-24', '2026-11-19', 'paid')} workMinutes={480} lastAddable="2027-09-30" />)).toContain(errorText('endBeforeStart'))
 })

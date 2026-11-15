@@ -190,9 +190,9 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           input={input}
           entry={openedEntry ?? null}
           defaultDate={sheet.defaultDate}
-          onSubmit={(draft) => {
-            if (openedEntry) plannerStore.updateEntry(openedEntry.id, draft)
-            else plannerStore.addEntries([draft])
+          onSubmit={(drafts) => {
+            if (openedEntry) plannerStore.updateEntry(openedEntry.id, drafts[0])
+            else plannerStore.addEntries(drafts)
             closeSheet()
           }}
           onRemove={() => {
