@@ -5,8 +5,10 @@ import { type IsoDate, addDays, monthEnd, weekday } from '../shared/date'
 import { type Entry, PAID_LEAVE_TYPE_ID, type WeekStart } from '../types'
 import { type CandidateBlock, type Ctx, candidateBlocks, isLongRun } from './candidateBlocks'
 import { type PlannerInput, restCalendarOf } from './input'
+import { type TogetherBlock, togetherBlocks } from './togetherBlocks'
 
 export type { CandidateBlock, CandidateRow } from './candidateBlocks'
+export type { TogetherBlock, TogetherRow } from './togetherBlocks'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */
 export type DayMark = 'done' | 'planned' | 'candidate' | 'company' | 'off'
@@ -39,6 +41,10 @@ export type QuarterView = Readonly<{
   marks: readonly DayMark[]
   grantNote: GrantNote | null
   candidates: readonly CandidateBlock[]
+  /** まとめて取る休暇の組。種類の並びは設定画面と同じ（§3.7） */
+  together: readonly TogetherBlock[]
+  /** candidates と together がどちらも空（§3.7） */
+  noCandidates: boolean
   entries: readonly EntryBlock[]
 }>
 
@@ -143,6 +149,7 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
   const ctx: Ctx = { input, cal: restCalendarOf(input) }
   const active = quarters.filter((q) => q.end >= input.today)
   const { placed, primaryDays } = candidateBlocks(ctx, active)
+  const togetherPlaced = togetherBlocks(ctx, active)
   const none = new Set<IsoDate>()
 
   return quarters.map((quarter) => {
@@ -151,6 +158,8 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
     const shown = new Set(months.flatMap((m) => m.weeks.flat()).map((c) => c?.mark ?? null))
     const groups = placed.filter((p) => p.quarterStart === quarter.start && p.block.kind === 'group')
     const gaps = placed.filter((p) => p.quarterStart === quarter.start && p.block.kind === 'monthGap')
+    const candidates = past ? [] : [...groups, ...gaps].map((p) => p.block)
+    const together = past ? [] : togetherPlaced.filter((p) => p.quarterStart === quarter.start).map((p) => p.block)
     return {
       quarter,
       past,
@@ -158,7 +167,9 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
       months,
       marks: MARK_ORDER.filter((m) => shown.has(m)),
       grantNote: grantNoteOf(ctx, quarter),
-      candidates: past ? [] : [...groups, ...gaps].map((p) => p.block),
+      candidates,
+      together,
+      noCandidates: candidates.length === 0 && together.length === 0,
       entries: entryBlocks(ctx, quarter),
     }
   })

@@ -44,7 +44,7 @@ function shortMinutesOf(input: PlannerInput, leaveDays: readonly IsoDate[], leav
 }
 
 /** F-209・§3.7: その種類の、今日が入る付与年の次の付与年の日を含むか。付与日が未設定なら false */
-function inNextGrantYear(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string): boolean {
+export function inNextGrantYear(input: PlannerInput, leaveDays: readonly IsoDate[], leaveTypeId: string): boolean {
   const current = grantYearOfType(input.settings, leaveTypeId, input.today)
   return current !== null && leaveDays.some((d) => d > current.end)
 }

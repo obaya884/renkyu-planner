@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { planningQuarters } from '@/domain/quarters/quarters'
+import { planningQuarters, quartersBetween } from '@/domain/quarters/quarters'
 import { previewAdd } from './addPreview'
 import { SHEET, UNSET } from './fixture'
 import { buildQuarterViews } from './quarterView'
@@ -193,4 +193,50 @@ test('F-208・R-8: 祝日のない月の候補でも、使える期間のある�
   if (gap?.kind !== 'monthGap') throw new Error('6 月の候補が無い')
   expect(gap.rows.length).toBeGreaterThan(0)
   expect(gap.rows.every((r) => r.leaveTypeId === 'june' && r.leaveTypeName === '6月休暇' && r.shortMinutes === null)).toBe(true)
+})
+
+const freeType = { id: 'free', name: 'フリーバカンス', days: 5, usable: null, grantDay: '01-01', together: true } as const
+const refreshType = { id: 'refresh', name: 'リフレッシュ', days: 5, usable: { start: '07-01', end: '09-30' }, grantDay: null, together: true } as const
+const withTypes = (...types: object[]) => ({ ...SHEET, settings: { ...SHEET.settings, leaveTypes: [...SHEET.settings.leaveTypes, ...types] } }) as typeof SHEET
+
+test('F-212・§3.7: まとめて取る休暇の組。先頭の 1 件と残り、次の付与年', () => {
+  const [v4, v1] = buildQuarterViews(withTypes(freeType), qs)
+  expect(v4.together).toHaveLength(1)
+  expect(v4.together[0]).toMatchObject({ leaveTypeId: 'free', leaveTypeName: 'フリーバカンス', days: 5 })
+  expect(v4.together[0].primary).toEqual({
+    leaveDays: ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-25'],
+    run: { start: '2026-12-19', end: '2027-01-03', days: 16 },
+    long: true,
+    unconfirmed: false,
+    nextGrantYear: false, // フリーバカンスの今の付与年は 2026-01-01〜2026-12-31
+  })
+  expect(v4.together[0].rest.map((r) => r.leaveDays[0])).toEqual(['2026-11-16', '2026-11-20', '2026-11-24', '2026-11-30'])
+  expect(v1.together[0].primary).toEqual({
+    leaveDays: ['2027-01-04', '2027-01-05', '2027-01-06', '2027-01-07', '2027-01-08'],
+    run: { start: '2026-12-26', end: '2027-01-11', days: 17 },
+    long: true,
+    unconfirmed: false, // 連休の翌日 1/12 は確定期限 2027-12-31 より前
+    nextGrantYear: true,
+  })
+  expect(v4.noCandidates).toBe(false)
+})
+test('§3.7: 組の並びは設定画面の種類の並び。候補が無い四半期には組を出さない', () => {
+  const a = buildQuarterViews(withTypes(refreshType, freeType), qs)
+  expect(a.map((v) => v.together.map((b) => b.leaveTypeId))).toEqual([['free'], ['free'], ['free'], ['refresh', 'free']])
+  const b = buildQuarterViews(withTypes(freeType, refreshType), qs)
+  expect(b[3].together.map((x) => x.leaveTypeId)).toEqual(['free', 'refresh'])
+  // リフレッシュは有休と同じ 5/1 区切り。今の付与年は 2027-04-30 までなので、7〜9 月は次の付与年
+  expect(a[3].together[0].primary).toMatchObject({ leaveDays: ['2027-09-16', '2027-09-17', '2027-09-21', '2027-09-22', '2027-09-24'], nextGrantYear: true })
+})
+test('F-212・§3.6・§5.1: まとめて取る休暇を足しても、ふつうの候補と月カレンダーの印は変わらない', () => {
+  const base = buildQuarterViews(SHEET, qs)
+  const v = buildQuarterViews(withTypes(freeType), qs)
+  expect(v.map((q) => q.candidates)).toEqual(base.map((q) => q.candidates))
+  expect(v.map((q) => q.months)).toEqual(base.map((q) => q.months))
+  expect(base.every((q) => q.together.length === 0)).toBe(true)
+})
+test('R-20: 過ぎた四半期には出さない', () => {
+  const [past] = buildQuarterViews(withTypes(freeType), quartersBetween('2026-11-15', -1))
+  expect(past.past).toBe(true)
+  expect(past.together).toEqual([])
 })
