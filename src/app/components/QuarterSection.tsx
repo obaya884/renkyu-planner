@@ -1,3 +1,4 @@
+import { CandidateLegend } from '@/app/components/CandidateCard'
 import { CandidateList } from '@/app/components/CandidateList'
 import { EntryList } from '@/app/components/EntryList'
 import { MARK_CLASS, MonthCalendar } from '@/app/components/MonthCalendar'
@@ -69,11 +70,12 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
         <div className="space-y-4">
           {!past && (
             <div>
-              <h3 className="font-bold">{T.candidates}</h3>
+              <h3 className="mb-1.5 font-bold">{T.candidates}</h3>
               {noCandidates ? (
                 <p className="text-sm text-sub">{T.noCandidates}</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3.5">
+                  <CandidateLegend />
                   <CandidateList blocks={candidates} workMinutes={workMinutes} onAdd={onAdd} />
                   <TogetherList blocks={together} onAdd={onAddTogether} />
                 </div>

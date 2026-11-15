@@ -1,54 +1,42 @@
-import { T, formatPeriod, joinNotes, togetherHeading, togetherRest, togetherText } from '@/app/texts'
+import { Card, MoreRow, StripRow } from '@/app/components/CandidateCard'
+import { T, togetherHeading, togetherRest, togetherTake } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
-import type { TogetherBlock, TogetherRow } from '@/domain/view/quarterView'
+import type { Strip, TogetherBlock, TogetherRow } from '@/domain/view/quarterView'
 
 type OnAdd = (leaveDays: readonly IsoDate[], leaveTypeId: string) => void
 
-function Row({ row, leaveTypeId, onAdd }: { row: TogetherRow; leaveTypeId: string; onAdd: OnAdd }) {
-  const second = [formatPeriod(row.run), row.nextGrantYear ? T.nextGrantYear : null].filter((s) => s !== null)
+function Row({ row, strip, leaveTypeId, onAdd }: { row: TogetherRow; strip: Strip; leaveTypeId: string; onAdd: OnAdd }) {
+  const notes = [row.nextGrantYear ? T.nextGrantYear : null, row.unconfirmed ? T.unconfirmed : null].filter((s) => s !== null)
   return (
-    <li className="flex items-center justify-between gap-2 py-1">
-      <div className="min-w-0">
-        <div>
-          {togetherText(row)}
-          {row.long && <span className="ml-2 rounded bg-long-bg px-1.5 text-sm text-long-ink">{T.long}</span>}
-          {row.unconfirmed && <span className="ml-2 text-sm text-sub">{T.unconfirmed}</span>}
-        </div>
-        <div className="text-sm text-sub">{joinNotes(second)}</div>
-      </div>
-      <button
-        type="button"
-        onClick={() => onAdd(row.leaveDays, leaveTypeId)}
-        className="min-h-11 shrink-0 rounded-lg border border-primary px-3 text-sm text-primary"
-      >
-        {T.addToPlan}
-      </button>
-    </li>
+    <StripRow
+      take={togetherTake(row.leaveDays)}
+      runDays={row.run.days}
+      long={row.long}
+      strip={strip}
+      notes={notes}
+      onAdd={() => onAdd(row.leaveDays, leaveTypeId)}
+    />
   )
 }
 
-/** §3.7。まとめて取る休暇の組。種類ごとに見出し、先頭の 1 件、残りを標準の <details> にまとめる（状態は持たない） */
+/** §3.7（試作 D 案）。まとめて取る休暇の組を種類ごとにカードにする。先頭の 1 件、残りを標準の <details> にまとめる（状態は持たない） */
 export function TogetherList({ blocks, onAdd }: { blocks: readonly TogetherBlock[]; onAdd: OnAdd }) {
   if (blocks.length === 0) return null
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {blocks.map((block) => (
-        <div key={block.leaveTypeId}>
-          <h4 className="text-sm font-bold">{togetherHeading(block.leaveTypeName, block.days)}</h4>
-          <ul className="divide-y divide-line">
-            <Row row={block.primary} leaveTypeId={block.leaveTypeId} onAdd={onAdd} />
+        <Card key={block.leaveTypeId} heading={togetherHeading(block.leaveTypeName, block.days)}>
+          <ul>
+            <Row row={block.primary} strip={block.primaryStrip} leaveTypeId={block.leaveTypeId} onAdd={onAdd} />
           </ul>
           {block.rest.length > 0 && (
-            <details>
-              <summary className="flex min-h-11 cursor-pointer items-center rounded-lg bg-card px-3 text-sm">{togetherRest(block.rest.length)}</summary>
-              <ul className="mt-1 divide-y divide-line">
-                {block.rest.map((row) => (
-                  <Row key={row.leaveDays.join()} row={row} leaveTypeId={block.leaveTypeId} onAdd={onAdd} />
-                ))}
-              </ul>
-            </details>
+            <MoreRow summary={togetherRest(block.rest.length)}>
+              {block.rest.map((row, i) => (
+                <Row key={row.leaveDays.join()} row={row} strip={block.restStrips[i]} leaveTypeId={block.leaveTypeId} onAdd={onAdd} />
+              ))}
+            </MoreRow>
           )}
-        </div>
+        </Card>
       ))}
     </div>
   )

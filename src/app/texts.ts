@@ -7,7 +7,7 @@ import { formatMinutes, isShort, toMinutes } from '@/domain/leave/amount'
 import type { Amount, CompanyHoliday, LeaveType, WeekStart } from '@/domain/types'
 import type { IsoDate, MonthDay } from '@/domain/shared/date'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
-import type { TogetherRow } from '@/domain/view/quarterView'
+import type { CoreHead, TogetherRow } from '@/domain/view/quarterView'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
 
@@ -92,6 +92,10 @@ export const T = {
   viewPast: '過ぎた四半期の記録を見る',
   // §3.5〜§3.8
   addToPlan: '日程に入れる',
+  // 試作（D 案）の候補の欄
+  insert: '入れる',
+  noHolidayMonths: '祝日のない月',
+  more: '▾',
   entries: '日程',
   addDay: '＋ 日を足す',
   noEntries: 'まだありません',
@@ -466,4 +470,45 @@ export function togetherText(row: TogetherLike): string {
 /** §3.7 の残りをまとめる行。例: ほかの取り方（4） */
 export function togetherRest(count: number): string {
   return `ほかの取り方（${count}）`
+}
+
+// ---- 試作（D 案）の候補の欄 ----
+
+/** 例: 11/23(月) 勤労感謝の日 のまわり、年末年始（12/30〜1/3）のまわり、11/21(土)〜 のまわり */
+export function coreHeading(head: CoreHead): string {
+  switch (head.kind) {
+    case 'holiday':
+      return `${formatDay(head.date)} ${head.name} のまわり`
+    case 'company':
+      return `${head.name ?? T.legendCompany}（${monthDay(head.start)}〜${monthDay(head.end)}）のまわり`
+    case 'other':
+      return `${formatDay(head.date)}〜 のまわり`
+  }
+}
+
+/** 例: 11/20(金) を休む、12/28(月)・12/29(火) を休む */
+export function candidateTake(leaveDays: readonly IsoDate[]): string {
+  return `${leaveDays.map(formatDay).join('・')} を休む`
+}
+
+/** 例: 12/21(月)〜12/25(金) を休む */
+export function togetherTake(leaveDays: readonly IsoDate[]): string {
+  const first = leaveDays[0]
+  const last = leaveDays[leaveDays.length - 1]
+  return `${leaveDays.length === 1 ? formatDay(first) : `${formatDay(first)}〜${formatDay(last)}`} を休む`
+}
+
+/** 例: 4連休 */
+export function runDaysText(days: number): string {
+  return `${days}連休`
+}
+
+/** 例: 10月 金曜か月曜を休むと 3連休（8） */
+export function monthGapLine(month: IsoDate, runDays: number, count: number): string {
+  return `${Number(month.slice(5, 7))}月 金曜か月曜を休むと ${runDays}連休（${count}）`
+}
+
+/** 日の並びの 1 マス。例: { weekday: '金', day: '20' } */
+export function stripCell(d: IsoDate): { weekday: string; day: string } {
+  return { weekday: WEEKDAY_NAMES[weekday(d)], day: String(Number(d.slice(8, 10))) }
 }

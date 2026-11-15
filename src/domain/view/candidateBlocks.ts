@@ -1,18 +1,67 @@
-import { type RestCalendar, type RestKind, type Run, runContaining } from '../calendar/restDays'
+import { isValidCompanyHoliday } from '../calendar/companyHoliday'
+import { type RestCalendar, type RestKind, type Run, inCompanyHoliday, runContaining } from '../calendar/restDays'
 import { type Candidate, findCandidates } from '../candidates/findCandidates'
 import { groupCandidates } from '../candidates/groupCandidates'
 import { monthGaps } from '../candidates/monthGap'
 import { isShort } from '../leave/amount'
 import { grantYearOfType } from '../leave/balance'
 import type { Quarter } from '../quarters/quarters'
-import type { IsoDate } from '../shared/date'
+import { type IsoDate, addDays, eachDay } from '../shared/date'
 import { previewAdd } from './addPreview'
 import { defaultLeaveTypeId } from './defaultLeaveType'
 import type { PlannerInput } from './input'
 
+/** 試作（D 案）: 日の並びの 1 マスの種類。take は休む日、off は土日・祝日、done・planned はすでにある 1 日分の日程 */
+export type StripKind = 'take' | 'off' | 'company' | 'done' | 'planned'
+export type StripDay = Readonly<{ date: IsoDate; kind: StripKind }>
+/** 試作（D 案）: 連休の日の並び。10 日以上は small（マスを小さくし、入りきらなければ折り返す） */
+export type Strip = Readonly<{ size: 'normal' | 'small'; days: readonly StripDay[] }>
+
+const SMALL_STRIP_DAYS = 10
+
+/** 試作（D 案）: run の日を、休む日・休みの日の種類・日程の有無で分ける */
+export function stripOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run): Strip {
+  const take = new Set(leaveDays)
+  const days = eachDay(run.start, run.end).map((date): StripDay => {
+    if (take.has(date)) return { date, kind: 'take' }
+    const kind = ctx.cal.kindOf(date)
+    if (kind === 'company') return { date, kind: 'company' }
+    if (kind === 'leave') {
+      const done = ctx.input.entries.some((e) => e.date === date && e.amount.unit === 'day' && e.done)
+      return { date, kind: done ? 'done' : 'planned' }
+    }
+    return { date, kind: 'off' }
+  })
+  return { size: days.length >= SMALL_STRIP_DAYS ? 'small' : 'normal', days }
+}
+
+/** 試作（D 案）: 組の見出しに出す核。会社の休日は核を含む会社の休日の続いた日と、設定の名前（無ければ null） */
+export type CoreHead = Readonly<
+  | { kind: 'holiday'; date: IsoDate; name: string }
+  | { kind: 'company'; start: IsoDate; end: IsoDate; name: string | null }
+  | { kind: 'other'; date: IsoDate }
+>
+
+function coreHeadOf(ctx: Ctx, core: IsoDate): CoreHead {
+  const { cal, input } = ctx
+  const kind = cal.kindOf(core)
+  if (kind === 'company') {
+    let start = core
+    let end = core
+    for (let i = 0; i < 400 && cal.kindOf(addDays(start, -1)) === 'company'; i++) start = addDays(start, -1)
+    for (let i = 0; i < 400 && cal.kindOf(addDays(end, 1)) === 'company'; i++) end = addDays(end, 1)
+    const h = input.settings.companyHolidays.filter(isValidCompanyHoliday).find((x) => inCompanyHoliday(x, core))
+    return { kind: 'company', start, end, name: h?.name ? h.name : null }
+  }
+  if (kind === 'holiday') return { kind: 'holiday', date: core, name: input.holidays.holidays[core] }
+  return { kind: 'other', date: core }
+}
+
 export type CandidateRow = Readonly<{
   leaveDays: readonly IsoDate[]
   run: Run
+  /** 試作（D 案）: 連休の日の並び */
+  strip: Strip
   long: boolean
   unconfirmed: boolean
   /** 日程に入れるときの引く休暇の初期値（F-208。defaultLeaveTypeId）と、その名前 */
@@ -25,7 +74,7 @@ export type CandidateRow = Readonly<{
 }>
 
 export type CandidateBlock = Readonly<
-  | { kind: 'group'; core: IsoDate; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }
+  | { kind: 'group'; core: IsoDate; head: CoreHead; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }
   | { kind: 'monthGap'; month: IsoDate; unconfirmed: boolean; runDays: number; rows: readonly CandidateRow[] }
 >
 
@@ -55,6 +104,7 @@ function rowOf(ctx: Ctx, leaveDays: readonly IsoDate[], run: Run, long: boolean,
   return {
     leaveDays,
     run,
+    strip: stripOf(ctx, leaveDays, run),
     long,
     unconfirmed,
     leaveTypeId,
@@ -99,7 +149,7 @@ export function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { placed:
     for (const r of primary) for (const d of r.leaveDays) primaryDays.add(d)
     placed.push({
       quarterStart: g.quarterStart,
-      block: { kind: 'group', core: g.core, primary, rest, restHasLong: rest.some((r) => r.long) },
+      block: { kind: 'group', core: g.core, head: coreHeadOf(ctx, g.core), primary, rest, restHasLong: rest.some((r) => r.long) },
     })
   }
 

@@ -7,7 +7,7 @@ import { type CandidateBlock, type Ctx, candidateBlocks, isLongRun } from './can
 import { type PlannerInput, restCalendarOf } from './input'
 import { type TogetherBlock, togetherBlocks } from './togetherBlocks'
 
-export type { CandidateBlock, CandidateRow } from './candidateBlocks'
+export type { CandidateBlock, CandidateRow, CoreHead, Strip, StripDay, StripKind } from './candidateBlocks'
 export type { TogetherBlock, TogetherRow } from './togetherBlocks'
 
 /** 重なったときはこの順で前を優先する（画面定義書 §3.6） */

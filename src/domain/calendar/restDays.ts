@@ -15,7 +15,8 @@ export type RestCalendar = Readonly<{
 
 export type Run = Readonly<{ start: IsoDate; end: IsoDate; days: number }>
 
-function inCompanyHoliday(h: CompanyHoliday, d: IsoDate): boolean {
+/** d がその会社の休日に入るか（R-15） */
+export function inCompanyHoliday(h: CompanyHoliday, d: IsoDate): boolean {
   if (h.kind === 'once') return h.start <= d && d <= h.end
   const md = d.slice(5)
   // 開始月日が終了月日より後なら年をまたぐ（R-15）
