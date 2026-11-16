@@ -60,3 +60,20 @@ export function entrySheetAddUrlOf(input: Readonly<{
   const amount: Amount = rangeDays === null ? entry.amount : { unit: 'day' }
   return addCalendarUrlOf(rangeDays ?? [date], { ...entry, amount }, settings, today)
 }
+
+/**
+ * F-506・画面定義書 §5.1: 候補から入れるモーダルの「Google カレンダーに追加」の行き先。days は休む日。
+ * 「予定に入れる」が押せないあいだ（canSave が false）は null（押せない見た目）。量はいつも 1 日。
+ * 最後の日が今日より前なら null（addCalendarUrlOf）
+ */
+export function addSheetUrlOf(input: Readonly<{
+  canSave: boolean
+  days: readonly IsoDate[]
+  entry: Readonly<{ leaveTypeId: string; title: string }>
+  settings: Settings
+  today: IsoDate
+}>): string | null {
+  const { canSave, days, entry, settings, today } = input
+  if (!canSave) return null
+  return addCalendarUrlOf(days, { ...entry, amount: { unit: 'day' } }, settings, today)
+}

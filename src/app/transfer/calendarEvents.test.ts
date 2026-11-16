@@ -55,7 +55,7 @@ test('§5.2・壊れた文字: 名前や休暇の種類の名前に対になっ�
   expect(new URL(url2).searchParams.get('text')).toBe('a\ufffd')
 })
 import { previewRange } from '@/domain/view/rangePreview'
-import { addCalendarUrlOf, entrySheetAddUrlOf } from './calendarEvents'
+import { addCalendarUrlOf, addSheetUrlOf, entrySheetAddUrlOf } from './calendarEvents'
 
 const day = { leaveTypeId: 'paid', amount: { unit: 'day' }, title: '' } as const
 const datesOf = (url: string | null) => new URL(url!).searchParams.get('dates')
@@ -121,4 +121,25 @@ test('F-506・§6: 期間でない半日は、題に「（半日）」を添え�
 test('F-506・§5.2: 過ぎた日は null、今日ちょうどは押せる', () => {
   expect(entrySheetAddUrlOf(entrySheetInput({ date: '2026-11-15' }))).toBeNull()
   expect(datesOf(entrySheetAddUrlOf(entrySheetInput({ date: '2026-11-16' })))).toBe('20261116/20261117')
+})
+
+// §5.1・F-506: 候補から入れるモーダルのリンクの行き先。量はいつも 1 日。入れられないあいだは null
+const addSheetInput = (input: Partial<Parameters<typeof addSheetUrlOf>[0]> = {}) => ({
+  canSave: true,
+  days: ['2026-12-28', '2026-12-29'],
+  entry: { leaveTypeId: 'paid', title: '' },
+  settings: SHEET.settings,
+  today: '2026-11-16',
+  ...input,
+})
+test('F-506・§5.1: 「予定に入れる」が押せない（canSave が false）あいだは null', () => {
+  expect(addSheetUrlOf(addSheetInput({ canSave: false }))).toBeNull()
+})
+test('F-506・§5.1: 入れられるときは、最初の日から最後の日までの帯（量は 1 日）', () => {
+  const url = addSheetUrlOf(addSheetInput({ entry: { leaveTypeId: 'paid', title: '旅行' } }))
+  expect(datesOf(url)).toBe('20261228/20261230')
+  expect(new URL(url!).searchParams.get('text')).toBe('旅行')
+})
+test('F-506・§5.1: 最後の日が今日より前なら null', () => {
+  expect(addSheetUrlOf(addSheetInput({ days: ['2026-11-10'] }))).toBeNull()
 })

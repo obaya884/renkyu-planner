@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { endDateAfterDateChange, endDateOnToggle } from './rangeInput'
+import { endDateAfterDateChange, endDateOnToggle, rangeErrorPlaces } from './rangeInput'
 import { SHEET } from './fixture'
 import { previewRange } from './rangePreview'
 import { planEntrySave } from './entrySave'
@@ -47,4 +47,19 @@ test('F-307・§5.2: 終わりの日が日付と同じで休みの日なら、�
   expect(previewRange(SHEET, '2026-11-23', '2026-11-23', 'paid').errors).toEqual(['noDays']) // 祝日
   expect(previewRange(SHEET, '2026-12-31', '2026-12-31', 'paid').errors).toEqual(['noDays']) // 会社の休日
   expect(planFor('2026-11-21', '2026-11-21').canSave).toBe(false)
+})
+
+test('F-307・§5.2: 日付だけ空なら、日付の誤りは日付の欄の下に出し、終わりの日の欄の下には出さない', () => {
+  expect(rangeErrorPlaces(['invalidDate'], '', '2026-11-20')).toEqual({ date: ['invalidDate'], end: [] })
+})
+test('F-307・§5.2: 終わりの日だけ空なら、終わりの日の欄の下にだけ出す', () => {
+  expect(rangeErrorPlaces(['invalidDate'], '2026-11-20', '')).toEqual({ date: [], end: ['invalidDate'] })
+})
+test('F-307・§5.2: 両方空なら、両方の欄の下に出す（Claude の案）', () => {
+  expect(rangeErrorPlaces(['invalidDate'], '', '')).toEqual({ date: ['invalidDate'], end: ['invalidDate'] })
+})
+test('F-307・§5.2: 両方正しければ日付の欄の下には何も出さず、ほかの誤りは終わりの日の欄の下のまま', () => {
+  expect(rangeErrorPlaces([], '2026-11-20', '2026-11-24')).toEqual({ date: [], end: [] })
+  expect(rangeErrorPlaces(['endBeforeStart', 'tooFar'], '2026-11-24', '2026-11-20')).toEqual({ date: [], end: ['endBeforeStart', 'tooFar'] })
+  expect(rangeErrorPlaces(['noDays'], '2026-11-21', '2026-11-22')).toEqual({ date: [], end: ['noDays'] })
 })

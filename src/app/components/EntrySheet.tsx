@@ -15,7 +15,7 @@ import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import type { PlannerInput } from '@/domain/view/input'
 import { type SaveError, planEntrySave } from '@/domain/view/entrySave'
 import { type RangePreview, previewRange } from '@/domain/view/rangePreview'
-import { endDateAfterDateChange, endDateOnToggle } from '@/domain/view/rangeInput'
+import { endDateAfterDateChange, endDateOnToggle, rangeErrorPlaces } from '@/domain/view/rangeInput'
 
 type Props = {
   input: PlannerInput
@@ -72,7 +72,7 @@ export function EntryRangeLines({ preview, workMinutes, lastAddable }: { preview
       {errors.length > 0 ? (
         <ErrorLines errors={errors} lastAddable={lastAddable} />
       ) : (
-        <p className="text-sm">{rangeDaysText(days)}</p>
+        days.length > 0 && <p className="text-sm">{rangeDaysText(days)}</p>
       )}
       {overOneDay && <p className="text-sm text-warn-ink">{T.overOneDay}</p>}
       <UnassignedLines deltas={deltas} workMinutes={workMinutes} />
@@ -107,6 +107,8 @@ export function EntrySheetBody({ input, entry, defaultDate, editCalendarUrl = nu
 
   // F-307: 終わりの日を入れたときは、足す日ごとに 1 日の日程を作り、1 日ずつ検証する（planEntrySave）
   const range = ranged ? previewRange(input, date, endDate, leaveTypeId) : null
+  // F-307・§8.3: 日付が空か正しくないときの文は日付の欄の下、終わりの日の分は終わりの日の欄の下
+  const rangePlaces = range === null ? null : rangeErrorPlaces(range.errors, date, endDate)
   const { drafts, errors: saveErrors, canSave } = planEntrySave(input, draft, entry?.id ?? null, range)
   const typeErrors = saveErrors.filter((e) => e === 'unknownLeaveType')
   const limitErrors = saveErrors.filter((e) => e === 'tooManyEntries')
@@ -134,6 +136,7 @@ export function EntrySheetBody({ input, entry, defaultDate, editCalendarUrl = nu
               />
             </Field>
             {!ranged && <ErrorLines errors={dateErrors} lastAddable={lastAddable} />}
+            {rangePlaces !== null && <ErrorLines errors={rangePlaces.date} lastAddable={lastAddable} />}
             <label className="flex min-h-11 items-center gap-2">
               <input
                 type="checkbox"
@@ -153,7 +156,7 @@ export function EntrySheetBody({ input, entry, defaultDate, editCalendarUrl = nu
                 </Field>
               </div>
             )}
-            {range !== null && <EntryRangeLines preview={range} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}
+            {range !== null && rangePlaces !== null && <EntryRangeLines preview={{ ...range, errors: rangePlaces.end }} workMinutes={input.settings.workMinutes} lastAddable={lastAddable} />}
           </div>
         )}
         {!ranged && (

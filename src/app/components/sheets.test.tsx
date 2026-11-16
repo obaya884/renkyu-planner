@@ -357,6 +357,14 @@ test('F-506・§5.1: 最後の日が今日より前なら、リンクは消さ�
   expect(tag).not.toContain('href')
   expect(tag).not.toContain('tabindex')
 })
+test('F-506・§5.1: 「予定に入れる」が押せないあいだ（会社の休日と重なる）は、リンクも押せない見た目', () => {
+  const input = { ...SHEET, settings: { ...SHEET.settings, companyHolidays: [...SHEET.settings.companyHolidays, { kind: 'once', start: '2026-11-20', end: '2026-11-20' } as const] } }
+  const h = html(<AddSheetBody input={input} leaveDays={['2026-11-20']} onSubmit={noop} onClose={noop} />)
+  expect(h).toMatch(/<button[^>]*disabled=""[^>]*>予定に入れる/)
+  const tag = linkTag(h)!
+  expect(tag).toContain('aria-disabled="true"')
+  expect(tag).not.toContain('href')
+})
 test('F-506・§5.2: 日を足すモーダルにもリンクを出す。保存できない状態のときは押せない見た目', () => {
   const add = (date: string) => html(<EntrySheetBody input={SHEET} entry={null} defaultDate={date} onSubmit={noop} onRemove={noop} onClose={noop} />)
   const ok = linkTag(add('2026-11-20'))!
