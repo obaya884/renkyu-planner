@@ -18,7 +18,7 @@ function resetIfAsked<S extends { removeItem(key: string): void } | null>(storag
 }
 
 // サーバーの描画とハイドレーションでは、案内を出さない側の値を使う
-const SERVER_FLAGS: HomeScreenFlags = { guideClosed: true, prompted: true }
+const SERVER_FLAGS: HomeScreenFlags = { guideHiddenUntil: '9999-12-31', prompted: true }
 const serverFlags = () => SERVER_FLAGS
 
 export function useHomeScreenFlags(): HomeScreenFlags {

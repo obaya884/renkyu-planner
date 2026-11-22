@@ -175,7 +175,7 @@ export const T = {
   // ホーム画面への追加の案内（試作。画面定義書にはまだ無い。文言はモック 2026-11-22 のまま、すべて仮）
   homeGuideTitle: 'ホーム画面に追加して使うのがおすすめです',
   homeGuideOpen: '手順を見る',
-  homeGuideClose: '閉じる',
+  homeGuideClose: 'あとで',
   homePromptTitle: '記録を消えにくくする',
   homePromptStrong: 'ホーム画面に追加して開くと、消えません。',
   homePromptGo: 'ホーム画面に追加する手順を見る',

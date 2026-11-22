@@ -1,3 +1,4 @@
+import { type IsoDate, addDays } from '@/domain/shared/date'
 import type { StoredData } from '@/domain/storage/stored'
 import { DEFAULT_SETTINGS } from '@/domain/types'
 import { MAX_BACKUP_LINK_LENGTH } from './backupLink'
@@ -47,12 +48,20 @@ export function homeScreenAudience(env: HomeScreenEnv): HomeScreenAudience {
   return /Safari\//.test(ua) && !NOT_SAFARI.test(ua) ? 'safari' : 'other'
 }
 
-/** 1-A: 主な画面の上のカード。「閉じる」を押したら、もう出さない */
-export function showsGuideCard(audience: HomeScreenAudience | null, guideClosed: boolean): boolean {
-  return guideBrowser(audience) !== null && !guideClosed
+/** 「あとで」を押してから、カードをまた出すまでの日数（仮） */
+export const GUIDE_SNOOZE_DAYS = 3
+
+/** 今日「あとで」を押したとき、カードをまた出す最初の日 */
+export function guideHiddenUntilOf(today: IsoDate): IsoDate {
+  return addDays(today, GUIDE_SNOOZE_DAYS)
 }
 
-/** 設定画面の「記録の持ち出し」の節の入口。「閉じる」を押したあとも出す */
+/** 1-A: 主な画面の上のカード。「あとで」を押したら、また出す日（hiddenUntil）まで隠す。二度と出さない道は無い */
+export function showsGuideCard(audience: HomeScreenAudience | null, hiddenUntil: IsoDate | null, today: IsoDate): boolean {
+  return guideBrowser(audience) !== null && (hiddenUntil === null || today >= hiddenUntil)
+}
+
+/** 設定画面の「記録の持ち出し」の節の入口。カードを隠しているあいだも出す */
 export function showsSettingsEntry(audience: HomeScreenAudience | null): boolean {
   return guideBrowser(audience) !== null
 }

@@ -28,7 +28,7 @@ import { calendarUrlOf } from '@/app/transfer/calendarEvents'
 import { useBackupLinkOnOpen } from '@/app/transfer/useBackupLink'
 import { useHomeScreenAudience } from '@/app/transfer/useHomeScreenAudience'
 import { homeSheetStore, useHomeSheet } from '@/app/transfer/useHomeSheet'
-import { guideBrowser, isBlankStored, promptsAfterSave, showsGuideCard } from '@/domain/transfer/homeScreen'
+import { guideBrowser, guideHiddenUntilOf, isBlankStored, promptsAfterSave, showsGuideCard } from '@/domain/transfer/homeScreen'
 import { importCounts } from '@/domain/transfer/importCounts'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
@@ -132,8 +132,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
         </p>
       )}
       {settings.grantDay === null && <p className="text-sm">{APP_DESCRIPTION}</p>}
-      {showsGuideCard(audience, homeFlags.guideClosed) && (
-        <HomeGuideCard browser={browser} onOpen={() => homeSheetStore.open(data)} onClose={homeScreenStore.closeGuide} />
+      {showsGuideCard(audience, homeFlags.guideHiddenUntil, today) && (
+        <HomeGuideCard browser={browser} onOpen={() => homeSheetStore.open(data)} onClose={() => homeScreenStore.hideGuideUntil(guideHiddenUntilOf(today))} />
       )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div ref={setCardsEl} className="lg:w-1/2">

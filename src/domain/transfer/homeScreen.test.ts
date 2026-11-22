@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED } from '@/domain/storage/stored'
-import { backupMarkOf, guideBrowser, homeScreenAudience, homeSheetStart, isBlankStored, moveLinkView, promptsAfterSave, showsGuideCard, showsSettingsEntry } from './homeScreen'
+import { backupMarkOf, guideBrowser, guideHiddenUntilOf, homeScreenAudience, homeSheetStart, isBlankStored, moveLinkView, promptsAfterSave, showsGuideCard, showsSettingsEntry } from './homeScreen'
 import { MAX_BACKUP_LINK_LENGTH } from './backupLink'
 
 const IPHONE_SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1'
@@ -34,7 +34,7 @@ test('試作（ホーム画面）: iPhone の Chrome には、Chrome 用の案�
   expect(guideBrowser('homeApp')).toBeNull()
   expect(guideBrowser('other')).toBeNull()
   expect(guideBrowser(null)).toBeNull()
-  expect(showsGuideCard('chrome', false)).toBe(true)
+  expect(showsGuideCard('chrome', null, '2026-11-22')).toBe(true)
   expect(showsSettingsEntry('chrome')).toBe(true)
   expect(promptsAfterSave({ audience: 'chrome', prompted: false, wasBlank: true, isBlank: false })).toBe(true)
 })
@@ -52,12 +52,16 @@ test('試作（ホーム画面）: ?guide=1 なら、どの端末でも案内を
   expect(homeScreenAudience(env(ANDROID_CHROME, { forced: true }))).toBe('safari')
 })
 
-test('試作（ホーム画面）: 上のカードは、出す相手で「閉じる」を押していないときだけ。設定画面の入口は閉じたあとも出す', () => {
-  expect(showsGuideCard('safari', false)).toBe(true)
-  expect(showsGuideCard('safari', true)).toBe(false)
-  expect(showsGuideCard('homeApp', false)).toBe(false)
-  expect(showsGuideCard('other', false)).toBe(false)
-  expect(showsGuideCard(null, false)).toBe(false)
+test('試作（ホーム画面）: 上のカードは、「あとで」を押すと 3 日隠れ、4 日めにまた出る。設定画面の入口は隠しているあいだも出す', () => {
+  const T0 = '2026-11-22'
+  expect(guideHiddenUntilOf(T0)).toBe('2026-11-25')
+  expect(showsGuideCard('safari', null, T0)).toBe(true)
+  expect(showsGuideCard('safari', '2026-11-25', T0)).toBe(false)
+  expect(showsGuideCard('safari', '2026-11-25', '2026-11-24')).toBe(false)
+  expect(showsGuideCard('safari', '2026-11-25', '2026-11-25')).toBe(true)
+  expect(showsGuideCard('homeApp', null, T0)).toBe(false)
+  expect(showsGuideCard('other', null, T0)).toBe(false)
+  expect(showsGuideCard(null, null, T0)).toBe(false)
   expect(showsSettingsEntry('safari')).toBe(true)
   expect(showsSettingsEntry('homeApp')).toBe(false)
   expect(showsSettingsEntry(null)).toBe(false)
