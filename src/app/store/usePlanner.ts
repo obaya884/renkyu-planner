@@ -6,7 +6,7 @@ import { type KeyValueStore, type PlannerState, createPlannerStore } from './cre
 import { newId } from './newId'
 
 /** window.localStorage を読むだけで SecurityError になるブラウザがあるので、例外なら使えないものとして扱う */
-function browserStorage(): KeyValueStore | null {
+export function browserStorage(): KeyValueStore | null {
   if (typeof window === 'undefined') return null
   try {
     return window.localStorage

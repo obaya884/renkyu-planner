@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRef } from 'react'
 import { FIELD_CLASS, Field, SECONDARY_BUTTON_CLASS } from '@/app/components/Sheet'
 import { T, type TransferNote, backupLinkLengthText, transferNoteText } from '@/app/texts'
@@ -19,12 +20,14 @@ type Props = {
   onRestore: () => void
   onExportIcs: () => void
   onClear: () => void
+  /** ホーム画面に追加する手順への入口（試作）。渡したときだけ出す。押すと主な画面へ移り、そこで手順を開く */
+  onHomeScreen?: () => void
 }
 
 const BUTTON_CLASS = `${SECONDARY_BUTTON_CLASS} w-full text-left`
 
 /** §6 の記録の持ち出しの節。状態は持たず、選んだファイルを onPickFile に渡すだけ */
-export function TransferSection({ note, canRestore, link, onExport, onMakeLink, onStartImport, onPickFile, onRestore, onExportIcs, onClear }: Props) {
+export function TransferSection({ note, canRestore, link, onExport, onMakeLink, onStartImport, onPickFile, onRestore, onExportIcs, onClear, onHomeScreen }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   return (
     <section className="space-y-2">
@@ -79,6 +82,11 @@ export function TransferSection({ note, canRestore, link, onExport, onMakeLink, 
         <button type="button" onClick={onRestore} className={SECONDARY_BUTTON_CLASS}>
           {T.restoreImport}
         </button>
+      )}
+      {onHomeScreen !== undefined && (
+        <Link href="/" onClick={onHomeScreen} className="inline-flex min-h-11 items-center text-sm text-primary">
+          {T.homeEntry}
+        </Link>
       )}
       <p className="text-sm text-sub">{T.transferNote}</p>
     </section>

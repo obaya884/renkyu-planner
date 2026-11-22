@@ -171,7 +171,45 @@ export const T = {
   backupLinkTitle: 'このリンクの記録を読み込みますか',
   backupLinkSubmit: '読み込む',
   unreadableLink: 'このリンクは読めませんでした',
+  // ホーム画面への追加の案内（試作。画面定義書にはまだ無い。文言はモック 2026-11-22 のまま、すべて仮）
+  homeGuideTitle: 'ホーム画面に追加して使うのがおすすめです',
+  homeGuideBody: 'Safari は、しばらく開かないサイトの記録を消すことがあります。',
+  homeGuideOpen: '手順を見る',
+  homeGuideClose: '閉じる',
+  homePromptTitle: '記録を消えにくくする',
+  homePromptBody: '保存しました。この記録は、この iPhone の Safari の中にあります。Safari は、しばらく開かないサイトの記録を消すことがあります。',
+  homePromptStrong: 'ホーム画面に追加して開くと、消えません。',
+  homePromptGo: 'ホーム画面に追加する手順を見る',
+  homePromptLater: 'あとで',
+  homeEntry: 'ホーム画面に追加する手順を見る',
+  homeStepsTitle: 'ホーム画面に追加する',
+  homeStep1Before: '共有のボタン',
+  homeStep1After: 'を押す',
+  homeStep2Before: '下へ送って',
+  homeStep2Key: 'ホーム画面に追加',
+  homeStep2After: 'を選ぶ',
+  homeStep3Before: '右上の',
+  homeStep3Key: '追加',
+  homeStep3After: 'を押す',
+  homeShareIconLabel: '共有',
+  homeAddIconLabel: 'ホーム画面に追加',
+  homeStepsAfter: 'これからは、ホーム画面の「連休プランナー」から開いてください。',
+  homeMoveGo: '記録も一緒に移す',
+  homeMoveSkip: '記録は移さずに、手順だけ見る',
+  homeReadyTitle: '準備ができました',
+  homeReadyLead: 'このまま、ホーム画面に追加してください。',
+  homeReadyAfter: 'ホーム画面の「連休プランナー」を開くと、記録を読み込むかを聞かれます。',
+  homeMoveTooLong: 'ホーム画面のアプリは、Safari とは別の場所に記録を持ちます。記録が多くて一緒に移せないので、設定画面の「ファイルに書き出す」で書き出し、ホーム画面のアプリで読み込んでください。',
+  homeMoveFailed: 'ホーム画面のアプリは、Safari とは別の場所に記録を持ちます。このブラウザでは記録を一緒に移せないので、設定画面の「ファイルに書き出す」で書き出し、ホーム画面のアプリで読み込んでください。',
+  close: '閉じる',
+  homeAppLinkTitle: '記録を読み込みますか',
+  homeAppLinkLead: 'Safari で入れた記録を、このアプリに移します。',
 } as const
+
+/** 試作（ホーム画面）: 記録ごと移すかを聞く文。例: …いまの記録（日程 3 件）も一緒に移せます。 */
+export function homeMoveLead(entryCount: number): string {
+  return `ホーム画面のアプリは、Safari とは別の場所に記録を持ちます。いまの記録（日程 ${entryCount} 件）も一緒に移せます。`
+}
 
 /** §6 の記録の持ち出しの節に出す 1 行の種類 */
 export type TransferNote = 'imported' | 'restored' | 'unreadableFile' | 'noCalendarEntries' | 'cleared' | 'linkCopied' | 'linkTooLong' | 'linkFailed'

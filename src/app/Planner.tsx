@@ -6,6 +6,8 @@ import { BackupLinkSheet } from '@/app/components/BackupLinkSheet'
 import { BalanceCards } from '@/app/components/BalanceCards'
 import { EntrySheet } from '@/app/components/EntrySheet'
 import { GrantSheet } from '@/app/components/GrantSheet'
+import { HomeGuideCard, HomePromptSheet } from '@/app/components/HomeGuide'
+import { HomeScreenSheet } from '@/app/components/HomeScreenSheet'
 import { InviteCard } from '@/app/components/InviteCard'
 import { LongBreakStrip } from '@/app/components/LongBreakStrip'
 import { Notices } from '@/app/components/Notices'
@@ -17,12 +19,16 @@ import { defaultDayFor } from '@/domain/view/defaultDay'
 import { APP_DESCRIPTION } from '@/app/site'
 import { T } from '@/app/texts'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
+import { homeScreenStore, useHomeScreenFlags } from '@/app/store/useHomeScreenFlags'
 import { useToday } from '@/app/store/useToday'
 import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { type Quarter, canGoBack as canGoBackFrom, quartersBetween } from '@/domain/quarters/quarters'
 import { calendarUrlOf } from '@/app/transfer/calendarEvents'
 import { useBackupLinkOnOpen } from '@/app/transfer/useBackupLink'
+import { useHomeScreenAudience } from '@/app/transfer/useHomeScreenAudience'
+import { homeSheetStore, useHomeSheet } from '@/app/transfer/useHomeSheet'
+import { isBlankStored, promptsAfterSave, showsGuideCard } from '@/domain/transfer/homeScreen'
 import { importCounts } from '@/domain/transfer/importCounts'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
@@ -43,8 +49,20 @@ type OpenSheet =
 export function Planner({ holidays, children }: { holidays: HolidayData; children: React.ReactNode }) {
   const { ready, data, canSave, unreadable } = usePlanner()
   const today = useToday()
+  // ホーム画面への追加の案内（試作）を出す相手。サーバーとハイドレーションでは null（最初の HTML に案内を入れない）
+  const audience = useHomeScreenAudience()
+  const homeFlags = useHomeScreenFlags()
+  const homeSheet = useHomeSheet()
   // 控えのリンク（試作）を #b… 付きで開いたとき。記録を読み終えてから読む
-  const backupLink = useBackupLinkOnOpen(ready)
+  const backupLink = useBackupLinkOnOpen(ready, audience)
+  // 1-C（試作）: 記録が空から空でなくなったら、ほかのモーダルが閉じたあとに 1 回だけ勧める。前の描画の「空か」と比べる
+  const blank = isBlankStored(data)
+  const [wasBlank, setWasBlank] = useState<boolean | null>(null)
+  const [promptDue, setPromptDue] = useState(false)
+  if (ready && wasBlank !== blank) {
+    if (wasBlank !== null && promptsAfterSave({ audience, prompted: homeFlags.prompted, wasBlank, isBlank: blank })) setPromptDue(true)
+    setWasBlank(blank)
+  }
   // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
   const [shift, setShift] = useState(0)
   const [selected, setSelected] = useState<IsoDate | null>(null)
@@ -112,6 +130,9 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
         </p>
       )}
       {settings.grantDay === null && <p className="text-sm">{APP_DESCRIPTION}</p>}
+      {showsGuideCard(audience, homeFlags.guideClosed) && (
+        <HomeGuideCard onOpen={() => homeSheetStore.open(data)} onClose={homeScreenStore.closeGuide} />
+      )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div ref={setCardsEl} className="lg:w-1/2">
           {summary.state === 'unset' ? (
@@ -179,7 +200,30 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
         )}
       </div>
       {backupLink.pending !== null && (
-        <BackupLinkSheet counts={importCounts(backupLink.pending)} onSubmit={backupLink.accept} onClose={backupLink.dismiss} />
+        <BackupLinkSheet
+          counts={importCounts(backupLink.pending)}
+          onSubmit={backupLink.accept}
+          onClose={backupLink.dismiss}
+          title={audience === 'homeApp' ? T.homeAppLinkTitle : undefined}
+          lead={audience === 'homeApp' ? T.homeAppLinkLead : undefined}
+        />
+      )}
+      {/* ホーム画面への追加（試作）。モーダルは 1 つずつ出すので、ほかのモーダルが閉じてから出す */}
+      {sheet === null && backupLink.pending === null && homeSheet !== null && (
+        <HomeScreenSheet view={homeSheet} onMove={homeSheetStore.move} onSkip={homeSheetStore.skip} onClose={homeSheetStore.close} />
+      )}
+      {sheet === null && backupLink.pending === null && homeSheet === null && promptDue && (
+        <HomePromptSheet
+          onGo={() => {
+            homeScreenStore.markPrompted()
+            setPromptDue(false)
+            homeSheetStore.open(data)
+          }}
+          onLater={() => {
+            homeScreenStore.markPrompted()
+            setPromptDue(false)
+          }}
+        />
       )}
       {sheet?.kind === 'add' && (
         <AddSheet

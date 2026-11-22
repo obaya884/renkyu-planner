@@ -15,6 +15,8 @@ import { makeBackupLink } from '@/app/transfer/backupLink'
 import { calendarEventsOf } from '@/app/transfer/calendarEvents'
 import { downloadText, readFileText } from '@/app/transfer/download'
 import { deliverLink } from '@/app/transfer/shareLink'
+import { useHomeScreenAudience } from '@/app/transfer/useHomeScreenAudience'
+import { homeSheetStore } from '@/app/transfer/useHomeSheet'
 import {
   TRANSFER_IDLE,
   afterBackupLink,
@@ -38,6 +40,7 @@ import { type StoredData, serializeStored } from '@/domain/storage/stored'
 import { icsFileName, recordFileName } from '@/domain/transfer/fileName'
 import { buildIcs, icsStamp } from '@/domain/transfer/ics'
 import { importCounts } from '@/domain/transfer/importCounts'
+import { showsSettingsEntry } from '@/domain/transfer/homeScreen'
 import { buildGrantSection, companyHolidayRows, leaveTypeRows } from '@/domain/view/settingsView'
 
 /** 開いているモーダル（1 つだけ）。節を足すタスクで種類を足す */
@@ -62,6 +65,8 @@ function backupLinkBase(): string {
 export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   const { ready, canSave, unreadable, data } = usePlanner()
   const today = useToday()
+  // ホーム画面に追加する手順への入口（試作）を出す相手
+  const audience = useHomeScreenAudience()
   const [sheet, setSheet] = useState<SettingsSheet>(null)
   // §6: 節の状態は画面をまたいで残す（設定画面を離れても「読み込む前に戻す」を出すため）。記録が変わったら transferStore が戻す先を捨てる
   const transfer = useTransfer()
@@ -182,6 +187,7 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
           resetTransfer()
           setSheet({ kind: 'clear' })
         }}
+        onHomeScreen={showsSettingsEntry(audience) ? () => homeSheetStore.open(data) : undefined}
       />
       {sheet?.kind === 'clear' && (
         <ClearSheet
