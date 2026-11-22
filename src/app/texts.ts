@@ -87,7 +87,6 @@ export const T = {
   tabsLabel: '四半期',
   candidates: '候補',
   noCandidates: 'この四半期の候補はありません',
-  restHasLong: '長めあり',
   enterGrant: '日数を入れる',
   done: '取得済み',
   legendOff: '土日・祝日',
@@ -103,7 +102,6 @@ export const T = {
   entries: '日程',
   addDay: '＋ 日を足す',
   noEntries: 'まだありません',
-  long: '長め',
   unconfirmed: '祝日が未確定',
   nextGrantYear: '次の付与年から引く',
   overlap: '休みの日と重なっています',
@@ -288,7 +286,13 @@ type CandidateLike = Pick<Candidate, 'leaveDays' | 'run'>
 
 /** 静的な一覧用。例: 11/2(月) を休むと 4 連休（10/31〜11/3） */
 export function describeCandidate(c: CandidateLike): string {
-  return `${c.leaveDays.map(formatDay).join('・')} を休むと ${c.run.days} 連休（${formatPeriod(c.run)}）`
+  const { lead, days, tail } = describeCandidateParts(c)
+  return `${lead}${days}${tail}`
+}
+
+/** describeCandidate を、日数の前・日数・日数の後に分ける。日数の文字だけ色を変えるため（§3.7） */
+export function describeCandidateParts(c: CandidateLike): { lead: string; days: string; tail: string } {
+  return { lead: `${c.leaveDays.map(formatDay).join('・')} を休むと `, days: `${c.run.days} 連休`, tail: `（${formatPeriod(c.run)}）` }
 }
 
 /** §3.7・§3.8 の 2 行目。語句を「・」でつなぐ。例: 11/20〜11/23・2日使う */
@@ -299,6 +303,11 @@ export function joinNotes(parts: readonly string[]): string {
 /** 日程の量（1 日・半日・分）。例: 1 日、2 時間 */
 export function amountText(amount: Amount, workMinutes: number): string {
   return formatAmount(toMinutes(amount, workMinutes), workMinutes)
+}
+
+/** §3.7 のまとめた行の札。例: 最長 9連休 */
+export function restLongestText(days: number): string {
+  return `最長 ${runDaysText(days)}`
 }
 
 /** §3.7 のまとめた行。例: もっと多く休む取り方（7） */
@@ -318,7 +327,13 @@ export function shortText(leaveTypeName: string, minutes: number, workMinutes: n
 
 /** §3.8 の連休の見出し・添え書き。例: 12/26〜1/3 の 9連休 */
 export function runHeading(run: Run): string {
-  return `${formatPeriod(run)} の ${run.days}連休`
+  const { lead, days } = runHeadingParts(run)
+  return `${lead}${days}`
+}
+
+/** runHeading を、日数の前と日数に分ける。日数の文字だけ色を変えるため（§3.8） */
+export function runHeadingParts(run: Run): { lead: string; days: string } {
+  return { lead: `${formatPeriod(run)} の `, days: runDaysText(run.days) }
 }
 
 /** §3.3。例: 長めの休暇（5連休以上） */

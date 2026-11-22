@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, longBreakBadgeText, longBreakHeading, candidateDays, candidateNotes, coreHeading, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, insertLabel, joinNotes, longBreakChip, monthGapLine, quarterHeading, runDaysText, shortNote, stripCell, stripLabel, takeText, togetherDays, togetherHeading, togetherNotes, togetherRest, unassignedText, usablePeriod, unassignedLabel } from './texts'
+import { T, longBreakBadgeText, longBreakHeading, candidateDays, candidateNotes, coreHeading, describeCandidate, describeCandidateParts, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, insertLabel, joinNotes, longBreakChip, monthGapLine, quarterHeading, restLongestText, runDaysText, shortNote, stripCell, stripLabel, takeText, togetherDays, togetherHeading, togetherNotes, togetherRest, unassignedText, usablePeriod, unassignedLabel } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -97,4 +97,13 @@ test('§5.1: 未割り当ての行の見出し。前の付与年は、1 行だ�
   expect(unassignedLabel('previous', 2)).toBe('前の付与年')
   expect(unassignedLabel('current', 2)).toBe('今の付与年')
   expect(unassignedLabel('next', 2)).toBe('次の付与年')
+})
+
+test('§3.7: もっと多く休む取り方の札は「最長 9連休」', () => {
+  expect(restLongestText(9)).toBe('最長 9連休')
+  expect(restLongestText(4)).toBe('最長 4連休')
+})
+test('§3.5: 最初の HTML の候補の 1 行は、日数の部分だけ取り出せる', () => {
+  const parts = describeCandidateParts({ leaveDays: ['2026-11-02'], run: { start: '2026-10-31', end: '2026-11-03', days: 4 } })
+  expect(parts).toEqual({ lead: '11/2(月) を休むと ', days: '4 連休', tail: '（10/31〜11/3）' })
 })

@@ -95,7 +95,9 @@ export type CandidateRow = Readonly<{
 }>
 
 /** 同じ核の候補の組（R-5）。head は見出しの元（§3.7） */
-export type CandidateGroupView = Readonly<{ core: IsoDate; head: CoreHead; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restHasLong: boolean }>
+export type CandidateGroupView = Readonly<{ core: IsoDate; head: CoreHead; primary: readonly CandidateRow[]; rest: readonly CandidateRow[]; restLongest: RestLongest }>
+/** 「もっと多く休む取り方」の札（§3.7）。days はまとめた中でいちばん長い連休の日数、long はそれが 5 連休以上（R-14）か。long なら長めの色、でなければ灰色 */
+export type RestLongest = Readonly<{ days: number; long: boolean }>
 /** 祝日のない月の候補（R-8） */
 export type MonthGapBlock = Readonly<{ month: IsoDate; unconfirmed: boolean; runDays: number; rows: readonly CandidateRow[] }>
 
@@ -103,6 +105,12 @@ const LONG_RUN_DAYS = 5
 
 /** 連休が長め（5 日以上）か。連休の長めはここで 1 つに決める */
 export const isLongRun = (run: Run | null): boolean => run !== null && run.days >= LONG_RUN_DAYS
+
+/** まとめた候補の中でいちばん長い連休の日数と、それが長めか。候補が無ければ 0 日 */
+export function restLongestOf(rows: readonly Pick<CandidateRow, 'run'>[]): RestLongest {
+  const days = Math.max(0, ...rows.map((r) => r.run.days))
+  return { days, long: days >= LONG_RUN_DAYS }
+}
 
 /** 組み立て 1 回ぶんの共通の値。cal、entryMarks、usage（付与年ごとの取得済みと予定）は input から 1 度だけ作る（ctxOf） */
 export type Ctx = Readonly<{ input: PlannerInput; cal: RestCalendar; entryMarks: ReadonlyMap<IsoDate, EntryMark>; usage: UsageTable }>
@@ -176,7 +184,7 @@ export function candidateBlocks(ctx: Ctx, active: readonly Quarter[]): { groups:
     for (const r of primary) for (const d of r.leaveDays) primaryDays.add(d)
     groups.push({
       quarterStart: g.quarterStart,
-      block: { core: g.core, head: coreHeadOf(ctx, g.core), primary, rest, restHasLong: rest.some((r) => r.long) },
+      block: { core: g.core, head: coreHeadOf(ctx, g.core), primary, rest, restLongest: restLongestOf(rest) },
     })
   }
 

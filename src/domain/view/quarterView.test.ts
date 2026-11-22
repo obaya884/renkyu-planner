@@ -33,7 +33,7 @@ test('F-203・R-7: 候補の組。休む日数がいちばん少ない候補を�
   expect(nov.primary.map((r) => r.leaveDays)).toEqual([['2026-11-20'], ['2026-11-24']])
   expect(nov.primary[0]).toMatchObject({ run: { start: '2026-11-20', end: '2026-11-23', days: 4 }, long: false, unconfirmed: false, nextGrantYear: false, shortMinutes: null })
   expect(nov.rest).toHaveLength(7)
-  expect(nov.restHasLong).toBe(true)
+  expect(nov.restLongest).toEqual({ days: Math.max(...nov.rest.map((r) => r.run.days)), long: true }) // §3.7: 札は「最長 N連休」
   expect(q4.monthGaps).toEqual([]) // 12 月は平日に会社の休日がある
 })
 test('F-203・§5.1: primary は休む日数がいちばん少ない候補の全部（効率の差を問わない）。連休の長い順', () => {

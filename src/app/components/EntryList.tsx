@@ -1,4 +1,4 @@
-import { T, amountText, formatDay, joinNotes, runHeading } from '@/app/texts'
+import { T, amountText, formatDay, joinNotes, runHeading, runHeadingParts } from '@/app/texts'
 import type { EntryBlock, EntryRow } from '@/domain/view/quarterView'
 
 type RowProps = {
@@ -48,9 +48,9 @@ export function EntryList({ blocks, onAddDay, ...rowProps }: { blocks: readonly 
           {blocks.map((block) => (
             <li key={block.rows[0].entry.id}>
               {block.run !== null && (
-                <div className="pt-1 text-sm font-bold text-long-ink">
-                  {runHeading(block.run)}
-                  {block.long && <span className="ml-2 rounded bg-long-bg px-1.5">{T.long}</span>}
+                <div className="pt-1 text-sm font-bold">
+                  {runHeadingParts(block.run).lead}
+                  <span className={block.long ? 'text-long-ink' : undefined}>{runHeadingParts(block.run).days}</span>
                 </div>
               )}
               <ul>

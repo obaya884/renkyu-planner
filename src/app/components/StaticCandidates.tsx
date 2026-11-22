@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { T, describeCandidate, holidayNote, quarterHeading } from '@/app/texts'
+import { T, describeCandidateParts, holidayNote, quarterHeading } from '@/app/texts'
 import { type CandidateGroup, bestCandidate } from '@/domain/candidates/groupCandidates'
 import type { IsoDate } from '@/domain/shared/date'
 
@@ -29,10 +29,12 @@ export function StaticCandidates({ groups, confirmedUntil }: { groups: readonly 
               .filter((g) => g.quarterStart === q)
               .map((g) => {
                 const c = bestCandidate(g)
+                const { lead, days, tail } = describeCandidateParts(c)
                 return (
                   <li key={g.core}>
-                    {describeCandidate(c)}
-                    {c.long && <span className="ml-2 rounded bg-long-bg px-1.5 text-sm text-long-ink">{T.long}</span>}
+                    {lead}
+                    <span className={c.long ? 'text-long-ink' : undefined}>{days}</span>
+                    {tail}
                     {c.unconfirmed && <span className="ml-2 text-sm text-sub">{T.unconfirmed}</span>}
                   </li>
                 )

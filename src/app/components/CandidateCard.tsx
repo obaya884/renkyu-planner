@@ -102,13 +102,15 @@ export function StripRow({ days, run, long, strip, notes, warn = null, onAdd }: 
 }
 
 /** カードのいちばん下の開く行。標準の <details> で開閉する（状態は持たない） */
-export function MoreRow({ summary, tag = null, children }: { summary: string; tag?: string | null; children: ReactNode }) {
+export function MoreRow({ summary, tag = null, children }: { summary: string; tag?: { text: string; long: boolean } | null; children: ReactNode }) {
   return (
     <details className="group border-t border-line">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-[13px] text-primary [&::-webkit-details-marker]:hidden">
         <span>
           {summary}
-          {tag !== null && <span className="ml-1.5 rounded bg-long-bg px-1.5 align-[1px] text-xs text-long-ink">{tag}</span>}
+          {tag !== null && (
+            <span className={`ml-1.5 rounded px-1.5 align-[1px] text-xs ${tag.long ? 'bg-long-bg text-long-ink' : 'bg-none-bg text-none-ink'}`}>{tag.text}</span>
+          )}
         </span>
         <span aria-hidden className="transition-transform group-open:rotate-180">
           {T.more}

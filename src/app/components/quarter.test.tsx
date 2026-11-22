@@ -10,6 +10,7 @@ import { EntryList } from './EntryList'
 import { MonthCalendar } from './MonthCalendar'
 import { QuarterSection } from './QuarterSection'
 import { QuarterTabs } from './QuarterTabs'
+import { StaticCandidates } from './StaticCandidates'
 import { StickySummary } from './StickySummary'
 import { TogetherList } from './TogetherList'
 
@@ -42,7 +43,8 @@ test('F-203・§3.7: 組ごとに見出しつきのカード。最良の候補�
   expect(h).toContain('>11/20(金) を休む<')
   expect(h).toContain('>11/24(火) を休む<')
   expect(h).toContain('もっと多く休む取り方（7）')
-  expect(h).toContain(T.restHasLong)
+  // 11/23 の組の残りは 5 連休以上を含む（長めの色）。最長の日数を「最長 N連休」で出す
+  expect(h).toMatch(/<span[^>]*bg-long-bg[^>]*text-long-ink[^>]*>最長 \d+連休<\/span>/)
   expect(h).toContain('<details')
   expect(h.indexOf('>12/25(金) を休む<')).toBeLessThan(h.indexOf('>11/20(金) を休む<')) // 効率の順
   expect(h.lastIndexOf('もっと多く休む取り方')).toBeGreaterThan(h.indexOf('>11/24(火) を休む<')) // カードのいちばん下
@@ -52,7 +54,7 @@ test('§3.7・F-204: 上の行の右に連休の日数。5 連休以上は長め
   expect(rowOf(h, '11/20(金) を休む')).toMatch(/<b[^>]*>4連休<\/b>/)
   expect(rowOf(h, '11/20(金) を休む')).not.toContain('text-long-ink')
   expect(rowOf(h, '12/25(金) を休む')).toMatch(/<b[^>]*text-long-ink[^>]*>10連休<\/b>/)
-  expect(text(h)).not.toMatch(new RegExp(`${T.long}(?!あり)`))
+  expect(text(h)).not.toContain('長め')
 })
 test('§3.7・F-202: 日の並び。休む日、土日・祝日、会社の休日、予定を data-kind に持ち、期間の文字は出さない', () => {
   const h = candidateList(q4)
@@ -110,8 +112,10 @@ test('F-209・F-211・§3.7: 補足は並びの下。次の付与年から引く
 })
 test('F-304・F-305・R-17: 日程の行。連休の見出し、取得済み・予定、重なり', () => {
   const h = html(<EntryList blocks={q4.entries} workMinutes={480} onOpen={noop} onAddDay={noop} />)
-  expect(h.split('12/26〜1/3 の 9連休')).toHaveLength(2) // §3.8: 見出しだけ。各行の 2 行目には出さない
-  expect(h).toContain('12/26〜1/3 の 9連休')
+  expect(h.split('12/26〜1/3 の ')).toHaveLength(2) // §3.8: 見出しだけ。各行の 2 行目には出さない
+  expect(h).toContain('12/26〜1/3 の <span class="text-long-ink">9連休</span>')
+  expect(h).toMatch(/10\/31〜11\/3 の 4連休/)
+  expect(text(h)).not.toContain('長め') // §3.8: 「長め」の札は付けない
   expect(h).toContain('12/28(月)')
   expect(h).toContain('年末年始')
   expect(h).toContain('10/31〜11/3 の 4連休')
@@ -238,4 +242,24 @@ test('§3.7: 候補の見出しのすぐ下に凡例。候補が無い四半期�
   const none = html(<QuarterSection view={{ ...q4, groups: [], monthGaps: [], together: [], noCandidates: true }} {...props} />)
   expect(none).toContain(T.noCandidates)
   expect(none).not.toContain('data-legend="candidates"')
+})
+
+test('§3.7・F-204: 開く行の札。最長が 5 連休に届かないときも「最長 4連休」を灰色（なしの色）で出す', () => {
+  const group = { ...q4.groups[1], restLongest: { days: 4, long: false } }
+  const h = html(<CandidateList groups={[group]} monthGaps={[]} workMinutes={480} onAdd={noop} />)
+  expect(h).toMatch(/<span[^>]*bg-none-bg[^>]*text-none-ink[^>]*>最長 4連休<\/span>/)
+  expect(h).not.toContain('bg-long-bg')
+})
+test('§3.5・N-04: 最初の HTML の候補の一覧に「長め」の札は無い。5 連休以上は日数の文字が長めの色', () => {
+  const cand = (days: number, leaveDay: string) => ({ leaveDays: [leaveDay], run: { start: leaveDay, end: leaveDay, days }, long: days >= 5, unconfirmed: false, core: leaveDay })
+  const groups = [
+    { core: '2026-11-20', quarterStart: '2026-10-01', candidates: [cand(4, '2026-11-20')] },
+    { core: '2026-12-25', quarterStart: '2026-10-01', candidates: [cand(10, '2026-12-25')] },
+  ]
+  const h = html(<StaticCandidates groups={groups} confirmedUntil="2027-12-31" />)
+  expect(text(h)).not.toContain('長め')
+  expect(h).not.toContain('bg-long-bg')
+  expect(h).toMatch(/4 連休/)
+  expect(h).not.toMatch(/text-long-ink[^>]*>4 連休/)
+  expect(h).toMatch(/text-long-ink[^>]*>10 連休/)
 })

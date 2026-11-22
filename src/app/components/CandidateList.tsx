@@ -1,5 +1,5 @@
 import { Card, MoreRow, StripRow } from '@/app/components/CandidateCard'
-import { T, candidateDays, candidateNotes, coreHeading, monthGapLine, restSummary, shortNote } from '@/app/texts'
+import { T, candidateDays, candidateNotes, coreHeading, monthGapLine, restLongestText, restSummary, shortNote } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
 import type { CandidateGroupView, CandidateRow, MonthGapBlock } from '@/domain/view/quarterView'
 
@@ -32,7 +32,7 @@ export function CandidateList({ groups, monthGaps, workMinutes, onAdd }: { group
             ))}
           </ul>
           {group.rest.length > 0 && (
-            <MoreRow summary={restSummary(group.rest.length)} tag={group.restHasLong ? T.restHasLong : null}>
+            <MoreRow summary={restSummary(group.rest.length)} tag={{ text: restLongestText(group.restLongest.days), long: group.restLongest.long }}>
               {group.rest.map((row) => (
                 <Row key={row.leaveDays.join()} row={row} workMinutes={workMinutes} onAdd={onAdd} />
               ))}

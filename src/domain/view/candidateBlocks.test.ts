@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { planningQuarters } from '@/domain/quarters/quarters'
 import { addDays } from '@/domain/shared/date'
 import type { CompanyHoliday, Entry } from '@/domain/types'
-import { type StripKind, ctxOf, entryMarkOf, stripOf } from './candidateBlocks'
+import { type StripKind, ctxOf, entryMarkOf, restLongestOf, stripOf } from './candidateBlocks'
 import { SHEET, UNSET } from './fixture'
 import type { PlannerInput } from './input'
 import { buildQuarterViews } from './quarterView'
@@ -85,4 +85,12 @@ test('§5.1: 祝日でも会社の休日でもない核は、種類も名前も�
   // 核は並びの中の leave でない最初の休みの日 12/5(土)（R-5）
   const input = { ...UNSET, entries: [day('2026-12-04')] }
   expect(headOf(input, '2026-12-05')).toEqual({ kind: 'other', date: '2026-12-05' })
+})
+
+test('§3.7・F-204・R-14: まとめた中でいちばん長い連休の日数。5 連休以上なら長めの色、届かないときは灰色', () => {
+  const row = (days: number) => ({ run: { start: '2026-11-20', end: '2026-11-23', days } })
+  expect(restLongestOf([row(4), row(9), row(6)])).toEqual({ days: 9, long: true })
+  expect(restLongestOf([row(5), row(4)])).toEqual({ days: 5, long: true })
+  expect(restLongestOf([row(4), row(3)])).toEqual({ days: 4, long: false })
+  expect(restLongestOf([row(3)])).toEqual({ days: 3, long: false })
 })
