@@ -452,3 +452,31 @@ test('D-13: 2 つのストアが 1 つの保存領域を共有しているとき
   expect(saved.value.entries).toEqual([])
   expect(saved.value.settings.workMinutes).toBe(465)
 })
+test('D-15: 初めて保存領域に書けたときに 1 回だけ、保存データを消さないよう頼む。読んだだけでは頼まない', () => {
+  let asked = 0
+  const s = createPlannerStore(memory(), ids(), () => asked++)
+  s.load()
+  expect(asked).toBe(0)
+  s.addEntries([draft('2026-12-28')])
+  expect(asked).toBe(1)
+  s.addEntries([draft('2026-12-29')])
+  s.removeEntry('id-1')
+  expect(asked).toBe(1)
+})
+test('D-15: 保存領域が使えない・書けないときは頼まない。頼むのが例外になっても、記録は保存できている', () => {
+  let asked = 0
+  const none = createPlannerStore(null, ids(), () => asked++)
+  none.load()
+  none.addEntries([draft('2026-12-28')])
+  const full = { getItem: () => null, setItem: () => { throw new Error('full') }, removeItem: () => {} }
+  const s2 = createPlannerStore(full, ids(), () => asked++)
+  s2.load()
+  s2.addEntries([draft('2026-12-28')])
+  expect(asked).toBe(0)
+  const m = memory()
+  const s3 = createPlannerStore(m, ids(), () => { throw new Error('x') })
+  s3.load()
+  s3.addEntries([draft('2026-12-28')])
+  expect(s3.getState().canSave).toBe(true)
+  expect(JSON.parse(m.dump()[STORAGE_KEY]).entries).toHaveLength(1)
+})

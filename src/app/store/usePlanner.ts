@@ -15,7 +15,15 @@ export function browserStorage(): KeyValueStore | null {
   }
 }
 
-export const plannerStore = createPlannerStore(browserStorage(), () => newId(crypto))
+/**
+ * D-15: ブラウザに、このサイトの保存データを消さないよう頼む。仕組みが無いブラウザや断られたときは何もしない。
+ * Firefox は、ここで利用者に確かめる画面を出す
+ */
+function askBrowserToKeep(): void {
+  void navigator.storage?.persist?.().catch(() => {})
+}
+
+export const plannerStore = createPlannerStore(browserStorage(), () => newId(crypto), askBrowserToKeep)
 
 /** サーバーの描画とハイドレーションでは、初めの状態を使う。マウントしたあとに読み込む */
 export function usePlanner(): PlannerState {

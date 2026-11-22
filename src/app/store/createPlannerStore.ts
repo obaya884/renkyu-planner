@@ -51,9 +51,13 @@ export type PlannerStore = Readonly<{
 
 const INITIAL: PlannerState = { ready: false, data: EMPTY_STORED, canSave: true, unreadable: false }
 
-/** D-3・D-5〜D-9。保存領域が使えなくても、メモリの中の記録では動き続ける */
-export function createPlannerStore(storage: KeyValueStore | null, newId: () => string): PlannerStore {
+/**
+ * D-3・D-5〜D-9。保存領域が使えなくても、メモリの中の記録では動き続ける。
+ * askToKeep は、ブラウザに保存データを消さないよう頼む関数（D-15）。初めて書けたときに 1 回だけ呼ぶ
+ */
+export function createPlannerStore(storage: KeyValueStore | null, newId: () => string, askToKeep: () => void = () => {}): PlannerStore {
   let state: PlannerState = INITIAL
+  let asked = false
   const listeners = new Set<() => void>()
 
   const publish = (next: PlannerState) => {
@@ -96,6 +100,14 @@ export function createPlannerStore(storage: KeyValueStore | null, newId: () => s
         storage.setItem(STORAGE_KEY, serializeStored(data))
       } catch {
         canSave = false
+      }
+      if (canSave && !asked) {
+        asked = true
+        try {
+          askToKeep()
+        } catch {
+          // D-15: 頼めなくても何も変えない
+        }
       }
     }
     publish({ ...state, ...extra, data, canSave })
