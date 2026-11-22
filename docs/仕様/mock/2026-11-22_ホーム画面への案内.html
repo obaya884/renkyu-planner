@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>連休プランナー ホーム画面への案内のモック（2026-11-22）</title>
+<style>
+body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f9fafb;color:#111827;margin:0;padding:24px 28px 60px;line-height:1.6}
+h1{font-size:20px;margin:0 0 6px}
+h2{font-size:17px;margin:34px 0 4px;border-left:4px solid #0d9488;padding-left:10px}
+.note{font-size:13px;color:#4b5563;max-width:900px}.note li{margin:2px 0}
+.ph-wrap{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin:14px 0 20px}
+.ph-col{width:320px}
+.ph-col h3{margin:0 0 2px;font-size:15px}
+.ph-col .why{font-size:12px;color:#6b7280;min-height:72px;margin:0 0 8px}
+.ph{width:320px;height:640px;border:8px solid #1f2937;border-radius:26px;background:#fff;color:#1f2937;font-size:12px;line-height:1.5;overflow:hidden;position:relative;box-sizing:border-box}
+.ph .bar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:14px}
+.ph .bar span{font-weight:400;color:#0d9488;font-size:12px}
+.ph .desc{margin:8px 12px;font-size:11.5px}
+.ph .invite{margin:8px 12px;padding:9px 11px;border:1px dashed #0d9488;border-radius:8px;background:#f0fdfa}
+.ph .invite b{font-size:13px}.ph .invite p{margin:1px 0 7px;color:#6b7280;font-size:11px}
+.ph .btn{display:inline-block;background:#0d9488;color:#fff;border-radius:7px;padding:7px 12px;font-weight:700;font-size:12px}
+.ph .btn.ghost{background:#fff;color:#0d9488;border:1px solid #0d9488}
+.ph .lb{margin:10px 12px 0;font-size:10.5px;color:#6b7280}
+.ph .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:3px 12px 0}
+.ph .chips div{border-radius:7px;text-align:center;font-size:10px;padding:3px 0;line-height:1.3}
+.ph .chips b{display:block;font-size:11.5px}
+.ph .has{background:#d1fae5;color:#065f46}.ph .yet{background:#fef3c7;color:#92400e}
+.ph .tabs{display:flex;border-bottom:1px solid #e5e7eb;margin-top:10px}
+.ph .tabs div{flex:1;text-align:center;padding:5px 0;font-size:11.5px;color:#6b7280}
+.ph .tabs small{display:block;font-size:9px}
+.ph .tabs .on{color:#0d9488;font-weight:700;border-bottom:2px solid #0d9488}
+.ph .ghostrow{margin:10px 12px;height:10px;border-radius:5px;background:#f3f4f6}
+.ph .bal{margin:8px 12px;padding:8px 10px;background:#f3f4f6;border-radius:8px}
+.ph .bal b{font-size:17px}.ph .s{color:#6b7280;font-size:10.5px}
+
+/* 案内のカード */
+.guide{margin:8px 12px;padding:9px 11px;border:1px solid #e5e7eb;border-left:4px solid #0d9488;border-radius:8px;background:#fff;position:relative}
+.guide .x{position:absolute;right:8px;top:6px;color:#6b7280;font-size:11px}
+.guide b{font-size:12.5px;display:block;padding-right:44px}
+.guide p{margin:2px 0 6px;color:#4b5563;font-size:11px}
+.guide .more{color:#0d9488;font-size:11.5px;font-weight:700}
+.steps{list-style:none;margin:6px 0 4px;padding:0;counter-reset:s}
+.steps li{display:flex;align-items:center;gap:7px;padding:5px 0;border-top:1px solid #f3f4f6;font-size:11.5px;counter-increment:s}
+.steps li::before{content:counter(s);flex:0 0 17px;height:17px;border-radius:50%;background:#0d9488;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ico{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:#f3f4f6;vertical-align:middle;flex:0 0 22px}
+.ico svg{width:14px;height:14px;stroke:#0a84ff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.kbd{background:#f3f4f6;border-radius:4px;padding:0 5px;font-weight:700;white-space:nowrap}
+.dim{position:absolute;inset:0;background:rgba(17,24,39,.45)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:14px 14px 16px}
+.sheet h5{margin:0 0 4px;font-size:14px}
+.sheet p{margin:0 0 6px;color:#4b5563;font-size:11.5px}
+.sheet .go{margin-top:10px;background:#0d9488;color:#fff;text-align:center;border-radius:8px;padding:10px;font-weight:700;font-size:13px}
+.sheet .no{text-align:center;color:#6b7280;padding-top:9px;font-size:12px}
+.sheet .kv{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #e5e7eb;font-size:12px}
+.sheet .kv span:first-child{color:#6b7280}
+.safari{position:absolute;left:0;right:0;bottom:0;height:40px;background:#f2f2f7;border-top:1px solid #d1d5db;display:flex;justify-content:space-around;align-items:center}
+.safari svg{width:18px;height:18px;stroke:#0a84ff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.safari .hit{outline:2px solid #f59e0b;outline-offset:4px;border-radius:6px}
+.home{background:linear-gradient(160deg,#99f6e4,#c7d2fe);height:100%;padding:34px 22px}
+.home .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 14px}
+.home .app{text-align:center;font-size:9px;color:#1f2937}
+.home .app i{display:block;width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,.55);margin:0 auto 3px}
+.home .app.me i{background:#0d9488;color:#fff;font-style:normal;font-weight:700;font-size:15px;line-height:52px;outline:2px solid #f59e0b;outline-offset:3px}
+</style></head><body>
+
+<h1>ホーム画面への案内のモック（2026-11-22）</h1>
+<ul class="note">
+<li>iPhone と iPad の Safari は、しばらく開かないサイトの記録を消すことがある。ホーム画面に追加して開く使い方には、この決まりが掛からない。</li>
+<li>案内は、iPhone・iPad の Safari で開いたときだけ出す。ホーム画面のアプリとして開いているとき、Android、PC では出さない。</li>
+<li>ホーム画面のアプリは、Safari と記録が別になる。記録を入れたあとの人には、記録ごと移す道（3）を用意する。</li>
+<li>文言はすべて仮。</li>
+</ul>
+
+<h2>1. まだ何も入れていない人への案内（場所と濃さの 3 案）</h2>
+<div class="ph-wrap">
+
+<div class="ph-col"><h3>1-A 上に畳んだカード</h3>
+<p class="why">説明文のすぐ下に 2 行で出す。「手順を見る」で開く。場所を取らないが、読み飛ばされやすい。「閉じる」で消え、もう出ない。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="desc">有給と祝日と会社の休みを組み合わせて、連休を計画できます。登録なしで使えます。</div>
+<div class="guide"><span class="x">閉じる</span>
+<b>ホーム画面に追加して使うのがおすすめです</b>
+<p>Safari は、しばらく開かないサイトの記録を消すことがあります。</p>
+<span class="more">手順を見る ▾</span></div>
+<div class="invite"><b>有休の残りを出す</b><p>付与日と日数を入れると、残りと、まだ日を決めていない日数が出ます</p><span class="btn">付与日と日数を入れる</span></div>
+<div class="lb">長めの休暇（5連休以上）</div>
+<div class="chips"><div class="yet">10〜12月<b>まだ</b></div><div class="yet">1〜3月<b>まだ</b></div><div class="has">4〜6月<b>あり</b></div><div class="yet">7〜9月<b>まだ</b></div></div>
+<div class="tabs"><div class="on"><small>2026年</small>10〜12月</div><div><small>2027年</small>1〜3月</div><div><small>2027年</small>4〜6月</div><div><small>2027年</small>7〜9月</div></div>
+<div class="ghostrow" style="width:45%"></div><div class="ghostrow"></div><div class="ghostrow" style="width:80%"></div>
+</div></div>
+
+<div class="ph-col"><h3>1-B 手順まで見せるカード</h3>
+<p class="why">初めから手順の 3 歩を出す。伝わりやすいが、初めて開いた画面の上半分を使う。有休の残りのカードが下に押される。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="desc">有給と祝日と会社の休みを組み合わせて、連休を計画できます。登録なしで使えます。</div>
+<div class="guide"><span class="x">閉じる</span>
+<b>ホーム画面に追加して使うのがおすすめです</b>
+<p>Safari は、しばらく開かないサイトの記録を消すことがあります。ホーム画面に追加すると消えません。</p>
+<ol class="steps">
+<li><span>下の <span class="ico"><svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg></span> を押す</span></li>
+<li><span><span class="kbd">ホーム画面に追加</span> を選ぶ</span></li>
+<li><span>右上の <span class="kbd">追加</span> を押す</span></li>
+</ol></div>
+<div class="invite"><b>有休の残りを出す</b><p>付与日と日数を入れると、残りと、まだ日を決めていない日数が出ます</p><span class="btn">付与日と日数を入れる</span></div>
+<div class="lb">長めの休暇（5連休以上）</div>
+<div class="chips"><div class="yet">10〜12月<b>まだ</b></div><div class="yet">1〜3月<b>まだ</b></div><div class="has">4〜6月<b>あり</b></div><div class="yet">7〜9月<b>まだ</b></div></div>
+<div class="safari"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg><svg class="hit" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg><svg viewBox="0 0 24 24"><path d="M5 4h14v17l-7-5-7 5z"/></svg><svg viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V5h12v12h-4"/></svg></div>
+</div></div>
+
+<div class="ph-col"><h3>1-C 初めて保存したあとに出す</h3>
+<p class="why">開いたときには出さず、初めて設定か日程を保存した直後に、下から出す。記録ができた瞬間なので理由が伝わる。ただ、この時点ではもう記録があるので、3 の「記録ごと移す」とつなげる。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="bal"><span class="s">有休 残り</span><br><b>14日</b><br><span class="s">予定 1日・未割り当て 13日</span></div>
+<div class="lb">長めの休暇（5連休以上）</div>
+<div class="chips"><div class="yet">10〜12月<b>まだ</b></div><div class="yet">1〜3月<b>まだ</b></div><div class="has">4〜6月<b>あり</b></div><div class="yet">7〜9月<b>まだ</b></div></div>
+<div class="ghostrow" style="width:45%"></div><div class="ghostrow"></div>
+<div class="dim"></div>
+<div class="sheet"><h5>記録を消えにくくする</h5>
+<p>保存しました。この記録は、この iPhone の Safari の中にあります。Safari は、しばらく開かないサイトの記録を消すことがあります。</p>
+<p><b>ホーム画面に追加して開くと、消えません。</b></p>
+<div class="go">ホーム画面に追加する手順を見る</div>
+<div class="no">あとで</div></div>
+</div></div>
+</div>
+
+<h2>2. 手順の画面（1-A の「手順を見る」、1-C の「手順を見る」の先）</h2>
+<div class="ph-wrap">
+<div class="ph-col"><h3>2 手順の 3 歩</h3>
+<p class="why">Safari の下の並びのうち、押すボタンを絵で示す。iPad や、アドレスの欄を上に置いている人では位置が違うので、文は「共有のボタン」と絵で伝える。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="ghostrow" style="width:45%"></div><div class="ghostrow"></div>
+<div class="dim"></div>
+<div class="sheet" style="bottom:40px"><h5>ホーム画面に追加する</h5>
+<ol class="steps">
+<li><span>共有のボタン <span class="ico"><svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg></span> を押す</span></li>
+<li><span>下へ送って <span class="kbd">ホーム画面に追加</span> <span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span> を選ぶ</span></li>
+<li><span>右上の <span class="kbd">追加</span> を押す</span></li>
+</ol>
+<p style="margin-top:6px">これからは、ホーム画面の「連休プランナー」から開いてください。</p>
+<div class="no">閉じる</div></div>
+<div class="safari"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg><svg class="hit" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg><svg viewBox="0 0 24 24"><path d="M5 4h14v17l-7-5-7 5z"/></svg><svg viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V5h12v12h-4"/></svg></div>
+</div></div>
+</div>
+
+<h2>3. もう記録を入れた人: 記録ごと移す</h2>
+<div class="ph-wrap">
+
+<div class="ph-col"><h3>3-1 移す準備</h3>
+<p class="why">記録があるときは、手順の前に「記録も一緒に移す」を挟む。押すと、アドレスに記録の控えを入れる（サーバーには送られない）。その状態でホーム画面に追加してもらう。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="bal"><span class="s">有休 残り</span><br><b>14日</b><br><span class="s">予定 1日・未割り当て 13日</span></div>
+<div class="ghostrow" style="width:45%"></div>
+<div class="dim"></div>
+<div class="sheet" style="bottom:40px"><h5>ホーム画面に追加する</h5>
+<p>ホーム画面のアプリは、Safari とは別の場所に記録を持ちます。いまの記録（日程 3 件）も一緒に移せます。</p>
+<div class="go">記録も一緒に移す</div>
+<div class="no">記録は移さずに、手順だけ見る</div></div>
+<div class="safari"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg><svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg><svg viewBox="0 0 24 24"><path d="M5 4h14v17l-7-5-7 5z"/></svg><svg viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V5h12v12h-4"/></svg></div>
+</div></div>
+
+<div class="ph-col"><h3>3-2 準備ができた</h3>
+<p class="why">準備ができたことを伝えてから、同じ 3 歩を出す。途中でこの画面を離れると、控えはアドレスから消す。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="ghostrow" style="width:45%"></div><div class="ghostrow"></div>
+<div class="dim"></div>
+<div class="sheet" style="bottom:40px"><h5>準備ができました</h5>
+<p>このまま、ホーム画面に追加してください。</p>
+<ol class="steps">
+<li><span>共有のボタン <span class="ico"><svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg></span> を押す</span></li>
+<li><span>下へ送って <span class="kbd">ホーム画面に追加</span> を選ぶ</span></li>
+<li><span>右上の <span class="kbd">追加</span> を押す</span></li>
+</ol>
+<p style="margin-top:6px">ホーム画面の「連休プランナー」を開くと、記録を読み込むかを聞かれます。</p>
+<div class="no">やめる</div></div>
+<div class="safari"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg><svg class="hit" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg><svg viewBox="0 0 24 24"><path d="M5 4h14v17l-7-5-7 5z"/></svg><svg viewBox="0 0 24 24"><rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V5h12v12h-4"/></svg></div>
+</div></div>
+
+<div class="ph-col"><h3>3-3 ホーム画面に並ぶ</h3>
+<p class="why">アイコンと名前。絵柄は仮（主色の地に文字）。5c で決める。</p>
+<div class="ph"><div class="home"><div class="grid">
+<div class="app"><i></i>カレンダー</div><div class="app"><i></i>写真</div><div class="app"><i></i>メモ</div><div class="app"><i></i>設定</div>
+<div class="app"><i></i>マップ</div><div class="app me"><i>連休</i>連休プランナー</div>
+</div></div></div></div>
+
+<div class="ph-col"><h3>3-4 ホーム画面のアプリを初めて開く</h3>
+<p class="why">アドレスの欄が無い表示で開く。記録の控えが入っていれば、件数を出して確かめる（ファイルの読み込みと同じ形）。2 回目からは出ない。ここでは案内のカードは出さない。</p>
+<div class="ph">
+<div class="bar">連休プランナー<span>設定</span></div>
+<div class="desc">有給と祝日と会社の休みを組み合わせて、連休を計画できます。登録なしで使えます。</div>
+<div class="invite"><b>有休の残りを出す</b><p>付与日と日数を入れると、残りと、まだ日を決めていない日数が出ます</p><span class="btn">付与日と日数を入れる</span></div>
+<div class="dim"></div>
+<div class="sheet"><h5>記録を読み込みますか</h5>
+<p>Safari で入れた記録を、このアプリに移します。</p>
+<div class="kv"><span>日程</span><span>3 件</span></div>
+<div class="kv"><span>会社の休日</span><span>1 件</span></div>
+<div class="kv"><span>休暇の種類</span><span>1 件</span></div>
+<div class="go">読み込む</div>
+<div class="no">やめる</div></div>
+</div></div>
+</div>
+
+<h2>決めていただく点</h2>
+<ul class="note">
+<li>まだ何も入れていない人への出し方は、1-A（上に畳んだカード）、1-B（手順まで見せる）、1-C（初めて保存したあと）のどれにするか。組み合わせ（1-A を出しつつ、保存のあとに 1-C も出す）もできる。</li>
+<li>「閉じる」「あとで」を押した人に、もう一度出すか（例: 設定画面の「記録の持ち出し」の節には、いつでも手順への入口を置く）。</li>
+<li>理由の文の強さ。「消すことがあります」は事実だが、初めて来た人を不安にさせないか。</li>
+</ul>
+</body></html>
