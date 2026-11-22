@@ -4,9 +4,9 @@ import { EntryList } from '@/app/components/EntryList'
 import { MARK_CLASS, MonthCalendar } from '@/app/components/MonthCalendar'
 import { BELOW_SUMMARY_TOP_LG } from '@/app/components/StickySummary'
 import { TogetherList } from '@/app/components/TogetherList'
-import { T, grantNoteText, longBreakLine, quarterHeading } from '@/app/texts'
+import { T, grantNoteText, longBreakBadgeText, longBreakPeriod, quarterHeading } from '@/app/texts'
 import type { IsoDate } from '@/domain/shared/date'
-import type { DayMark, QuarterView } from '@/domain/view/quarterView'
+import type { DayMark, LongBreakStatus, QuarterView } from '@/domain/view/quarterView'
 
 type Props = {
   view: QuarterView
@@ -27,19 +27,25 @@ const LEGEND: Readonly<Record<DayMark, string>> = {
   company: T.legendCompany,
   off: T.legendOff,
 }
+const BADGE_CLASS: Readonly<Record<LongBreakStatus, string>> = {
+  has: 'bg-has-bg text-has-ink',
+  notYet: 'bg-warn-bg text-warn-ink',
+  none: 'bg-none-bg text-none-ink',
+}
 const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', 'candidate']
 
 /** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
 export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onAddDay, onEnterGrant, belowSummary = false }: Props) {
-  const { quarter, past, longBreak, months, marks, grantNote, groups, monthGaps, together, noCandidates, entries } = view
+  const { quarter, past, longBreak, longBreakStatus, months, marks, grantNote, groups, monthGaps, together, noCandidates, entries } = view
   return (
     <section className="space-y-3">
       <h2 className={`bg-white py-1 text-lg font-bold lg:sticky lg:z-10 ${belowSummary ? BELOW_SUMMARY_TOP_LG : 'lg:top-0'}`}>{quarterHeading(quarter.start)}</h2>
       <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
         <div className="space-y-3">
           <p className="text-sm">
-            {longBreakLine(longBreak)}
-            {longBreak !== null && <span className="ml-2 rounded-full bg-has-bg px-2 text-has-ink">{T.has}</span>}
+            {T.longBreak}
+            <span className={`ml-2 rounded-full px-2 ${BADGE_CLASS[longBreakStatus]}`}>{longBreakBadgeText(longBreakStatus)}</span>
+            {longBreak !== null && ` ${longBreakPeriod(longBreak)}`}
           </p>
           <div className="grid grid-cols-3 gap-2">
             {months.map((m) => (

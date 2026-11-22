@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { T, candidateDays, candidateNotes, coreHeading, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, insertLabel, joinNotes, longBreakChip, monthGapLine, quarterHeading, runDaysText, shortNote, stripCell, stripLabel, takeText, togetherDays, togetherHeading, togetherNotes, togetherRest, unassignedText, usablePeriod, unassignedLabel } from './texts'
+import { T, longBreakBadgeText, longBreakHeading, candidateDays, candidateNotes, coreHeading, describeCandidate, errorText, formatAmount, formatDay, formatJapaneseDate, formatPeriod, holidayNote, insertLabel, joinNotes, longBreakChip, monthGapLine, quarterHeading, runDaysText, shortNote, stripCell, stripLabel, takeText, togetherDays, togetherHeading, togetherNotes, togetherRest, unassignedText, usablePeriod, unassignedLabel } from './texts'
 
 test('日付と候補の書き方', () => {
   expect(formatDay('2026-11-02')).toBe('11/2(月)')
@@ -25,6 +25,16 @@ test('§8.3: 受け付けないときの文言', () => {
 test('P-6: 画面定義書の仮の文言', () => {
   expect(T.addToPlan).toBe('日程に入れる')
   expect(T.cannotSave).toBe('このブラウザでは記録を保存できません。閉じると、入れた内容は消えます。')
+})
+test('§3.3・R-14: 見出しの定義の数字は引数から作る', () => {
+  expect(longBreakHeading(5)).toBe('長めの休暇（5連休以上）')
+  expect(T.longBreakNote).toBe('土日と祝日だけで計算しています')
+})
+test('§3.5: 節の札の言葉。あり・まだは上の 4 つの札と同じ', () => {
+  expect(longBreakBadgeText('has')).toBe(T.has)
+  expect(longBreakBadgeText('notYet')).toBe(T.notYet)
+  expect(longBreakBadgeText('none')).toBe(T.longBreakNone)
+  expect(T.longBreakNone).toBe('なし')
 })
 test('§3.2・§3.3・§3.10: 使える期間、長めの休暇の札、祝日の 1 行', () => {
   expect(usablePeriod('07-01', '09-30')).toBe('7〜9月')

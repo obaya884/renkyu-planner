@@ -35,10 +35,14 @@ export type EntryBlock = Readonly<{ run: Run | null; long: boolean; rows: readon
 
 export type GrantNote = Readonly<{ date: IsoDate; entered: boolean; grantDays: number }>
 
+export type LongBreakStatus = 'has' | 'notYet' | 'none'
+
 export type QuarterView = Readonly<{
   quarter: Quarter
   past: boolean
   longBreak: Run | null
+  /** §3.5: 節の札。あり、まだ（これからの四半期で無い）、なし（過ぎた四半期で無かった） */
+  longBreakStatus: LongBreakStatus
   months: readonly MonthView[]
   marks: readonly DayMark[]
   grantNote: GrantNote | null
@@ -165,10 +169,12 @@ export function buildQuarterViews(input: PlannerInput, quarters: readonly Quarte
     const groups = inQuarter(placed.groups)
     const monthGaps = inQuarter(placed.monthGaps)
     const together = inQuarter(togetherPlaced)
+    const longBreak = longBreakOf(ctx.cal, quarter)
     return {
       quarter,
       past,
-      longBreak: longBreakOf(ctx.cal, quarter),
+      longBreak,
+      longBreakStatus: longBreak !== null ? 'has' : past ? 'none' : 'notYet',
       months,
       marks: MARK_ORDER.filter((m) => shown.has(m)),
       grantNote: grantNoteOf(ctx, quarter),

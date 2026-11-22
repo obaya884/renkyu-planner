@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 import { SHEET, UNSET } from './fixture'
+import { LONG_BREAK_DAYS } from '../quarters/quarters'
 import { buildSummary } from './summary'
 
 test('F-401: 有休のカード。残り 9 日と 2 時間、予定 5 日、未割り当て 4 日と 2 時間', () => {
@@ -21,6 +22,8 @@ test('F-403・R-14: 今日からの 4 つの四半期の長めの休暇', () => 
     ['2027-07-01', false],
   ])
   expect(s.holidaysOnly).toBe(false)
+  expect(s.longBreakDays).toBe(LONG_BREAK_DAYS) // 見出しの「5」は R-14 の日数
+  expect(LONG_BREAK_DAYS).toBe(5)
 })
 test('F-106: 付与日が無ければカードを出さない。会社の休日も日程も無ければ「土日と祝日だけ」', () => {
   const s = buildSummary(UNSET)

@@ -48,12 +48,15 @@ export function canGoBack(dates: readonly IsoDate[], grantYearStart: IsoDate | n
   return dates.some((d) => d < first.start) || (grantYearStart !== null && grantYearStart < first.start)
 }
 
+/** 長めの休暇とみなす連休の最短の日数（R-14） */
+export const LONG_BREAK_DAYS = 5
+
 /** 開始日がその四半期に入る 5 日以上の連休のうち、最も長いもの。同じ長さなら早いもの（R-14） */
 export function longBreakOf(cal: RestCalendar, q: Quarter): Run | null {
   let best: Run | null = null
   for (const run of restRuns(cal, q.start, q.end)) {
     // 前の四半期から続く連休は、開始日がこの四半期に入らないので数えない
-    if (run.start >= q.start && run.days >= 5 && (best === null || run.days > best.days)) best = run
+    if (run.start >= q.start && run.days >= LONG_BREAK_DAYS && (best === null || run.days > best.days)) best = run
   }
   return best
 }

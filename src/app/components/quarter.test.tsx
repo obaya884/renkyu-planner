@@ -139,6 +139,22 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
   expect(hp).toContain(T.addDay)
   expect(html(<QuarterSection view={q2} {...props} />)).toContain('前の年と同じ 14日で計算中')
 })
+test('§3.5・F-403: 長めの休暇の行は、どの状態でもラベル、札、期間の順。あり・まだ・なし', () => {
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
+  const line = (view: typeof q4) => {
+    const h = html(<QuarterSection view={view} {...props} />)
+    return h.slice(h.indexOf('長めの休暇'), h.indexOf('</p>', h.indexOf('長めの休暇')))
+  }
+  const has = line(q4)
+  expect(has).toMatch(/^長めの休暇<span[^>]*bg-has-bg[^>]*>あり<\/span>[^<]*12\/26〜1\/3（9連休）$/)
+  const [, q1] = buildQuarterViews(SHEET, qs)
+  expect(line(q1)).toMatch(/^長めの休暇<span[^>]*bg-warn-bg[^>]*>まだ<\/span>$/)
+  const [none] = buildQuarterViews(SHEET, planningQuarters('2026-11-15', -3))
+  expect(line(none)).toMatch(/^長めの休暇<span[^>]*bg-none-bg[^>]*text-none-ink[^>]*>なし<\/span>$/)
+  const [pastHas] = buildQuarterViews(SHEET, planningQuarters('2026-11-15', -2))
+  expect(line(pastHas)).toMatch(/^長めの休暇<span[^>]*bg-has-bg[^>]*>あり<\/span>[^<]*（\d+連休）$/)
+  expect(html(<QuarterSection view={q1} {...props} />)).not.toContain('まだない')
+})
 test('§3.6: 付与日の 1 行。入力済みなら有休の日数を出す', () => {
   const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   expect(html(<QuarterSection view={q2} {...props} />)).toContain(T.enterGrant)

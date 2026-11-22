@@ -10,6 +10,7 @@ import { STORAGE_LIMITS } from '@/domain/storage/limits'
 import { isBlankEventName } from '@/domain/transfer/eventText'
 import type { ImportCounts } from '@/domain/transfer/importCounts'
 import type { GrantYearPosition } from '@/domain/view/addPreview'
+import type { LongBreakStatus } from '@/domain/view/quarterView'
 import type { CandidateRow, CoreHead, TogetherRow } from '@/domain/view/quarterView'
 import type { GrantYearRow } from '@/domain/view/settingsView'
 import { weekday } from '@/domain/shared/date'
@@ -71,9 +72,10 @@ export const T = {
   fiveDaysLabel: '年 5 日の取得まで',
   // §3.3
   longBreak: '長めの休暇',
-  longBreakHolidaysOnly: '（土日と祝日だけで計算）',
+  longBreakNote: '土日と祝日だけで計算しています',
   has: 'あり',
   notYet: 'まだ',
+  longBreakNone: 'なし',
   // §3.9
   inviteTitle: '有休の残りを出す',
   inviteBody: '付与日と日数を入れると、残りと、まだ日を決めていない日数が出ます',
@@ -88,7 +90,6 @@ export const T = {
   noCandidates: 'この四半期の候補はありません',
   restHasLong: '長めあり',
   enterGrant: '日数を入れる',
-  noLongBreak: 'まだない',
   done: '取得済み',
   legendOff: '土日・祝日',
   legendCompany: '会社の休日',
@@ -321,9 +322,19 @@ export function runHeading(run: Run): string {
   return `${formatPeriod(run)} の ${run.days}連休`
 }
 
-/** §3.5。例: 長めの休暇: 12/26〜1/3（9連休） */
-export function longBreakLine(run: Run | null): string {
-  return `${T.longBreak}: ${run === null ? T.noLongBreak : `${formatPeriod(run)}（${run.days}連休）`}`
+/** §3.3。例: 長めの休暇（5連休以上） */
+export function longBreakHeading(days: number): string {
+  return `${T.longBreak}（${days}連休以上）`
+}
+
+/** §3.5。節の札の言葉。あり・まだは上の 4 つの札と同じ */
+export function longBreakBadgeText(status: LongBreakStatus): string {
+  return status === 'has' ? T.has : status === 'notYet' ? T.notYet : T.longBreakNone
+}
+
+/** §3.5。例: 12/26〜1/3（9連休） */
+export function longBreakPeriod(run: Run): string {
+  return `${formatPeriod(run)}（${run.days}連休）`
 }
 
 /** §3.6 の付与日の 1 行。例: 5/1 から次の付与年（前の年と同じ 14日で計算中） */

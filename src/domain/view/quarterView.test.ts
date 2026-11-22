@@ -69,6 +69,18 @@ test('F-304: 日程の塊。同じ連休の 2 件は 1 つの塊、1 件だけ�
   expect(q4.entries[0].rows[0].run).toBeNull()
   expect(q4.longBreak).toEqual({ start: '2026-12-26', end: '2027-01-03', days: 9 })
 })
+test('F-403・§3.5: 節の長めの休暇の札。あり・まだ・なし（なしは過ぎた四半期だけ）', () => {
+  const at = (today: string, shift = 0) => buildQuarterViews({ ...SHEET, today }, planningQuarters(today, shift))
+  expect(q4.longBreakStatus).toBe('has') // これからの四半期で、あり
+  const [, q1] = at('2026-11-15')
+  expect(q1.longBreak).toBeNull()
+  expect(q1.longBreakStatus).toBe('notYet') // これからの四半期で、なし → まだ
+  const [q1past] = at('2026-11-15', -3) // 2026 年 1〜3 月。長めの休暇が無い
+  expect(q1past).toMatchObject({ past: true, longBreak: null, longBreakStatus: 'none' })
+  const [q2past] = at('2026-11-15', -2) // 4〜6 月。GW の連休がある
+  expect(q2past).toMatchObject({ past: true, longBreakStatus: 'has' })
+  expect(q2past.longBreak).not.toBeNull()
+})
 test('F-209: 付与日の印と、次の付与年に入る候補', () => {
   expect(cell(q2, '2027-05-01')?.grantDay).toBe(true)
   expect(q2.grantNote).toEqual({ date: '2027-05-01', entered: false, grantDays: 14 })
