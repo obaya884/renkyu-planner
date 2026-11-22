@@ -28,7 +28,7 @@ import { calendarUrlOf } from '@/app/transfer/calendarEvents'
 import { useBackupLinkOnOpen } from '@/app/transfer/useBackupLink'
 import { useHomeScreenAudience } from '@/app/transfer/useHomeScreenAudience'
 import { homeSheetStore, useHomeSheet } from '@/app/transfer/useHomeSheet'
-import { isBlankStored, promptsAfterSave, showsGuideCard } from '@/domain/transfer/homeScreen'
+import { guideBrowser, isBlankStored, promptsAfterSave, showsGuideCard } from '@/domain/transfer/homeScreen'
 import { importCounts } from '@/domain/transfer/importCounts'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
@@ -51,6 +51,8 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   const today = useToday()
   // ホーム画面への追加の案内（試作）を出す相手。サーバーとハイドレーションでは null（最初の HTML に案内を入れない）
   const audience = useHomeScreenAudience()
+  // 案内の文に出すブラウザの名前。案内を出さない相手では使わない
+  const browser = guideBrowser(audience) ?? 'safari'
   const homeFlags = useHomeScreenFlags()
   const homeSheet = useHomeSheet()
   // 控えのリンク（試作）を #b… 付きで開いたとき。記録を読み終えてから読む
@@ -131,7 +133,7 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
       )}
       {settings.grantDay === null && <p className="text-sm">{APP_DESCRIPTION}</p>}
       {showsGuideCard(audience, homeFlags.guideClosed) && (
-        <HomeGuideCard onOpen={() => homeSheetStore.open(data)} onClose={homeScreenStore.closeGuide} />
+        <HomeGuideCard browser={browser} onOpen={() => homeSheetStore.open(data)} onClose={homeScreenStore.closeGuide} />
       )}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div ref={setCardsEl} className="lg:w-1/2">
@@ -210,10 +212,11 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
       )}
       {/* ホーム画面への追加（試作）。モーダルは 1 つずつ出すので、ほかのモーダルが閉じてから出す */}
       {sheet === null && backupLink.pending === null && homeSheet !== null && (
-        <HomeScreenSheet view={homeSheet} onMove={homeSheetStore.move} onSkip={homeSheetStore.skip} onClose={homeSheetStore.close} />
+        <HomeScreenSheet view={homeSheet} browser={browser} onMove={homeSheetStore.move} onSkip={homeSheetStore.skip} onClose={homeSheetStore.close} />
       )}
       {sheet === null && backupLink.pending === null && homeSheet === null && promptDue && (
         <HomePromptSheet
+          browser={browser}
           onGo={() => {
             homeScreenStore.markPrompted()
             setPromptDue(false)

@@ -8,10 +8,19 @@ import { MAX_BACKUP_LINK_LENGTH } from './backupLink'
  */
 
 /**
- * 案内の相手。safari は案内を出す相手（iPhone・iPad の Safari で、ホーム画面のアプリではない）、homeApp はホーム画面のアプリとして開いている、
- * other はそれ以外（Android・PC・iOS のほかのブラウザ）。画面がまだ端末を読んでいないあいだは null で表す
+ * 案内の相手。safari と chrome は案内を出す相手（iPhone・iPad の Safari と Chrome で、ホーム画面のアプリではない）、
+ * homeApp はホーム画面のアプリとして開いている、other はそれ以外（Android・PC・iOS のほかのブラウザ）。
+ * 画面がまだ端末を読んでいないあいだは null で表す
  */
-export type HomeScreenAudience = 'safari' | 'homeApp' | 'other'
+export type HomeScreenAudience = 'safari' | 'chrome' | 'homeApp' | 'other'
+
+/** 案内を出すブラウザ。共有のボタンの場所が違うので、手順の文を分ける */
+export type GuideBrowser = 'safari' | 'chrome'
+
+/** 案内を出す相手ならそのブラウザ、出さない相手なら null */
+export function guideBrowser(audience: HomeScreenAudience | null): GuideBrowser | null {
+  return audience === 'safari' || audience === 'chrome' ? audience : null
+}
 
 export type HomeScreenEnv = Readonly<{
   userAgent: string
@@ -23,26 +32,29 @@ export type HomeScreenEnv = Readonly<{
   forced: boolean
 }>
 
-/** iOS のほかのブラウザとアプリ内のブラウザ。共有のボタンの場所が違い、ホーム画面への追加の手順も違うので出さない */
+/** iOS の Chrome */
+const IOS_CHROME = /CriOS\//
+/** iOS のほかのブラウザとアプリ内のブラウザ。ホーム画面への追加の手順を確かめていないので出さない */
 const NOT_SAFARI = /CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|GSA\/|FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter/
 
 export function homeScreenAudience(env: HomeScreenEnv): HomeScreenAudience {
   if (env.standalone) return 'homeApp'
-  if (env.forced) return 'safari'
   const ua = env.userAgent
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && env.maxTouchPoints > 1)
+  if (ios && IOS_CHROME.test(ua)) return 'chrome'
+  if (env.forced) return 'safari'
   if (!ios) return 'other'
   return /Safari\//.test(ua) && !NOT_SAFARI.test(ua) ? 'safari' : 'other'
 }
 
 /** 1-A: 主な画面の上のカード。「閉じる」を押したら、もう出さない */
 export function showsGuideCard(audience: HomeScreenAudience | null, guideClosed: boolean): boolean {
-  return audience === 'safari' && !guideClosed
+  return guideBrowser(audience) !== null && !guideClosed
 }
 
 /** 設定画面の「記録の持ち出し」の節の入口。「閉じる」を押したあとも出す */
 export function showsSettingsEntry(audience: HomeScreenAudience | null): boolean {
-  return audience === 'safari'
+  return guideBrowser(audience) !== null
 }
 
 /** 記録が初めのまま（日程が無く、設定も既定のまま）か */
@@ -63,7 +75,7 @@ export function isBlankStored(data: StoredData): boolean {
 
 /** 1-C: 初めて設定か日程を保存した直後（記録が空から空でなくなったとき）に 1 回だけ勧める */
 export function promptsAfterSave(p: Readonly<{ audience: HomeScreenAudience | null; prompted: boolean; wasBlank: boolean; isBlank: boolean }>): boolean {
-  return p.audience === 'safari' && !p.prompted && p.wasBlank && !p.isBlank
+  return guideBrowser(p.audience) !== null && !p.prompted && p.wasBlank && !p.isBlank
 }
 
 /** 手順のモーダルの始まり。記録が空なら手順の 3 歩、記録があれば「記録も一緒に移す」かを聞く */

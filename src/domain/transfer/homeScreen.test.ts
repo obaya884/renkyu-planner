@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED } from '@/domain/storage/stored'
-import { backupMarkOf, homeScreenAudience, homeSheetStart, isBlankStored, moveLinkView, promptsAfterSave, showsGuideCard, showsSettingsEntry } from './homeScreen'
+import { backupMarkOf, guideBrowser, homeScreenAudience, homeSheetStart, isBlankStored, moveLinkView, promptsAfterSave, showsGuideCard, showsSettingsEntry } from './homeScreen'
 import { MAX_BACKUP_LINK_LENGTH } from './backupLink'
 
 const IPHONE_SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1'
@@ -25,10 +25,22 @@ test('試作（ホーム画面）: Mac を名乗る iPad は、タッチの数�
   expect(homeScreenAudience(env(IPAD_AS_MAC, { maxTouchPoints: 5 }))).toBe('safari')
   expect(homeScreenAudience(env(IPAD_AS_MAC, { maxTouchPoints: 0 }))).toBe('other')
 })
-test('試作（ホーム画面）: Android・PC・iOS の Safari 以外のブラウザやアプリ内のブラウザには出さない', () => {
+test('試作（ホーム画面）: iPhone の Chrome には、Chrome 用の案内を出す。?guide=1 を付けても Chrome のまま', () => {
+  expect(homeScreenAudience(env(IPHONE_CHROME, { maxTouchPoints: 5 }))).toBe('chrome')
+  expect(homeScreenAudience(env(IPHONE_CHROME, { maxTouchPoints: 5, forced: true }))).toBe('chrome')
+  expect(homeScreenAudience(env(IPHONE_CHROME, { maxTouchPoints: 5, standalone: true }))).toBe('homeApp')
+  expect(guideBrowser('chrome')).toBe('chrome')
+  expect(guideBrowser('safari')).toBe('safari')
+  expect(guideBrowser('homeApp')).toBeNull()
+  expect(guideBrowser('other')).toBeNull()
+  expect(guideBrowser(null)).toBeNull()
+  expect(showsGuideCard('chrome', false)).toBe(true)
+  expect(showsSettingsEntry('chrome')).toBe(true)
+  expect(promptsAfterSave({ audience: 'chrome', prompted: false, wasBlank: true, isBlank: false })).toBe(true)
+})
+test('試作（ホーム画面）: Android・PC・iOS の Safari と Chrome 以外のブラウザやアプリ内のブラウザには出さない', () => {
   expect(homeScreenAudience(env(ANDROID_CHROME, { maxTouchPoints: 5 }))).toBe('other')
   expect(homeScreenAudience(env(WINDOWS_CHROME))).toBe('other')
-  expect(homeScreenAudience(env(IPHONE_CHROME, { maxTouchPoints: 5 }))).toBe('other')
   expect(homeScreenAudience(env(IPHONE_LINE, { maxTouchPoints: 5 }))).toBe('other')
 })
 test('試作（ホーム画面）: ホーム画面のアプリとして開いているときは homeApp。?guide=1 より優先する', () => {

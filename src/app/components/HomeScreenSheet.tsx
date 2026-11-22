@@ -1,10 +1,11 @@
 'use client'
 
 import { PRIMARY_BUTTON_CLASS, Sheet, SheetTitle } from '@/app/components/Sheet'
-import { T, homeMoveLead } from '@/app/texts'
+import { T, homeMoveLead, homeNoMoveText, homeStep1Before } from '@/app/texts'
+import type { GuideBrowser } from '@/domain/transfer/homeScreen'
 import type { HomeSheetView } from '@/app/transfer/createHomeSheetStore'
 
-/** Safari の共有のボタンの絵（モック 2026-11-22 の inline SVG）。試作 */
+/** Safari と Chrome の共有のボタンの絵（モック 2026-11-22 の inline SVG）。試作 */
 export function ShareIcon() {
   return (
     <span className="inline-flex size-6 shrink-0 items-center justify-center rounded bg-card align-middle" role="img" aria-label={T.homeShareIconLabel}>
@@ -41,11 +42,11 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 }
 
 /** 手順の 3 歩（モックの 2）。共有のボタン → 「ホーム画面に追加」→「追加」 */
-export function HomeSteps() {
+export function HomeSteps({ browser }: { browser: GuideBrowser }) {
   return (
     <ol className="list-none p-0">
       <Step n={1}>
-        {T.homeStep1Before} <ShareIcon /> {T.homeStep1After}
+        {homeStep1Before(browser)} <ShareIcon /> {T.homeStep1After}
       </Step>
       <Step n={2}>
         {T.homeStep2Before} <span className={KEY_CLASS}>{T.homeStep2Key}</span> <AddToHomeIcon /> {T.homeStep2After}
@@ -57,18 +58,18 @@ export function HomeSteps() {
   )
 }
 
-type Props = { view: HomeSheetView; onMove: () => void; onSkip: () => void; onClose: () => void }
+type Props = { view: HomeSheetView; browser: GuideBrowser; onMove: () => void; onSkip: () => void; onClose: () => void }
 
 const WIDE_PRIMARY = `${PRIMARY_BUTTON_CLASS} w-full`
 const WIDE_SECONDARY = 'min-h-11 w-full px-4 text-sm text-sub'
 
 /** ホーム画面に追加する手順のモーダルの中身（試作。モックの 2・3-1・3-2）。view を描くだけ */
-export function HomeScreenSheetBody({ view, onMove, onSkip, onClose }: Props) {
+export function HomeScreenSheetBody({ view, browser, onMove, onSkip, onClose }: Props) {
   if (view.kind === 'choose') {
     return (
       <>
         <SheetTitle>{T.homeStepsTitle}</SheetTitle>
-        <p className="text-sm">{homeMoveLead(view.entryCount)}</p>
+        <p className="text-sm">{homeMoveLead(view.entryCount, browser)}</p>
         <div className="space-y-1">
           <button type="button" onClick={onMove} disabled={view.preparing} className={WIDE_PRIMARY}>
             {T.homeMoveGo}
@@ -85,8 +86,8 @@ export function HomeScreenSheetBody({ view, onMove, onSkip, onClose }: Props) {
     <>
       <SheetTitle>{ready ? T.homeReadyTitle : T.homeStepsTitle}</SheetTitle>
       {ready && <p className="text-sm">{T.homeReadyLead}</p>}
-      {view.kind === 'noMove' && <p className="text-sm">{view.reason === 'tooLong' ? T.homeMoveTooLong : T.homeMoveFailed}</p>}
-      <HomeSteps />
+      {view.kind === 'noMove' && <p className="text-sm">{homeNoMoveText(view.reason, browser)}</p>}
+      <HomeSteps browser={browser} />
       <p className="text-sm">{ready ? T.homeReadyAfter : T.homeStepsAfter}</p>
       <button type="button" onClick={onClose} className={WIDE_SECONDARY}>
         {ready ? T.cancel : T.close}
