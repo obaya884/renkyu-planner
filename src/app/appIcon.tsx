@@ -1,9 +1,8 @@
 /**
- * ホーム画面のアイコン（試作。絵柄は仮）。主色の地に、白いカレンダーの形。
+ * アプリのアイコン（画面定義書 §7。絵柄は仮）。主色の地に、白いカレンダーの形。
  * ImageResponse の同梱の字体には日本語が無く、日本語を出すとビルドのときに Google Fonts から取りに行くので、文字は入れない
  */
-export const APP_THEME_COLOR = '#0d9488'
-export const APP_BACKGROUND = '#ffffff'
+const APP_THEME_COLOR = '#0d9488'
 
 /** 一辺 size の正方形のアイコンの中身。icon.tsx と apple-icon.tsx が ImageResponse に渡す */
 export function AppIconArt({ size }: { size: number }) {

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { AppIconArt } from './appIcon'
 
-// 試作。リクエスト時の API を使わないので、ビルドのときに静的な画像として出る（app-icons の docs）
+// ブラウザのタブのアイコン。リクエスト時の API を使わないので、ビルドのときに静的な画像として出る（app-icons の docs）
 export const size = { width: 512, height: 512 }
 export const contentType = 'image/png'
 
