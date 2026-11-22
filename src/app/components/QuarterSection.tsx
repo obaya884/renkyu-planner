@@ -44,7 +44,7 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
         <div className="space-y-3">
           <p className="text-sm">
             {T.longBreak}
-            <span className={`ml-2 rounded-full px-2 ${BADGE_CLASS[longBreakStatus]}`}>{longBreakBadgeText(longBreakStatus)}</span>
+            <span className={`ml-2 whitespace-nowrap rounded-full px-2 ${BADGE_CLASS[longBreakStatus]}`}>{longBreakBadgeText(longBreakStatus)}</span>
             {longBreak !== null && ` ${longBreakPeriod(longBreak)}`}
           </p>
           <div className="grid grid-cols-3 gap-2">
