@@ -28,7 +28,6 @@ test('P-6: 画面定義書の仮の文言', () => {
 })
 test('§3.3・R-14: 見出しの定義の数字は引数から作る', () => {
   expect(longBreakHeading(5)).toBe('長めの休暇（5連休以上）')
-  expect(T.longBreakNote).toBe('土日と祝日だけで計算しています')
 })
 test('§3.5: 節の札の言葉。あり・まだは上の 4 つの札と同じ', () => {
   expect(longBreakBadgeText('has')).toBe(T.has)

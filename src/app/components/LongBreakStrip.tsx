@@ -5,7 +5,7 @@ import type { SummaryView } from '@/domain/view/summary'
 export function LongBreakStrip({ summary }: { summary: SummaryView }) {
   return (
     <div>
-      {/* PC は見出しと札を横に並べる。補足の 1 行は札の下 */}
+      {/* PC は見出しと札を横に並べる */}
       <div className="lg:flex lg:items-center lg:gap-3">
         <div className="text-sm text-sub lg:shrink-0">{longBreakHeading(summary.longBreakDays)}</div>
         {/* スマホは同じ幅の 4 つを 1 列に並べ、札の中を 2 段にする。PC は札の中を 1 段にして横に並べる */}
@@ -21,7 +21,6 @@ export function LongBreakStrip({ summary }: { summary: SummaryView }) {
           ))}
         </ul>
       </div>
-      {summary.holidaysOnly && <p className="mt-1 text-xs text-sub">{T.longBreakNote}</p>}
     </div>
   )
 }

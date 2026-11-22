@@ -21,13 +21,12 @@ test('F-403・R-14: 今日からの 4 つの四半期の長めの休暇', () => 
     ['2027-04-01', true],  // 4/30 を休んで 4/29〜5/5 の 7 連休
     ['2027-07-01', false],
   ])
-  expect(s.holidaysOnly).toBe(false)
   expect(s.longBreakDays).toBe(LONG_BREAK_DAYS) // 見出しの「5」は R-14 の日数
   expect(LONG_BREAK_DAYS).toBe(5)
 })
-test('F-106: 付与日が無ければカードを出さない。会社の休日も日程も無ければ「土日と祝日だけ」', () => {
+test('F-106: 付与日が無ければカードを出さない', () => {
   const s = buildSummary(UNSET)
-  expect(s).toMatchObject({ state: 'unset', cards: [], fiveDays: null, holidaysOnly: true })
+  expect(s).toMatchObject({ state: 'unset', cards: [], fiveDays: null })
   expect(s.longBreaks.map((c) => c.has)).toEqual([false, false, true, false]) // 2027 年の 5/1〜5/5
 })
 test('F-211: 持ち分を超えると short', () => {

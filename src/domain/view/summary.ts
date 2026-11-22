@@ -32,7 +32,6 @@ export type SummaryView = Readonly<{
   longBreaks: readonly LongBreakChip[]
   /** §3.3: 見出しの「5連休以上」の日数（R-14） */
   longBreakDays: number
-  holidaysOnly: boolean
   /** F-407。今の付与年に設定が無く、前の付与年に設定があるとき、今の付与年の開始日 */
   newGrantYearStart: IsoDate | null
 }>
@@ -43,9 +42,8 @@ export function buildSummary(input: PlannerInput): SummaryView {
   const grantYear = currentGrantYear(input)
   const cal = restCalendarOf(input)
   const longBreaks = planningQuarters(today).map((quarter) => ({ quarter, has: longBreakOf(cal, quarter) !== null }))
-  const holidaysOnly = settings.companyHolidays.length === 0 && entries.length === 0
 
-  if (grantYear === null) return { state: 'unset', cards: [], paid: null, extras: [], fiveDays: null, longBreaks, longBreakDays: LONG_BREAK_DAYS, holidaysOnly, newGrantYearStart: null }
+  if (grantYear === null) return { state: 'unset', cards: [], paid: null, extras: [], fiveDays: null, longBreaks, longBreakDays: LONG_BREAK_DAYS, newGrantYearStart: null }
 
   const cards: BalanceCard[] = []
   for (const type of settings.leaveTypes) {
@@ -70,5 +68,5 @@ export function buildSummary(input: PlannerInput): SummaryView {
   const fiveDays = five !== null && five.remainingDays > 0 ? five : null
   const keys = Object.keys(settings.grantYears)
   const newGrantYearStart = !keys.includes(grantYear.start) && keys.some((k) => k < grantYear.start) ? grantYear.start : null
-  return { state: 'set', cards, paid: cards.find((c) => c.leaveTypeId === PAID_LEAVE_TYPE_ID) ?? null, extras: cards.filter((c) => c.leaveTypeId !== PAID_LEAVE_TYPE_ID), fiveDays, longBreaks, longBreakDays: LONG_BREAK_DAYS, holidaysOnly, newGrantYearStart }
+  return { state: 'set', cards, paid: cards.find((c) => c.leaveTypeId === PAID_LEAVE_TYPE_ID) ?? null, extras: cards.filter((c) => c.leaveTypeId !== PAID_LEAVE_TYPE_ID), fiveDays, longBreaks, longBreakDays: LONG_BREAK_DAYS, newGrantYearStart }
 }

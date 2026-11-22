@@ -72,7 +72,6 @@ export const T = {
   fiveDaysLabel: '年 5 日の取得まで',
   // §3.3
   longBreak: '長めの休暇',
-  longBreakNote: '土日と祝日だけで計算しています',
   has: 'あり',
   notYet: 'まだ',
   longBreakNone: 'なし',

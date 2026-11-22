@@ -28,13 +28,11 @@ test('F-404: 年 5 日の取得に届いていなければ 1 行出す', () => {
   expect(html(<BalanceCards summary={s} workMinutes={480} onConfirmNewYear={() => {}} />)).toContain('あと 3日')
   expect(html(<BalanceCards summary={buildSummary(SHEET)} workMinutes={480} onConfirmNewYear={() => {}} />)).not.toContain(T.fiveDaysLabel)
 })
-test('F-106: 付与日が無ければカードを描かない。長めの休暇は札の下に補足の 1 行', () => {
+test('F-106・§3.3: 付与日が無ければカードを描かない。長めの休暇に補足の 1 行は出さない', () => {
   expect(html(<BalanceCards summary={buildSummary(UNSET)} workMinutes={480} onConfirmNewYear={() => {}} />)).toBe('')
   const h = html(<LongBreakStrip summary={buildSummary(UNSET)} />)
-  expect(h).toContain(T.longBreakNote)
-  expect(h).toMatch(/<\/ul><\/div><p[^>]*text-sub[^>]*>土日と祝日だけで計算しています<\/p>/) // 札の下、補助の色
-  expect(h).not.toContain('（土日と祝日だけで計算）')
-  expect(html(<LongBreakStrip summary={buildSummary(SHEET)} />)).not.toContain(T.longBreakNote)
+  expect(h).not.toContain('土日と祝日だけで計算') // 会社の休日も日程も無い状態でも出さない
+  expect(html(<LongBreakStrip summary={buildSummary(SHEET)} />)).not.toContain('土日と祝日だけで計算')
 })
 test('§3.3・R-14: 見出しは、いつも「長めの休暇（5連休以上）」', () => {
   for (const input of [SHEET, UNSET]) {
