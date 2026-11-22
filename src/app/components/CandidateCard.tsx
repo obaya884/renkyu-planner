@@ -109,7 +109,7 @@ export function MoreRow({ summary, tag = null, children }: { summary: string; ta
         <span>
           {summary}
           {tag !== null && (
-            <span className={`ml-1.5 rounded px-1.5 align-[1px] text-xs ${tag.long ? 'bg-long-bg text-long-ink' : 'bg-none-bg text-none-ink'}`}>{tag.text}</span>
+            <span className={`ml-1.5 whitespace-nowrap rounded px-1.5 align-[1px] text-xs ${tag.long ? 'bg-long-bg text-long-ink' : 'bg-none-bg text-none-ink'}`}>{tag.text}</span>
           )}
         </span>
         <span aria-hidden className="transition-transform group-open:rotate-180">
