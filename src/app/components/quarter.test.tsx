@@ -143,6 +143,17 @@ test('F-403・F-508: 節の見出しと長めの休暇。過ぎた四半期は�
   expect(hp).toContain(T.addDay)
   expect(html(<QuarterSection view={q2} {...props} />)).toContain('前の年と同じ 14日で計算中')
 })
+test('§3.5・§4: 日程は候補の上（左の列のカレンダーの下）。過ぎた四半期でも日程が出る', () => {
+  const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
+  const h = html(<QuarterSection view={q4} {...props} />)
+  const at = (label: string) => h.indexOf(`>${label}</h3>`)
+  expect(at(T.entries)).toBeGreaterThan(-1)
+  expect(at(T.candidates)).toBeGreaterThan(at(T.entries))
+  expect(h.indexOf(T.addDay)).toBeLessThan(at(T.candidates))
+  const [past] = buildQuarterViews(SHEET, planningQuarters('2026-11-15', -1))
+  const hp = html(<QuarterSection view={past} {...props} />)
+  expect(hp).toContain(`>${T.entries}<`)
+})
 test('§3.5・F-403: 長めの休暇の行は、どの状態でもラベル、札、期間の順。あり・まだ・なし', () => {
   const props = { workMinutes: 480, onAdd: noop, onAddTogether: noop, onOpen: noop, onAddDay: noop, onEnterGrant: noop }
   const line = (view: typeof q4) => {

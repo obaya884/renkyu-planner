@@ -34,7 +34,7 @@ const BADGE_CLASS: Readonly<Record<LongBreakStatus, string>> = {
 }
 const LEGEND_ORDER: readonly DayMark[] = ['off', 'company', 'done', 'planned', 'candidate']
 
-/** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー、右に候補と日程の 2 列 */
+/** §3.5・§4。スマホは縦 1 列、PC は左に見出し・カレンダー・日程、右に候補の 2 列 */
 export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen, onAddDay, onEnterGrant, belowSummary = false }: Props) {
   const { quarter, past, longBreak, longBreakStatus, months, marks, grantNote, groups, monthGaps, together, noCandidates, entries } = view
   return (
@@ -71,24 +71,22 @@ export function QuarterSection({ view, workMinutes, onAdd, onAddTogether, onOpen
               )}
             </p>
           )}
-        </div>
-        <div className="space-y-4">
-          {!past && (
-            <div>
-              <h3 className="mb-1.5 font-bold">{T.candidates}</h3>
-              {noCandidates ? (
-                <p className="text-sm text-sub">{T.noCandidates}</p>
-              ) : (
-                <div className="space-y-3.5">
-                  <CandidateLegend />
-                  <CandidateList groups={groups} monthGaps={monthGaps} workMinutes={workMinutes} onAdd={onAdd} />
-                  <TogetherList blocks={together} onAdd={onAddTogether} />
-                </div>
-              )}
-            </div>
-          )}
           <EntryList blocks={entries} workMinutes={workMinutes} onOpen={onOpen} onAddDay={onAddDay} />
         </div>
+        {!past && (
+          <div>
+            <h3 className="mb-1.5 font-bold">{T.candidates}</h3>
+            {noCandidates ? (
+              <p className="text-sm text-sub">{T.noCandidates}</p>
+            ) : (
+              <div className="space-y-3.5">
+                <CandidateLegend />
+                <CandidateList groups={groups} monthGaps={monthGaps} workMinutes={workMinutes} onAdd={onAdd} />
+                <TogetherList blocks={together} onAdd={onAddTogether} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )
