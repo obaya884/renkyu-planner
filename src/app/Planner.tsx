@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AddSheet } from '@/app/components/AddSheet'
+import { BackupLinkSheet } from '@/app/components/BackupLinkSheet'
 import { BalanceCards } from '@/app/components/BalanceCards'
 import { EntrySheet } from '@/app/components/EntrySheet'
 import { GrantSheet } from '@/app/components/GrantSheet'
@@ -21,6 +22,8 @@ import type { HolidayData } from '@/domain/holidays/importCsv'
 import type { IsoDate } from '@/domain/shared/date'
 import { type Quarter, canGoBack as canGoBackFrom, quartersBetween } from '@/domain/quarters/quarters'
 import { calendarUrlOf } from '@/app/transfer/calendarEvents'
+import { useBackupLinkOnOpen } from '@/app/transfer/useBackupLink'
+import { importCounts } from '@/domain/transfer/importCounts'
 import { currentGrantYear } from '@/domain/view/input'
 import { buildQuarterViews } from '@/domain/view/quarterView'
 import { buildSummary } from '@/domain/view/summary'
@@ -40,6 +43,8 @@ type OpenSheet =
 export function Planner({ holidays, children }: { holidays: HolidayData; children: React.ReactNode }) {
   const { ready, data, canSave, unreadable } = usePlanner()
   const today = useToday()
+  // 控えのリンク（試作）を #b… 付きで開いたとき。記録を読み終えてから読む
+  const backupLink = useBackupLinkOnOpen(ready)
   // 「‹ 前」で 1 減らし、「次 ›」で 1 増やす（0 以下）。selected が null なら、いちばん左の四半期を開く
   const [shift, setShift] = useState(0)
   const [selected, setSelected] = useState<IsoDate | null>(null)
@@ -101,6 +106,11 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
   return (
     <>
       <Notices canSave={canSave} unreadable={unreadable} />
+      {backupLink.unreadable && (
+        <p role="alert" className="text-sm text-danger">
+          {T.unreadableLink}
+        </p>
+      )}
       {settings.grantDay === null && <p className="text-sm">{APP_DESCRIPTION}</p>}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-6">
         <div ref={setCardsEl} className="lg:w-1/2">
@@ -168,6 +178,9 @@ export function Planner({ holidays, children }: { holidays: HolidayData; childre
           </button>
         )}
       </div>
+      {backupLink.pending !== null && (
+        <BackupLinkSheet counts={importCounts(backupLink.pending)} onSubmit={backupLink.accept} onClose={backupLink.dismiss} />
+      )}
       {sheet?.kind === 'add' && (
         <AddSheet
           input={input}

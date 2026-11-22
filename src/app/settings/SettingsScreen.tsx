@@ -11,16 +11,21 @@ import { SettingsSections } from '@/app/components/SettingsSections'
 import { TransferSection } from '@/app/components/TransferSection'
 import { plannerStore, usePlanner } from '@/app/store/usePlanner'
 import { useToday } from '@/app/store/useToday'
+import { makeBackupLink } from '@/app/transfer/backupLink'
 import { calendarEventsOf } from '@/app/transfer/calendarEvents'
 import { downloadText, readFileText } from '@/app/transfer/download'
+import { deliverLink } from '@/app/transfer/shareLink'
 import {
   TRANSFER_IDLE,
+  afterBackupLink,
+  afterBackupLinkFailed,
   afterClear,
   afterImport,
   afterNoCalendarEntries,
   afterRestore,
   afterUnreadable,
   canRestore,
+  isBackupLinkTooLong,
   keptAcrossScreens,
   readPickedFile,
   showsClearHint,
@@ -45,6 +50,11 @@ type SettingsSheet =
   | { kind: 'import'; data: StoredData }
   | { kind: 'clear' }
 
+/** 控えのリンクの # の前。リンクは主な画面（/）を開く */
+function backupLinkBase(): string {
+  return `${window.location.origin}/`
+}
+
 /**
  * 設定画面（画面定義書 §6）。記録を読み終え、今日がそろうまでは何も描かない。
  * 「祝日について」（サーバーで描く）は page.tsx がこの部品の下に置く
@@ -61,6 +71,20 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   // 所定労働時間の欄が出している値。欄が自分で変えた値と違う値が記録に入ったら（D-8 の読み直しなど）、欄を作り直す
   const [fieldWorkMinutes, setFieldWorkMinutes] = useState<number | null>(null)
   const shown = ready && today !== null
+  // 控えのリンク（試作）は記録が変わるたびに先に作っておく。押してから圧縮を待つと、スマホのブラウザが
+  // 「押した直後」とみなさなくなり、共有シートやクリップボードを断ることがあるため
+  const [prepared, setPrepared] = useState<{ data: StoredData; url: string } | null>(null)
+  useEffect(() => {
+    if (!ready) return
+    let alive = true
+    makeBackupLink(data, backupLinkBase()).then(
+      (url) => alive && setPrepared({ data, url }),
+      () => {},
+    )
+    return () => {
+      alive = false
+    }
+  }, [ready, data])
 
   // §6: 設定画面に入るときと離れるときに、節の 1 行を消す（戻せるあいだの「読み込みました」と「読み込む前に戻す」は残す）。
   // 描く前に整えるので useLayoutEffect にする
@@ -89,6 +113,17 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
   const grantView = buildGrantSection(input)
   // §6: 節のボタンを押したら、まず節の 1 行と、戻すための記録を消す（「読み込む前に戻す」を除く）
   const resetTransfer = () => setTransfer(TRANSFER_IDLE)
+  const makeLink = async () => {
+    resetTransfer()
+    let url: string
+    try {
+      url = prepared?.data === data ? prepared.url : await makeBackupLink(data, backupLinkBase())
+    } catch {
+      return setTransfer(afterBackupLinkFailed())
+    }
+    if (isBackupLinkTooLong(url)) return setTransfer(afterBackupLink(url, 'tooLong'))
+    setTransfer(afterBackupLink(url, await deliverLink(url)))
+  }
   const pickFile = async (file: File) => {
     const picked = readPickedFile(await readFileText(file))
     if (picked.kind === 'unreadable') return setTransfer(afterUnreadable())
@@ -123,6 +158,8 @@ export function SettingsScreen({ holidays }: { holidays: HolidayData }) {
       <TransferSection
         note={transfer.note}
         canRestore={canRestore(transfer)}
+        link={transfer.link ?? null}
+        onMakeLink={() => void makeLink()}
         onExport={() => {
           resetTransfer()
           downloadText(recordFileName(today), serializeStored(data), 'application/json')

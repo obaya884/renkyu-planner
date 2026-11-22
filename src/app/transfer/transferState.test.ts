@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { EMPTY_STORED, type StoredData, serializeStored } from '@/domain/storage/stored'
 import { SHEET } from '@/domain/view/fixture'
-import { TRANSFER_IDLE, afterClear, keptAcrossScreens, afterImport, afterNoCalendarEntries, afterRestore, afterUnreadable, canRestore, readPickedFile, showsClearHint, withCurrentData } from './transferState'
+import { TRANSFER_IDLE, afterBackupLink, afterBackupLinkFailed, afterClear, keptAcrossScreens, afterImport, afterNoCalendarEntries, afterRestore, afterUnreadable, canRestore, isBackupLinkTooLong, readPickedFile, showsClearHint, withCurrentData } from './transferState'
 
 const sheetData = { version: 1, settings: SHEET.settings, entries: SHEET.entries } as const
 const imported = afterImport(EMPTY_STORED, sheetData)
@@ -48,4 +48,19 @@ test('§6: 設定画面を離れても、戻せるあいだは「読み込みま
 test('§5.7・D-5: M-7 の添え書きは、記録を読めなかったときは出さない（書き出せるのは空の記録になる）', () => {
   expect(showsClearHint({ unreadable: false })).toBe(true)
   expect(showsClearHint({ unreadable: true })).toBe(false)
+})
+
+test('控えのリンク（試作）: 渡し方ごとの節の状態。長すぎるリンクは渡さず、欄にも出さない', () => {
+  const url = 'https://example.test/#b1=abc'
+  expect(afterBackupLink(url, 'shared')).toEqual({ note: null, undo: null, link: { length: url.length, url: null } })
+  expect(afterBackupLink(url, 'copied')).toEqual({ note: 'linkCopied', undo: null, link: { length: url.length, url: null } })
+  expect(afterBackupLink(url, 'manual')).toEqual({ note: null, undo: null, link: { length: url.length, url } })
+  const long = `https://example.test/#b1=${'a'.repeat(8000)}`
+  expect(afterBackupLink(long, 'tooLong')).toEqual({ note: 'linkTooLong', undo: null, link: { length: long.length, url: null } })
+  expect(isBackupLinkTooLong(url)).toBe(false)
+  expect(isBackupLinkTooLong(long)).toBe(true)
+  expect(isBackupLinkTooLong('a'.repeat(8000))).toBe(false)
+  expect(afterBackupLinkFailed()).toEqual({ note: 'linkFailed', undo: null })
+  // 設定画面を離れたら消す
+  expect(keptAcrossScreens(afterBackupLink(url, 'manual'))).toBe(TRANSFER_IDLE)
 })

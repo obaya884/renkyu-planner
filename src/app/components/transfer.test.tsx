@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { expect, test } from 'vitest'
-import { T, errorText, importCountsText, transferNoteText } from '@/app/texts'
+import { T, backupLinkLengthText, errorText, importCountsText, transferNoteText } from '@/app/texts'
+import { BackupLinkSheetBody } from './BackupLinkSheet'
 import { ClearSheetBody } from './ClearSheet'
 import { ImportSheetBody } from './ImportSheet'
 import { TransferSection } from './TransferSection'
@@ -8,7 +9,7 @@ import { TransferSection } from './TransferSection'
 const noop = () => {}
 const html = (el: React.ReactElement) => renderToStaticMarkup(el)
 const section = (p: Partial<React.ComponentProps<typeof TransferSection>> = {}) =>
-  html(<TransferSection note={null} canRestore={false} onExport={noop} onStartImport={noop} onPickFile={noop} onRestore={noop} onExportIcs={noop} onClear={noop} {...p} />)
+  html(<TransferSection note={null} canRestore={false} link={null} onExport={noop} onMakeLink={noop} onStartImport={noop} onPickFile={noop} onRestore={noop} onExportIcs={noop} onClear={noop} {...p} />)
 
 test('F-505・F-506・§6: 記録の持ち出しの節。4 つのボタンと、保存先の説明', () => {
   const h = section()
@@ -59,4 +60,29 @@ test('§5.7: 記録を読めなかったときの M-7 は、添え書きを出�
 test('§6: .ics に入れる日程が無いときの 1 行', () => {
   expect(transferNoteText('noCalendarEntries')).toBe('カレンダーに入れる日程がありません')
   expect(section({ note: 'noCalendarEntries' })).toContain('<p class="text-sm">カレンダーに入れる日程がありません</p>')
+})
+
+test('控えのリンク（試作）: 節のボタンと、作ったあとの長さ・コピーの 1 行・選べる欄・長すぎるときの 1 行', () => {
+  const h = section()
+  expect(h.indexOf(T.importFile)).toBeLessThan(h.indexOf(T.makeBackupLink))
+  expect(h.indexOf(T.makeBackupLink)).toBeLessThan(h.indexOf(T.exportIcs))
+  expect(h).not.toContain('リンクの長さ')
+  expect(backupLinkLengthText(1234)).toBe('リンクの長さ 1,234 文字')
+  const copied = section({ note: 'linkCopied', link: { length: 1234, url: null } })
+  expect(copied).toContain('コピーしました')
+  expect(copied).toContain('リンクの長さ 1,234 文字')
+  expect(copied).not.toContain('readOnly')
+  const manual = section({ link: { length: 30, url: 'https://example.test/#b1=abc' } })
+  expect(manual).toContain(T.backupLinkFieldLabel)
+  expect(manual).toMatch(/<input[^>]*readOnly=""[^>]*value="https:\/\/example.test\/#b1=abc"/)
+  expect(section({ note: 'linkTooLong', link: { length: 9000, url: null } })).toContain('記録が多いので、ファイルに書き出してください')
+  expect(section({ note: 'linkFailed' })).toMatch(/role="alert"[^>]*>このブラウザでは控えのリンクを作れませんでした</)
+})
+test('控えのリンク（試作）: 開いたときに確かめるモーダル。件数と、置き換わることを出す', () => {
+  const h = html(<BackupLinkSheetBody counts={{ entries: 3, companyHolidays: 1, leaveTypes: 2 }} onSubmit={noop} onClose={noop} />)
+  expect(h).toContain('このリンクの記録を読み込みますか')
+  expect(h).toContain('日程 3 件、会社の休日 1 件、休暇の種類 2 件を読み込みます')
+  expect(h).toContain('いまの記録は置き換わります')
+  expect(h.indexOf(`>${T.cancel}<`)).toBeLessThan(h.indexOf(`>${T.backupLinkSubmit}<`))
+  expect(T.unreadableLink).toBe('このリンクは読めませんでした')
 })

@@ -165,10 +165,16 @@ export const T = {
   importSubmit: '置き換える',
   restoreImport: '読み込む前に戻す',
   noCalendarEntries: 'カレンダーに入れる日程がありません',
+  // 控えのリンク（試作。画面定義書にはまだ無い）
+  makeBackupLink: '控えのリンクを作る',
+  backupLinkFieldLabel: 'リンク（選んでコピーしてください）',
+  backupLinkTitle: 'このリンクの記録を読み込みますか',
+  backupLinkSubmit: '読み込む',
+  unreadableLink: 'このリンクは読めませんでした',
 } as const
 
 /** §6 の記録の持ち出しの節に出す 1 行の種類 */
-export type TransferNote = 'imported' | 'restored' | 'unreadableFile' | 'noCalendarEntries' | 'cleared'
+export type TransferNote = 'imported' | 'restored' | 'unreadableFile' | 'noCalendarEntries' | 'cleared' | 'linkCopied' | 'linkTooLong' | 'linkFailed'
 
 /** 日曜始まり（曜日の番号の順）。月カレンダーの曜日の行は weekdayHeader を使う */
 export const WEEKDAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const
@@ -444,7 +450,18 @@ export function transferNoteText(note: TransferNote): string {
       return '記録を消しました'
     case 'noCalendarEntries':
       return T.noCalendarEntries
+    case 'linkCopied':
+      return 'コピーしました'
+    case 'linkTooLong':
+      return '記録が多いので、ファイルに書き出してください'
+    case 'linkFailed':
+      return 'このブラウザでは控えのリンクを作れませんでした'
   }
+}
+
+/** 控えのリンク（試作）の長さ。例: リンクの長さ 1,234 文字 */
+export function backupLinkLengthText(length: number): string {
+  return `リンクの長さ ${length.toLocaleString('en-US')} 文字`
 }
 
 /** §6・F-506: カレンダーの予定の題。名前があれば名前、無ければ休暇の種類の名前。半日と時間単位は量を括弧で添える。例: 有休（2 時間） */
